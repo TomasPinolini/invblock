@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, TrendingUp, TrendingDown, Loader2, AlertCircle } from "lucide-react";
+import { X, TrendingUp, TrendingDown, Loader2, AlertCircle, Activity } from "lucide-react";
 import { useTickerHistory } from "@/hooks/useHistoricalPrices";
+import { useIOLQuote } from "@/hooks/useIOLQuotes";
 import type { TimePeriod } from "@/services/yahoo/client";
 import { formatCurrency, formatPercent, cn } from "@/lib/utils";
 import { CATEGORY_COLORS, CATEGORY_LABELS } from "@/lib/constants";
@@ -17,6 +18,9 @@ interface AssetDetailModalProps {
     averagePrice: number;
     currentPrice: number;
     currentValue: number;
+    source?: "iol" | "binance";
+    dailyChange?: number | null;
+    hasLiveQuote?: boolean;
   };
   displayCurrency: "USD" | "ARS";
   onClose: () => void;
@@ -30,6 +34,14 @@ export default function AssetDetailModal({
   onClose,
 }: AssetDetailModalProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("1M");
+
+  // Fetch live quote for IOL assets
+  const isIOL = asset.source === "iol";
+  const { data: liveQuote, isLoading: quoteLoading } = useIOLQuote(
+    asset.ticker,
+    undefined,
+    isIOL
+  );
 
   // Fetch history for this specific ticker
   const { data: historyData, isLoading, error } = useTickerHistory(
@@ -232,6 +244,92 @@ export default function AssetDetailModal({
               </span>
             </div>
           </div>
+
+          {/* Live Quote Details (IOL only) */}
+          {isIOL && (
+            <div className="bg-zinc-800/50 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="h-4 w-4 text-blue-400" />
+                <p className="text-xs text-zinc-500 uppercase tracking-wider">Live Quote</p>
+                {quoteLoading && <Loader2 className="h-3 w-3 animate-spin text-zinc-500" />}
+              </div>
+              {liveQuote ? (
+                <div className="space-y-2">
+                  {/* Daily Change */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-zinc-500">Today</span>
+                    <span
+                      className={cn(
+                        "font-mono font-semibold",
+                        (liveQuote.variacionPorcentual ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                      )}
+                    >
+                      {(liveQuote.variacionPorcentual ?? 0) >= 0 ? "+" : ""}
+                      {(liveQuote.variacionPorcentual ?? 0).toFixed(2)}%
+                    </span>
+                  </div>
+                  {/* OHLC Grid */}
+                  <div className="grid grid-cols-4 gap-2 pt-2 border-t border-zinc-700">
+                    <div>
+                      <p className="text-[10px] text-zinc-600 uppercase">Open</p>
+                      <p className="text-xs font-mono text-zinc-300">
+                        {liveQuote.apertura ? formatCurrency(liveQuote.apertura, asset.currency) : "--"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-zinc-600 uppercase">High</p>
+                      <p className="text-xs font-mono text-emerald-400">
+                        {liveQuote.maximo ? formatCurrency(liveQuote.maximo, asset.currency) : "--"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-zinc-600 uppercase">Low</p>
+                      <p className="text-xs font-mono text-red-400">
+                        {liveQuote.minimo ? formatCurrency(liveQuote.minimo, asset.currency) : "--"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-zinc-600 uppercase">Prev Close</p>
+                      <p className="text-xs font-mono text-zinc-300">
+                        {liveQuote.cierreAnterior ? formatCurrency(liveQuote.cierreAnterior, asset.currency) : "--"}
+                      </p>
+                    </div>
+                  </div>
+                  {/* Volume */}
+                  {(liveQuote.volumen || liveQuote.montoOperado) && (
+                    <div className="flex items-center justify-between pt-2 border-t border-zinc-700">
+                      <span className="text-[10px] text-zinc-600 uppercase">Volume</span>
+                      <span className="text-xs font-mono text-zinc-400">
+                        {liveQuote.volumen?.toLocaleString() ?? "--"} shares
+                        {liveQuote.montoOperado && (
+                          <span className="text-zinc-600 ml-2">
+                            ({formatCurrency(liveQuote.montoOperado, asset.currency)})
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  {/* Bid/Ask */}
+                  {liveQuote.puntas && liveQuote.puntas.length > 0 && (
+                    <div className="flex items-center justify-between pt-2 border-t border-zinc-700">
+                      <span className="text-[10px] text-zinc-600 uppercase">Bid / Ask</span>
+                      <span className="text-xs font-mono">
+                        <span className="text-emerald-400">
+                          {formatCurrency(liveQuote.puntas[0]?.precioCompra ?? 0, asset.currency)}
+                        </span>
+                        <span className="text-zinc-600 mx-1">/</span>
+                        <span className="text-red-400">
+                          {formatCurrency(liveQuote.puntas[0]?.precioVenta ?? 0, asset.currency)}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : !quoteLoading ? (
+                <p className="text-xs text-zinc-600">Quote data unavailable</p>
+              ) : null}
+            </div>
+          )}
 
           {/* Time Period Selector */}
           <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-1">

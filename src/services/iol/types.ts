@@ -70,18 +70,46 @@ export interface IOLAccountState {
 export interface IOLOperation {
   numero: number;
   fechaOrden: string;
-  tipo: string;
-  estado: string;
+  fechaOperada?: string; // When it was executed
+  tipo: string; // "Compra" | "Venta" etc.
+  estado: string; // "iniciada" | "pendiente" | "terminada" | "cancelada"
   mercado: string;
   simbolo: string;
-  cantidad: number;
-  precio: number;
-  montoTotal: number;
-  cantidadOperada?: number;
+  cantidad: number; // Ordered quantity
+  cantidadOperada?: number; // Executed quantity
+  precio: number; // Ordered price
+  precioOperado?: number; // Executed price
+  montoTotal: number; // Order total
+  montoOperado?: number; // Executed total
+  validez?: string; // Order validity
+  plazo?: string; // Settlement period (T+0, T+1, etc.)
 }
 
 export interface IOLNotification {
   titulo: string;
   mensaje: string;
   link?: string;
+}
+
+// Quote/Cotización model from IOL API
+export interface IOLPunta {
+  precioCompra: number;
+  precioVenta: number;
+  cantidadCompra?: number;
+  cantidadVenta?: number;
+}
+
+export interface IOLQuote {
+  ultimoPrecio: number; // Last traded price
+  variacionPorcentual: number; // Daily change % (e.g., +2.5 or -1.3)
+  apertura: number; // Open
+  maximo: number; // High
+  minimo: number; // Low
+  cierreAnterior: number; // Previous close
+  volumen?: number; // Volume in shares
+  montoOperado?: number; // Volume in money
+  tendencia?: "sube" | "baja" | "mantiene"; // Trend direction
+  puntas?: IOLPunta[]; // Bid/ask spread
+  fechaHora?: string; // Quote timestamp
+  cantidadOperaciones?: number; // Number of trades
 }
