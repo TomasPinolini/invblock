@@ -1,0 +1,1506 @@
+// ============================================================================
+// PROJECT STRUCTURE
+// ============================================================================
+//
+// financial-command-center/
+// ├── drizzle.config.ts
+// ├── tailwind.config.ts
+// ├── src/
+// │   ├── app/
+// │   │   ├── layout.tsx
+// │   │   ├── page.tsx                    ← Dashboard shell
+// │   │   └── api/
+// │   │       ├── assets/route.ts         ← CRUD for assets
+// │   │       └── transactions/route.ts   ← CRUD for transactions
+// │   ├── db/
+// │   │   ├── index.ts                    ← Drizzle client
+// │   │   ├── schema.ts                   ← ★ Tables defined here
+// │   │   └── migrations/
+// │   ├── lib/
+// │   │   ├── supabase/
+// │   │   │   ├── client.ts               ← Browser client
+// │   │   │   └── server.ts               ← Server client
+// │   │   ├── validators.ts               ← ★ Zod schemas
+// │   │   ├── constants.ts                ← Enums, mock prices
+// │   │   └── utils.ts                    ← Formatters, helpers
+// │   ├── stores/
+// │   │   └── useAppStore.ts              ← ★ Zustand global store
+// │   ├── hooks/
+// │   │   ├── useAssets.ts                ← TanStack Query wrappers
+// │   │   └── useTransactions.ts
+// │   ├── components/
+// │   │   ├── ui/                         ← Radix primitives (Dialog, Select…)
+// │   │   ├── portfolio/
+// │   │   │   ├── PortfolioTable.tsx      ← ★ TanStack Table
+// │   │   │   ├── PortfolioSummary.tsx
+// │   │   │   └── AllocationBar.tsx
+// │   │   ├── forms/
+// │   │   │   ├── AssetEntryDialog.tsx    ← ★ Manual entry form
+// │   │   │   └── TransactionEntryDialog.tsx
+// │   │   └── layout/
+// │   │       ├── Sidebar.tsx
+// │   │       ├── Header.tsx
+// │   │       └── CurrencyToggle.tsx
+// │   └── services/                       ← Future: IOL, Binance, etc.
+// │       └── README.md
+// └── inngest/                            ← Future: background jobs
+//     └── README.md
+//
+// ============================================================================
+
+
+// ============================================================================
+// FILE: src/db/schema.ts — Drizzle ORM Schema
+// ============================================================================
+
+import {
+  pgTable,
+  uuid,
+  varchar,
+  numeric,
+  timestamp,
+  pgEnum,
+  index,
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
+// ── Enums ───────────────────────────────────────────────────────────────────
+
+export const assetCategoryEnum = pgEnum("asset_category", [
+  "stock",
+  "cedear",
+  "crypto",
+  "cash",
+]);
+
+export const currencyEnum = pgEnum("currency", ["USD", "ARS"]);
+
+export const transactionTypeEnum = pgEnum("transaction_type", [
+  "buy",
+  "sell",
+]);
+
+// ── Assets ──────────────────────────────────────────────────────────────────
+
+export const assets = pgTable(
+  "assets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull(), // FK to Supabase auth.users
+    ticker: varchar("ticker", { length: 20 }).notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    category: assetCategoryEnum("category").notNull(),
+    currency: currencyEnum("currency").notNull().default("USD"),
+    quantity: numeric("quantity", { precision: 18, scale: 8 })
+      .notNull()
+      .default("0"),
+    averagePrice: numeric("average_price", { precision: 18, scale: 8 })
+      .notNull()
+      .default("0"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: index("assets_user_idx").on(table.userId),
+    tickerIdx: index("assets_ticker_idx").on(table.ticker),
+  })
+);
+
+// ── Transactions (Ledger) ───────────────────────────────────────────────────
+
+export const transactions = pgTable(
+  "transactions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull(),
+    assetId: uuid("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    type: transactionTypeEnum("type").notNull(),
+    quantity: numeric("quantity", { precision: 18, scale: 8 }).notNull(),
+    pricePerUnit: numeric("price_per_unit", { precision: 18, scale: 8 })
+      .notNull(),
+    totalAmount: numeric("total_amount", { precision: 18, scale: 8 })
+      .notNull(),
+    currency: currencyEnum("currency").notNull().default("USD"),
+    executedAt: timestamp("executed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    notes: varchar("notes", { length: 500 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: index("txn_user_idx").on(table.userId),
+    assetIdx: index("txn_asset_idx").on(table.assetId),
+    dateIdx: index("txn_date_idx").on(table.executedAt),
+  })
+);
+
+// ── Relations ───────────────────────────────────────────────────────────────
+
+export const assetsRelations = relations(assets, ({ many }) => ({
+  transactions: many(transactions),
+}));
+
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  asset: one(assets, {
+    fields: [transactions.assetId],
+    references: [assets.id],
+  }),
+}));
+
+// Inferred types for use across the app
+export type Asset = typeof assets.$inferSelect;
+export type NewAsset = typeof assets.$inferInsert;
+export type Transaction = typeof transactions.$inferSelect;
+export type NewTransaction = typeof transactions.$inferInsert;
+
+
+// ============================================================================
+// FILE: src/db/index.ts — Drizzle Client
+// ============================================================================
+
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "./schema";
+
+const connectionString = process.env.DATABASE_URL!;
+
+const client = postgres(connectionString, { prepare: false });
+export const db = drizzle(client, { schema });
+
+
+// ============================================================================
+// FILE: src/lib/constants.ts — Enums, Mock Prices, Config
+// ============================================================================
+
+export const ASSET_CATEGORIES = [
+  "stock",
+  "cedear",
+  "crypto",
+  "cash",
+] as const;
+
+export const CURRENCIES = ["USD", "ARS"] as const;
+export const TRANSACTION_TYPES = ["buy", "sell"] as const;
+
+export type AssetCategory = (typeof ASSET_CATEGORIES)[number];
+export type Currency = (typeof CURRENCIES)[number];
+export type TransactionType = (typeof TRANSACTION_TYPES)[number];
+
+// Mock prices — replace with real API calls (IOL, Yahoo Finance, Binance)
+// This map is the single integration point for future price services.
+export const MOCK_PRICES: Record<string, number> = {
+  AAPL: 227.5,
+  MSFT: 445.2,
+  GOOGL: 178.9,
+  GGAL: 82.15, // CEDEAR - Galicia
+  YPF: 26.4, // CEDEAR - YPF
+  MELI: 2085.0, // CEDEAR - MercadoLibre
+  BTC: 104250.0,
+  ETH: 3420.0,
+  SOL: 195.6,
+  ARS: 1.0, // Cash balances
+  USD: 1.0,
+};
+
+// Blue dollar rate for ARS ↔ USD conversion (mock)
+export const MOCK_USD_ARS_RATE = 1250;
+
+export const CATEGORY_LABELS: Record<AssetCategory, string> = {
+  stock: "Stocks",
+  cedear: "CEDEARs",
+  crypto: "Crypto",
+  cash: "Cash",
+};
+
+export const CATEGORY_COLORS: Record<AssetCategory, string> = {
+  stock: "#3b82f6",   // blue-500
+  cedear: "#a855f7",  // purple-500
+  crypto: "#f59e0b",  // amber-500
+  cash: "#22c55e",    // green-500
+};
+
+
+// ============================================================================
+// FILE: src/lib/validators.ts — Zod Schemas
+// ============================================================================
+
+import { z } from "zod";
+import { ASSET_CATEGORIES, CURRENCIES, TRANSACTION_TYPES } from "./constants";
+
+// ── Asset Validation ────────────────────────────────────────────────────────
+
+export const assetFormSchema = z.object({
+  ticker: z
+    .string()
+    .min(1, "Ticker is required")
+    .max(20)
+    .transform((v) => v.toUpperCase().trim()),
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(120)
+    .transform((v) => v.trim()),
+  category: z.enum(ASSET_CATEGORIES, {
+    errorMap: () => ({ message: "Select a valid category" }),
+  }),
+  currency: z.enum(CURRENCIES).default("USD"),
+  quantity: z
+    .number({ coerce: true })
+    .nonnegative("Quantity must be ≥ 0")
+    .finite(),
+  averagePrice: z
+    .number({ coerce: true })
+    .nonnegative("Price must be ≥ 0")
+    .finite(),
+});
+
+export type AssetFormValues = z.infer<typeof assetFormSchema>;
+
+// ── Transaction Validation ──────────────────────────────────────────────────
+
+export const transactionFormSchema = z.object({
+  assetId: z.string().uuid("Select a valid asset"),
+  type: z.enum(TRANSACTION_TYPES, {
+    errorMap: () => ({ message: "Select buy or sell" }),
+  }),
+  quantity: z
+    .number({ coerce: true })
+    .positive("Quantity must be > 0")
+    .finite(),
+  pricePerUnit: z
+    .number({ coerce: true })
+    .positive("Price must be > 0")
+    .finite(),
+  currency: z.enum(CURRENCIES).default("USD"),
+  executedAt: z.string().datetime().optional(), // ISO string, defaults to now
+  notes: z.string().max(500).optional(),
+});
+
+export type TransactionFormValues = z.infer<typeof transactionFormSchema>;
+
+// ── Derived: the total is always computed, never user-entered ───────────────
+
+export const transactionInsertSchema = transactionFormSchema.transform(
+  (data) => ({
+    ...data,
+    totalAmount: data.quantity * data.pricePerUnit,
+  })
+);
+
+
+// ============================================================================
+// FILE: src/lib/utils.ts — Formatters & Helpers
+// ============================================================================
+
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
+
+export function formatCurrency(
+  value: number,
+  currency: "USD" | "ARS" = "USD"
+): string {
+  return new Intl.NumberFormat(currency === "ARS" ? "es-AR" : "en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+export function formatPercent(value: number): string {
+  const sign = value >= 0 ? "+" : "";
+  return `${sign}${value.toFixed(2)}%`;
+}
+
+export function formatQuantity(value: number, decimals = 4): string {
+  return Number(value).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: decimals,
+  });
+}
+
+export function relativeDate(date: string | Date): string {
+  return dayjs(date).fromNow();
+}
+
+export function cn(...classes: (string | false | undefined | null)[]): string {
+  return classes.filter(Boolean).join(" ");
+}
+
+
+// ============================================================================
+// FILE: src/stores/useAppStore.ts — Zustand Global Store
+// ============================================================================
+
+import { create } from "zustand";
+import { persist, devtools } from "zustand/middleware";
+import type { Currency, AssetCategory } from "@/lib/constants";
+
+// ── Types ───────────────────────────────────────────────────────────────────
+
+interface SyncStatus {
+  isActive: boolean;
+  lastSyncedAt: string | null;     // ISO timestamp
+  source: string | null;           // e.g. "iol", "binance", "manual"
+  error: string | null;
+}
+
+interface Preferences {
+  displayCurrency: Currency;       // ARS or USD — controls all value displays
+  defaultCategory: AssetCategory;
+  compactTable: boolean;           // Dense rows vs. comfortable
+}
+
+interface AppState {
+  // ── Preferences ──
+  preferences: Preferences;
+  setDisplayCurrency: (currency: Currency) => void;
+  setDefaultCategory: (category: AssetCategory) => void;
+  toggleCompactTable: () => void;
+
+  // ── Sync Status ──
+  sync: SyncStatus;
+  startSync: (source: string) => void;
+  completeSync: () => void;
+  failSync: (error: string) => void;
+
+  // ── UI State ──
+  isAssetDialogOpen: boolean;
+  isTransactionDialogOpen: boolean;
+  selectedAssetId: string | null;
+  openAssetDialog: () => void;
+  closeAssetDialog: () => void;
+  openTransactionDialog: (assetId?: string) => void;
+  closeTransactionDialog: () => void;
+}
+
+// ── Store ───────────────────────────────────────────────────────────────────
+
+export const useAppStore = create<AppState>()(
+  devtools(
+    persist(
+      (set) => ({
+        // ── Preferences ──
+        preferences: {
+          displayCurrency: "USD",
+          defaultCategory: "stock",
+          compactTable: false,
+        },
+        setDisplayCurrency: (currency) =>
+          set(
+            (s) => ({
+              preferences: { ...s.preferences, displayCurrency: currency },
+            }),
+            false,
+            "setDisplayCurrency"
+          ),
+        setDefaultCategory: (category) =>
+          set(
+            (s) => ({
+              preferences: { ...s.preferences, defaultCategory: category },
+            }),
+            false,
+            "setDefaultCategory"
+          ),
+        toggleCompactTable: () =>
+          set(
+            (s) => ({
+              preferences: {
+                ...s.preferences,
+                compactTable: !s.preferences.compactTable,
+              },
+            }),
+            false,
+            "toggleCompactTable"
+          ),
+
+        // ── Sync Status ──
+        sync: {
+          isActive: false,
+          lastSyncedAt: null,
+          source: null,
+          error: null,
+        },
+        startSync: (source) =>
+          set(
+            { sync: { isActive: true, lastSyncedAt: null, source, error: null } },
+            false,
+            "startSync"
+          ),
+        completeSync: () =>
+          set(
+            (s) => ({
+              sync: {
+                ...s.sync,
+                isActive: false,
+                lastSyncedAt: new Date().toISOString(),
+                error: null,
+              },
+            }),
+            false,
+            "completeSync"
+          ),
+        failSync: (error) =>
+          set(
+            (s) => ({
+              sync: { ...s.sync, isActive: false, error },
+            }),
+            false,
+            "failSync"
+          ),
+
+        // ── UI State ──
+        isAssetDialogOpen: false,
+        isTransactionDialogOpen: false,
+        selectedAssetId: null,
+        openAssetDialog: () =>
+          set({ isAssetDialogOpen: true }, false, "openAssetDialog"),
+        closeAssetDialog: () =>
+          set({ isAssetDialogOpen: false }, false, "closeAssetDialog"),
+        openTransactionDialog: (assetId) =>
+          set(
+            {
+              isTransactionDialogOpen: true,
+              selectedAssetId: assetId ?? null,
+            },
+            false,
+            "openTransactionDialog"
+          ),
+        closeTransactionDialog: () =>
+          set(
+            { isTransactionDialogOpen: false, selectedAssetId: null },
+            false,
+            "closeTransactionDialog"
+          ),
+      }),
+      {
+        name: "fcc-preferences",
+        // Only persist preferences, not transient UI/sync state
+        partialize: (state) => ({ preferences: state.preferences }),
+      }
+    ),
+    { name: "FinancialCommandCenter" }
+  )
+);
+
+
+// ============================================================================
+// FILE: src/hooks/useAssets.ts — TanStack Query Hooks
+// ============================================================================
+
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import type { Asset } from "@/db/schema";
+import type { AssetFormValues } from "@/lib/validators";
+
+const ASSETS_KEY = ["assets"] as const;
+
+async function fetchAssets(): Promise<Asset[]> {
+  const res = await fetch("/api/assets");
+  if (!res.ok) throw new Error("Failed to fetch assets");
+  return res.json();
+}
+
+async function createAsset(data: AssetFormValues): Promise<Asset> {
+  const res = await fetch("/api/assets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message ?? "Failed to create asset");
+  }
+  return res.json();
+}
+
+export function useAssets() {
+  return useQuery({
+    queryKey: ASSETS_KEY,
+    queryFn: fetchAssets,
+    staleTime: 1000 * 60 * 2, // 2 min — prices are mock anyway
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useCreateAsset() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createAsset,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ASSETS_KEY }),
+  });
+}
+
+
+// ============================================================================
+// FILE: src/api/assets/route.ts — Next.js Route Handler
+// ============================================================================
+
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { assets } from "@/db/schema";
+import { assetFormSchema } from "@/lib/validators";
+import { eq } from "drizzle-orm";
+// import { createServerClient } from "@/lib/supabase/server"; // uncomment when auth is wired
+
+export async function GET(/* req: NextRequest */) {
+  // const supabase = createServerClient();
+  // const { data: { user } } = await supabase.auth.getUser();
+  // if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = "00000000-0000-0000-0000-000000000000"; // placeholder
+  const rows = await db.query.assets.findMany({
+    where: eq(assets.userId, userId),
+    orderBy: (a, { desc }) => [desc(a.updatedAt)],
+    with: { transactions: true },
+  });
+
+  return NextResponse.json(rows);
+}
+
+export async function POST(req: NextRequest) {
+  const userId = "00000000-0000-0000-0000-000000000000"; // placeholder
+  const body = await req.json();
+  const parsed = assetFormSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { message: "Validation failed", errors: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const [row] = await db
+    .insert(assets)
+    .values({ ...parsed.data, userId })
+    .returning();
+
+  return NextResponse.json(row, { status: 201 });
+}
+
+
+// ============================================================================
+// FILE: src/components/portfolio/PortfolioTable.tsx — TanStack Table
+// ============================================================================
+
+"use client";
+
+import React, { useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  flexRender,
+  createColumnHelper,
+  type SortingState,
+  type ColumnFiltersState,
+} from "@tanstack/react-table";
+import {
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  TrendingUp,
+  TrendingDown,
+  Plus,
+  ReceiptText,
+} from "lucide-react";
+import { useAssets } from "@/hooks/useAssets";
+import { useAppStore } from "@/stores/useAppStore";
+import {
+  MOCK_PRICES,
+  MOCK_USD_ARS_RATE,
+  CATEGORY_LABELS,
+  CATEGORY_COLORS,
+} from "@/lib/constants";
+import {
+  formatCurrency,
+  formatPercent,
+  formatQuantity,
+  cn,
+} from "@/lib/utils";
+import type { Asset } from "@/db/schema";
+
+// ── Derived row type with computed fields ───────────────────────────────────
+
+interface PortfolioRow extends Asset {
+  currentPrice: number;
+  currentValue: number;
+  costBasis: number;
+  pnl: number;
+  pnlPercent: number;
+  allocation: number; // 0–100
+}
+
+// ── Column definitions ──────────────────────────────────────────────────────
+
+const col = createColumnHelper<PortfolioRow>();
+
+function buildColumns(displayCurrency: "USD" | "ARS") {
+  const cur = displayCurrency;
+
+  return [
+    col.accessor("ticker", {
+      header: "Ticker",
+      cell: (info) => (
+        <div className="flex items-center gap-2">
+          <span
+            className="h-2 w-2 rounded-full"
+            style={{
+              backgroundColor:
+                CATEGORY_COLORS[info.row.original.category] ?? "#6b7280",
+            }}
+          />
+          <span className="font-mono font-semibold text-zinc-100">
+            {info.getValue()}
+          </span>
+        </div>
+      ),
+    }),
+
+    col.accessor("name", {
+      header: "Name",
+      cell: (info) => (
+        <span className="text-zinc-400 truncate max-w-[180px] block">
+          {info.getValue()}
+        </span>
+      ),
+    }),
+
+    col.accessor("category", {
+      header: "Category",
+      cell: (info) => (
+        <span
+          className="text-xs font-medium px-2 py-0.5 rounded-full"
+          style={{
+            backgroundColor: `${CATEGORY_COLORS[info.getValue()]}20`,
+            color: CATEGORY_COLORS[info.getValue()],
+          }}
+        >
+          {CATEGORY_LABELS[info.getValue()]}
+        </span>
+      ),
+      filterFn: "equals",
+    }),
+
+    col.accessor("quantity", {
+      header: "Qty",
+      cell: (info) => (
+        <span className="font-mono text-zinc-300">
+          {formatQuantity(Number(info.getValue()))}
+        </span>
+      ),
+    }),
+
+    col.accessor("averagePrice", {
+      header: "Avg Cost",
+      cell: (info) => (
+        <span className="font-mono text-zinc-400">
+          {formatCurrency(Number(info.getValue()), cur)}
+        </span>
+      ),
+    }),
+
+    col.accessor("currentPrice", {
+      header: "Price",
+      cell: (info) => (
+        <span className="font-mono text-zinc-200">
+          {formatCurrency(info.getValue(), cur)}
+        </span>
+      ),
+    }),
+
+    col.accessor("currentValue", {
+      header: "Value",
+      cell: (info) => (
+        <span className="font-mono font-semibold text-zinc-100">
+          {formatCurrency(info.getValue(), cur)}
+        </span>
+      ),
+    }),
+
+    col.accessor("pnlPercent", {
+      header: "P&L %",
+      cell: (info) => {
+        const v = info.getValue();
+        const isPositive = v >= 0;
+        return (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 font-mono font-semibold",
+              isPositive ? "text-emerald-400" : "text-red-400"
+            )}
+          >
+            {isPositive ? (
+              <TrendingUp className="h-3.5 w-3.5" />
+            ) : (
+              <TrendingDown className="h-3.5 w-3.5" />
+            )}
+            {formatPercent(v)}
+          </span>
+        );
+      },
+    }),
+
+    col.accessor("allocation", {
+      header: "Alloc %",
+      cell: (info) => {
+        const v = info.getValue();
+        return (
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-16 rounded-full bg-zinc-800 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-blue-500"
+                style={{ width: `${Math.min(v, 100)}%` }}
+              />
+            </div>
+            <span className="font-mono text-xs text-zinc-400">
+              {v.toFixed(1)}%
+            </span>
+          </div>
+        );
+      },
+    }),
+
+    col.display({
+      id: "actions",
+      header: "",
+      cell: (info) => {
+        const { openTransactionDialog } = useAppStore.getState();
+        return (
+          <button
+            onClick={() => openTransactionDialog(info.row.original.id)}
+            className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200
+                       hover:bg-zinc-800 transition-colors"
+            title="Add transaction"
+          >
+            <ReceiptText className="h-4 w-4" />
+          </button>
+        );
+      },
+    }),
+  ];
+}
+
+// ── Component ───────────────────────────────────────────────────────────────
+
+export default function PortfolioTable() {
+  const { data: rawAssets, isLoading, error } = useAssets();
+  const displayCurrency = useAppStore((s) => s.preferences.displayCurrency);
+  const compact = useAppStore((s) => s.preferences.compactTable);
+  const openAssetDialog = useAppStore((s) => s.openAssetDialog);
+
+  const [sorting, setSorting] = React.useState<SortingState>([
+    { id: "currentValue", desc: true },
+  ]);
+  const [columnFilters, setColumnFilters] =
+    React.useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = React.useState("");
+
+  // ── Compute derived data ──────────────────────────────────────────────
+
+  const data: PortfolioRow[] = useMemo(() => {
+    if (!rawAssets?.length) return [];
+
+    const rate = displayCurrency === "ARS" ? MOCK_USD_ARS_RATE : 1;
+
+    const rows = rawAssets.map((asset) => {
+      const qty = Number(asset.quantity);
+      const avgPrice = Number(asset.averagePrice);
+      const mockPrice = (MOCK_PRICES[asset.ticker] ?? avgPrice) * rate;
+      const costBasis = qty * avgPrice * rate;
+      const currentValue = qty * mockPrice;
+      const pnl = currentValue - costBasis;
+      const pnlPercent = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
+
+      return {
+        ...asset,
+        currentPrice: mockPrice,
+        currentValue,
+        costBasis,
+        pnl,
+        pnlPercent,
+        allocation: 0, // computed below
+      };
+    });
+
+    const total = rows.reduce((sum, r) => sum + r.currentValue, 0);
+    rows.forEach((r) => {
+      r.allocation = total > 0 ? (r.currentValue / total) * 100 : 0;
+    });
+
+    return rows;
+  }, [rawAssets, displayCurrency]);
+
+  const columns = useMemo(
+    () => buildColumns(displayCurrency),
+    [displayCurrency]
+  );
+
+  // ── Table instance ────────────────────────────────────────────────────
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: { sorting, columnFilters, globalFilter },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
+
+  // ── Render ────────────────────────────────────────────────────────────
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-6
+                      text-red-400 text-sm">
+        Failed to load portfolio: {error.message}
+      </div>
+    );
+  }
+
+  const totalValue = data.reduce((s, r) => s + r.currentValue, 0);
+  const totalPnl = data.reduce((s, r) => s + r.pnl, 0);
+  const totalPnlPct =
+    data.reduce((s, r) => s + r.costBasis, 0) > 0
+      ? (totalPnl / data.reduce((s, r) => s + r.costBasis, 0)) * 100
+      : 0;
+
+  return (
+    <div className="space-y-4">
+      {/* ── Summary Bar ──────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <p className="text-xs uppercase tracking-widest text-zinc-500">
+            Total Portfolio Value
+          </p>
+          <p className="text-2xl font-bold font-mono text-zinc-50">
+            {formatCurrency(totalValue, displayCurrency)}
+          </p>
+          <p
+            className={cn(
+              "text-sm font-mono font-semibold",
+              totalPnl >= 0 ? "text-emerald-400" : "text-red-400"
+            )}
+          >
+            {formatCurrency(totalPnl, displayCurrency)}{" "}
+            ({formatPercent(totalPnlPct)})
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Global search */}
+          <input
+            type="text"
+            placeholder="Search assets…"
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="h-9 w-48 rounded-lg border border-zinc-800 bg-zinc-900/50
+                       px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                       focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+          />
+          <button
+            onClick={openAssetDialog}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg
+                       bg-blue-600 hover:bg-blue-500 text-white text-sm
+                       font-medium transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add Asset
+          </button>
+        </div>
+      </div>
+
+      {/* ── Table ────────────────────────────────────────────────────── */}
+      <div className="overflow-x-auto rounded-xl border border-zinc-800/80
+                      bg-zinc-950/50 backdrop-blur-sm">
+        <table className="w-full text-sm">
+          <thead>
+            {table.getHeaderGroups().map((hg) => (
+              <tr key={hg.id} className="border-b border-zinc-800/60">
+                {hg.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    onClick={header.column.getToggleSortingHandler()}
+                    className={cn(
+                      "px-4 text-left text-xs font-medium uppercase",
+                      "tracking-wider text-zinc-500 select-none",
+                      compact ? "py-2" : "py-3",
+                      header.column.getCanSort() &&
+                        "cursor-pointer hover:text-zinc-300 transition-colors"
+                    )}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                      {{
+                        asc: <ArrowUp className="h-3 w-3 text-blue-400" />,
+                        desc: <ArrowDown className="h-3 w-3 text-blue-400" />,
+                      }[header.column.getIsSorted() as string] ?? (
+                        header.column.getCanSort() && (
+                          <ArrowUpDown className="h-3 w-3 opacity-30" />
+                        )
+                      )}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+
+          <tbody>
+            {isLoading ? (
+              // Skeleton rows
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b border-zinc-800/30">
+                  {Array.from({ length: columns.length }).map((_, j) => (
+                    <td key={j} className="px-4 py-3">
+                      <div className="h-4 w-20 animate-pulse rounded bg-zinc-800" />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : table.getRowModel().rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="px-4 py-12 text-center text-zinc-600"
+                >
+                  No assets yet. Click "Add Asset" to get started.
+                </td>
+              </tr>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="border-b border-zinc-800/30 hover:bg-zinc-800/20
+                             transition-colors"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className={cn("px-4", compact ? "py-2" : "py-3")}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Footer Stats ─────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between text-xs text-zinc-600">
+        <span>
+          {data.length} asset{data.length !== 1 && "s"} ·{" "}
+          {table.getFilteredRowModel().rows.length} shown
+        </span>
+        <span>
+          Prices are mocked — connect IOL / Binance for live data
+        </span>
+      </div>
+    </div>
+  );
+}
+
+
+// ============================================================================
+// FILE: src/components/forms/AssetEntryDialog.tsx — Radix Dialog + Zod
+// ============================================================================
+
+"use client";
+
+import React from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import * as Select from "@radix-ui/react-select";
+import { X, ChevronDown, Check, Loader2 } from "lucide-react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAppStore } from "@/stores/useAppStore";
+import { useCreateAsset } from "@/hooks/useAssets";
+import {
+  assetFormSchema,
+  type AssetFormValues,
+} from "@/lib/validators";
+import {
+  ASSET_CATEGORIES,
+  CURRENCIES,
+  CATEGORY_LABELS,
+} from "@/lib/constants";
+import { cn } from "@/lib/utils";
+
+// ── Reusable field wrapper ──────────────────────────────────────────────────
+
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+        {label}
+      </label>
+      {children}
+      {error && <p className="text-xs text-red-400">{error}</p>}
+    </div>
+  );
+}
+
+// ── Styled input ────────────────────────────────────────────────────────────
+
+const inputClass = `h-9 w-full rounded-lg border border-zinc-700 bg-zinc-900
+  px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+  focus:outline-none focus:ring-1 focus:ring-blue-500/50
+  disabled:opacity-50`;
+
+// ── Component ───────────────────────────────────────────────────────────────
+
+export default function AssetEntryDialog() {
+  const open = useAppStore((s) => s.isAssetDialogOpen);
+  const close = useAppStore((s) => s.closeAssetDialog);
+  const defaultCategory = useAppStore((s) => s.preferences.defaultCategory);
+  const mutation = useCreateAsset();
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<AssetFormValues>({
+    resolver: zodResolver(assetFormSchema),
+    defaultValues: {
+      ticker: "",
+      name: "",
+      category: defaultCategory,
+      currency: "USD",
+      quantity: 0,
+      averagePrice: 0,
+    },
+  });
+
+  const onSubmit = async (values: AssetFormValues) => {
+    await mutation.mutateAsync(values);
+    reset();
+    close();
+  };
+
+  return (
+    <Dialog.Root open={open} onOpenChange={(v) => !v && close()}>
+      <Dialog.Portal>
+        {/* Overlay */}
+        <Dialog.Overlay
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm
+                     data-[state=open]:animate-in data-[state=closed]:animate-out
+                     data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0"
+        />
+        {/* Content */}
+        <Dialog.Content
+          className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2
+                     -translate-y-1/2 rounded-2xl border border-zinc-800
+                     bg-zinc-950 p-6 shadow-2xl shadow-black/40
+                     data-[state=open]:animate-in data-[state=closed]:animate-out
+                     data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0
+                     data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <Dialog.Title className="text-lg font-semibold text-zinc-100">
+              Add Asset
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button className="p-1 rounded-md text-zinc-500 hover:text-zinc-200
+                                 hover:bg-zinc-800 transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </Dialog.Close>
+          </div>
+
+          {/* Form */}
+          <div className="space-y-4">
+            {/* Row: Ticker + Name */}
+            <div className="grid grid-cols-[1fr_2fr] gap-3">
+              <Field label="Ticker" error={errors.ticker?.message}>
+                <input
+                  {...register("ticker")}
+                  placeholder="AAPL"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Name" error={errors.name?.message}>
+                <input
+                  {...register("name")}
+                  placeholder="Apple Inc."
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+
+            {/* Row: Category + Currency (Radix Select) */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Category" error={errors.category?.message}>
+                <Controller
+                  control={control}
+                  name="category"
+                  render={({ field }) => (
+                    <Select.Root
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <Select.Trigger
+                        className={cn(
+                          inputClass,
+                          "inline-flex items-center justify-between"
+                        )}
+                      >
+                        <Select.Value />
+                        <Select.Icon>
+                          <ChevronDown className="h-4 w-4 text-zinc-500" />
+                        </Select.Icon>
+                      </Select.Trigger>
+                      <Select.Portal>
+                        <Select.Content
+                          className="rounded-lg border border-zinc-700 bg-zinc-900
+                                     p-1 shadow-xl z-[100]"
+                        >
+                          <Select.Viewport>
+                            {ASSET_CATEGORIES.map((cat) => (
+                              <Select.Item
+                                key={cat}
+                                value={cat}
+                                className="flex items-center gap-2 rounded-md px-3 py-2
+                                           text-sm text-zinc-300 cursor-pointer
+                                           data-[highlighted]:bg-zinc-800
+                                           data-[highlighted]:text-zinc-100 outline-none"
+                              >
+                                <Select.ItemIndicator>
+                                  <Check className="h-3.5 w-3.5 text-blue-400" />
+                                </Select.ItemIndicator>
+                                <Select.ItemText>
+                                  {CATEGORY_LABELS[cat]}
+                                </Select.ItemText>
+                              </Select.Item>
+                            ))}
+                          </Select.Viewport>
+                        </Select.Content>
+                      </Select.Portal>
+                    </Select.Root>
+                  )}
+                />
+              </Field>
+
+              <Field label="Currency" error={errors.currency?.message}>
+                <Controller
+                  control={control}
+                  name="currency"
+                  render={({ field }) => (
+                    <Select.Root
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <Select.Trigger
+                        className={cn(
+                          inputClass,
+                          "inline-flex items-center justify-between"
+                        )}
+                      >
+                        <Select.Value />
+                        <Select.Icon>
+                          <ChevronDown className="h-4 w-4 text-zinc-500" />
+                        </Select.Icon>
+                      </Select.Trigger>
+                      <Select.Portal>
+                        <Select.Content
+                          className="rounded-lg border border-zinc-700 bg-zinc-900
+                                     p-1 shadow-xl z-[100]"
+                        >
+                          <Select.Viewport>
+                            {CURRENCIES.map((cur) => (
+                              <Select.Item
+                                key={cur}
+                                value={cur}
+                                className="flex items-center gap-2 rounded-md px-3 py-2
+                                           text-sm text-zinc-300 cursor-pointer
+                                           data-[highlighted]:bg-zinc-800
+                                           data-[highlighted]:text-zinc-100 outline-none"
+                              >
+                                <Select.ItemIndicator>
+                                  <Check className="h-3.5 w-3.5 text-blue-400" />
+                                </Select.ItemIndicator>
+                                <Select.ItemText>{cur}</Select.ItemText>
+                              </Select.Item>
+                            ))}
+                          </Select.Viewport>
+                        </Select.Content>
+                      </Select.Portal>
+                    </Select.Root>
+                  )}
+                />
+              </Field>
+            </div>
+
+            {/* Row: Quantity + Average Price */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Quantity" error={errors.quantity?.message}>
+                <input
+                  {...register("quantity", { valueAsNumber: true })}
+                  type="number"
+                  step="any"
+                  placeholder="0"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Avg Price" error={errors.averagePrice?.message}>
+                <input
+                  {...register("averagePrice", { valueAsNumber: true })}
+                  type="number"
+                  step="any"
+                  placeholder="0.00"
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+
+            {/* Submit */}
+            <button
+              onClick={handleSubmit(onSubmit)}
+              disabled={mutation.isPending}
+              className="mt-2 w-full h-10 rounded-lg bg-blue-600 hover:bg-blue-500
+                         disabled:opacity-50 text-white text-sm font-medium
+                         transition-colors inline-flex items-center justify-center gap-2"
+            >
+              {mutation.isPending && (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+              {mutation.isPending ? "Saving…" : "Add to Portfolio"}
+            </button>
+
+            {mutation.isError && (
+              <p className="text-xs text-red-400 text-center">
+                {mutation.error?.message ?? "Something went wrong"}
+              </p>
+            )}
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+
+// ============================================================================
+// FILE: src/app/layout.tsx — Root Layout (Dark Mode Default)
+// ============================================================================
+
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Providers } from "./providers";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
+export const metadata: Metadata = {
+  title: "Financial Command Center",
+  description: "Multi-asset portfolio tracker & analysis tool",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" className="dark">
+      <body
+        className={`${inter.variable} font-sans antialiased
+                    bg-zinc-950 text-zinc-100 min-h-screen`}
+      >
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}
+
+
+// ============================================================================
+// FILE: src/app/providers.tsx — TanStack Query Provider
+// ============================================================================
+
+"use client";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import React, { useState } from "react";
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const [qc] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: 2,
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  );
+
+  return (
+    <QueryClientProvider client={qc}>
+      {children}
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
+}
+
+
+// ============================================================================
+// FILE: src/app/page.tsx — Dashboard Shell
+// ============================================================================
+
+import PortfolioTable from "@/components/portfolio/PortfolioTable";
+import AssetEntryDialog from "@/components/forms/AssetEntryDialog";
+import CurrencyToggle from "@/components/layout/CurrencyToggle";
+import { Activity } from "lucide-react";
+
+export default function DashboardPage() {
+  return (
+    <div className="mx-auto max-w-7xl px-6 py-8 space-y-6">
+      {/* Header */}
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-lg bg-blue-600/20 flex items-center
+                          justify-center">
+            <Activity className="h-5 w-5 text-blue-400" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-zinc-100">
+              Financial Command Center
+            </h1>
+            <p className="text-xs text-zinc-500">
+              Multi-asset portfolio · Read-only analysis
+            </p>
+          </div>
+        </div>
+        <CurrencyToggle />
+      </header>
+
+      {/* Portfolio Table */}
+      <PortfolioTable />
+
+      {/* Dialogs (rendered globally, controlled by Zustand) */}
+      <AssetEntryDialog />
+    </div>
+  );
+}
+
+
+// ============================================================================
+// FILE: src/components/layout/CurrencyToggle.tsx
+// ============================================================================
+
+"use client";
+
+import { useAppStore } from "@/stores/useAppStore";
+import { cn } from "@/lib/utils";
+
+export default function CurrencyToggle() {
+  const currency = useAppStore((s) => s.preferences.displayCurrency);
+  const set = useAppStore((s) => s.setDisplayCurrency);
+
+  return (
+    <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-900/50 p-0.5">
+      {(["USD", "ARS"] as const).map((cur) => (
+        <button
+          key={cur}
+          onClick={() => set(cur)}
+          className={cn(
+            "px-3 py-1.5 text-xs font-semibold rounded-md transition-all",
+            currency === cur
+              ? "bg-zinc-800 text-zinc-100 shadow-sm"
+              : "text-zinc-500 hover:text-zinc-300"
+          )}
+        >
+          {cur}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+
+// ============================================================================
+// FILE: drizzle.config.ts
+// ============================================================================
+
+import type { Config } from "drizzle-kit";
+
+export default {
+  schema: "./src/db/schema.ts",
+  out: "./src/db/migrations",
+  dialect: "postgresql",
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+} satisfies Config;
+
+
+// ============================================================================
+// NEXT STEPS — Expansion Points
+// ============================================================================
+//
+// 1. LIVE PRICES — Replace MOCK_PRICES with a service layer:
+//    src/services/prices/
+//    ├── iol.ts        → IOL API for CEDEARs & ARG stocks
+//    ├── yahoo.ts      → Yahoo Finance for US stocks
+//    ├── binance.ts    → Binance for crypto
+//    └── index.ts      → Unified PriceService interface
+//
+// 2. INNGEST — Background jobs:
+//    inngest/
+//    ├── client.ts
+//    └── functions/
+//        ├── sync-prices.ts      → Cron: fetch prices every 5 min
+//        ├── recalc-portfolio.ts  → Event: on transaction, recalc avg price
+//        └── alert-threshold.ts   → Event: P&L exceeds threshold
+//
+// 3. SUPABASE AUTH — Wire up RLS:
+//    - Enable RLS on `assets` and `transactions`
+//    - Policy: user_id = auth.uid()
+//    - Replace placeholder userId in route handlers
+//
+// 4. TRANSACTION DIALOG — Clone AssetEntryDialog pattern with
+//    transactionFormSchema and a date picker (dayjs).
+//
+// 5. CHARTS — Add Recharts or Tremor for:
+//    - Allocation pie/donut chart
+//    - P&L over time (line chart from transactions)
+//    - Category breakdown (bar chart)

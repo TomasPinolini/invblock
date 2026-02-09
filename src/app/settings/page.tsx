@@ -1,0 +1,306 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Settings,
+  Link2,
+  Unlink,
+  RefreshCw,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  ArrowLeft,
+} from "lucide-react";
+import { relativeDate, cn } from "@/lib/utils";
+
+export default function SettingsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    router.push("/auth/login");
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-zinc-950 px-6 py-8">
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push("/")}
+            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-200
+                       hover:bg-zinc-800 transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-zinc-800 flex items-center justify-center">
+              <Settings className="h-5 w-5 text-zinc-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-zinc-100">Settings</h1>
+              <p className="text-sm text-zinc-500">
+                Manage your broker connections
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* IOL Connection */}
+        <IOLConnectionCard />
+      </div>
+    </div>
+  );
+}
+
+function IOLConnectionCard() {
+  const queryClient = useQueryClient();
+  const [status, setStatus] = useState<{
+    connected: boolean;
+    updatedAt: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Form state
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Fetch connection status
+  useEffect(() => {
+    fetch("/api/iol/status")
+      .then((res) => res.json())
+      .then((data) => {
+        setStatus(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const handleConnect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setConnecting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const res = await fetch("/api/iol/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Connection failed");
+      }
+
+      setStatus({ connected: true, updatedAt: new Date().toISOString() });
+      setSuccess("Successfully connected to IOL!");
+      setUsername("");
+      setPassword("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Connection failed");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      await fetch("/api/iol/auth", { method: "DELETE" });
+      setStatus({ connected: false, updatedAt: null });
+    } catch (err) {
+      setError("Failed to disconnect");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const res = await fetch("/api/iol/sync", { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Sync failed");
+      }
+
+      setSuccess(
+        `Synced ${data.total} assets (${data.created} new, ${data.updated} updated)`
+      );
+      setStatus((s) =>
+        s ? { ...s, updatedAt: new Date().toISOString() } : null
+      );
+      // Invalidate assets cache so dashboard shows fresh data
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-blue-600/20 flex items-center justify-center">
+            <span className="text-blue-400 font-bold text-sm">IOL</span>
+          </div>
+          <div>
+            <h3 className="font-semibold text-zinc-100">InvertirOnline</h3>
+            <p className="text-xs text-zinc-500">
+              Sync your CEDEARs and Argentine stocks
+            </p>
+          </div>
+        </div>
+        {status?.connected && (
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs">
+            <CheckCircle2 className="h-3 w-3" />
+            Connected
+          </span>
+        )}
+      </div>
+
+      {error && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-emerald-400 bg-emerald-950/30 border border-emerald-900/50 rounded-lg px-3 py-2">
+          <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+          {success}
+        </div>
+      )}
+
+      {status?.connected ? (
+        <div className="space-y-4">
+          {status.updatedAt && (
+            <p className="text-xs text-zinc-500">
+              Last synced: {relativeDate(status.updatedAt)}
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="flex-1 h-10 rounded-lg bg-blue-600 hover:bg-blue-500
+                         disabled:opacity-50 text-white text-sm font-medium
+                         transition-colors inline-flex items-center justify-center gap-2"
+            >
+              {syncing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {syncing ? "Syncing..." : "Sync Portfolio"}
+            </button>
+            <button
+              onClick={handleDisconnect}
+              className="h-10 px-4 rounded-lg border border-zinc-700 bg-zinc-800
+                         text-zinc-300 hover:text-white hover:bg-zinc-700
+                         text-sm font-medium transition-colors
+                         inline-flex items-center justify-center gap-2"
+            >
+              <Unlink className="h-4 w-4" />
+              Disconnect
+            </button>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleConnect} className="space-y-4">
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                IOL Username / Email
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="your@email.com"
+                required
+                className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                IOL Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+              />
+            </div>
+          </div>
+
+          <p className="text-xs text-zinc-600">
+            Your credentials are used only to authenticate with IOL's API. We
+            store only the access token, not your password.
+          </p>
+
+          <button
+            type="submit"
+            disabled={connecting}
+            className="w-full h-10 rounded-lg bg-blue-600 hover:bg-blue-500
+                       disabled:opacity-50 text-white text-sm font-medium
+                       transition-colors inline-flex items-center justify-center gap-2"
+          >
+            {connecting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Link2 className="h-4 w-4" />
+            )}
+            {connecting ? "Connecting..." : "Connect to IOL"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}

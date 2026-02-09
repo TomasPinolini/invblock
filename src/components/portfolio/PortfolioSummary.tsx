@@ -1,0 +1,149 @@
+"use client";
+
+import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
+import { useAppStore } from "@/stores/useAppStore";
+import {
+  MOCK_USD_ARS_RATE,
+  CATEGORY_COLORS,
+  CATEGORY_LABELS,
+  type AssetCategory,
+} from "@/lib/constants";
+import { formatCurrency, formatPercent, cn } from "@/lib/utils";
+import { TrendingUp, TrendingDown, Wallet, PieChart, Activity } from "lucide-react";
+
+export default function PortfolioSummary() {
+  const { data: portfolio } = useIOLPortfolio();
+  const displayCurrency = useAppStore((s) => s.preferences.displayCurrency);
+
+  // Convert value from asset's native currency to display currency
+  const convertToDisplay = (value: number, assetCurrency: string) => {
+    if (assetCurrency === displayCurrency) return value;
+    if (assetCurrency === "ARS" && displayCurrency === "USD") {
+      return value / MOCK_USD_ARS_RATE;
+    }
+    if (assetCurrency === "USD" && displayCurrency === "ARS") {
+      return value * MOCK_USD_ARS_RATE;
+    }
+    return value;
+  };
+
+  // Calculate totals from live IOL data
+  const summary = (portfolio?.assets ?? []).reduce(
+    (acc, asset) => {
+      const currentValue = convertToDisplay(asset.currentValue, asset.currency);
+      const costBasis = convertToDisplay(asset.averagePrice * asset.quantity, asset.currency);
+      const pnl = convertToDisplay(asset.pnl, asset.currency);
+
+      acc.totalValue += currentValue;
+      acc.totalCost += costBasis;
+      acc.totalPnl += pnl;
+
+      // Group by category
+      if (!acc.byCategory[asset.category]) {
+        acc.byCategory[asset.category] = { value: 0, count: 0 };
+      }
+      acc.byCategory[asset.category].value += currentValue;
+      acc.byCategory[asset.category].count += 1;
+
+      return acc;
+    },
+    {
+      totalValue: 0,
+      totalCost: 0,
+      totalPnl: 0,
+      byCategory: {} as Record<AssetCategory, { value: number; count: number }>,
+    }
+  );
+
+  const totalPnlPct =
+    summary.totalCost > 0 ? (summary.totalPnl / summary.totalCost) * 100 : 0;
+  const isPositive = summary.totalPnl >= 0;
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Total Value */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+        <div className="flex items-center gap-2 text-zinc-500 mb-2">
+          <Wallet className="h-4 w-4" />
+          <span className="text-xs uppercase tracking-wider">Total Value</span>
+        </div>
+        <p className="text-2xl font-bold font-mono text-zinc-50">
+          {formatCurrency(summary.totalValue, displayCurrency)}
+        </p>
+      </div>
+
+      {/* P&L */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+        <div className="flex items-center gap-2 text-zinc-500 mb-2">
+          <Activity className="h-4 w-4" />
+          <span className="text-xs uppercase tracking-wider">Total P&L</span>
+        </div>
+        <p
+          className={cn(
+            "text-2xl font-bold font-mono",
+            isPositive ? "text-emerald-400" : "text-red-400"
+          )}
+        >
+          <span className="inline-flex items-center gap-1">
+            {isPositive ? (
+              <TrendingUp className="h-5 w-5" />
+            ) : (
+              <TrendingDown className="h-5 w-5" />
+            )}
+            {formatCurrency(Math.abs(summary.totalPnl), displayCurrency)}
+          </span>
+        </p>
+        <p
+          className={cn(
+            "text-sm font-mono mt-1",
+            isPositive ? "text-emerald-400/70" : "text-red-400/70"
+          )}
+        >
+          {formatPercent(totalPnlPct)}
+        </p>
+      </div>
+
+      {/* Cost Basis */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+        <div className="flex items-center gap-2 text-zinc-500 mb-2">
+          <PieChart className="h-4 w-4" />
+          <span className="text-xs uppercase tracking-wider">Cost Basis</span>
+        </div>
+        <p className="text-2xl font-bold font-mono text-zinc-50">
+          {formatCurrency(summary.totalCost, displayCurrency)}
+        </p>
+      </div>
+
+      {/* Asset Count by Category */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+        <div className="flex items-center gap-2 text-zinc-500 mb-3">
+          <span className="text-xs uppercase tracking-wider">Allocation</span>
+        </div>
+        <div className="space-y-2">
+          {(Object.entries(summary.byCategory) as [AssetCategory, { value: number; count: number }][]).map(
+            ([category, data]) => {
+              const pct =
+                summary.totalValue > 0
+                  ? (data.value / summary.totalValue) * 100
+                  : 0;
+              return (
+                <div key={category} className="flex items-center gap-2">
+                  <div
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: CATEGORY_COLORS[category] }}
+                  />
+                  <span className="text-xs text-zinc-400 flex-1">
+                    {CATEGORY_LABELS[category]}
+                  </span>
+                  <span className="text-xs font-mono text-zinc-300">
+                    {pct.toFixed(1)}%
+                  </span>
+                </div>
+              );
+            }
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,209 @@
+================================================================================
+IOL API REFERENCE - Extracted from Swagger Spec (v2)
+================================================================================
+Base URL: https://api.invertironline.com
+Auth: Bearer token (15 min expiry) + Refresh token
+
+================================================================================
+ACCOUNT ENDPOINTS (MiCuenta)
+================================================================================
+
+GET /api/v2/estadocuenta
+  Response (EstadoCuentaModel):
+    - cuentas[]: Array of CuentaModel
+    - estadisticas[]: Statistics
+    - totalEnPesos: double
+
+  CuentaModel:
+    - numero: string (account number)
+    - tipo: enum [inversion_Argentina_Pesos, inversion_Argentina_Dolares,
+                  inversion_Estados_Unidos_Dolares, administrada_*]
+    - moneda: enum [peso_Argentino, dolar_Estadounidense, ...]
+    - disponible: double (available cash)
+    - comprometido: double (committed in orders)
+    - saldo: double (balance)
+    - titulosValorizados: double (securities value)
+    - total: double (total value)
+    - margenDescubierto: double (margin)
+
+GET /api/v2/portafolio/{pais}
+  Params: pais = estados_Unidos | argentina
+  Response (PortafolioModel): Portfolio items with P&L
+
+================================================================================
+OPERATIONS ENDPOINTS (MiCuenta)
+================================================================================
+
+GET /api/v2/operaciones
+  Query params:
+    - filtro.numero: int (operation number)
+    - filtro.estado: enum [todas, pendientes, terminadas, canceladas]
+    - filtro.fechaDesde: datetime
+    - filtro.fechaHasta: datetime
+    - filtro.pais: enum [estados_Unidos, argentina]
+  Response: Array of OperacionModel
+
+GET /api/v2/operaciones/{numero}
+  Response (OperacionDetalleModel): Single operation details
+
+DELETE /api/v2/operaciones/{numero}
+  Cancel an order
+  Response (ResponseModel)
+
+OperacionModel:
+  - numero: int (operation ID)
+  - fechaOrden: datetime
+  - tipo: string (operation type)
+  - estado: enum [iniciada, en_Proceso, parcialmente_Terminada, terminada,
+                  cancelada, pendiente_Cancelacion,
+                  cancelada_Por_Vencimiento_Validez,
+                  parcialmente_Terminada_Con_Pedido_Cancelacion, en_Modificacion]
+  - mercado: string
+  - simbolo: string (ticker)
+  - cantidad: double
+  - monto: double
+  - modalidad: enum [precio_Limite, precio_Mercado]
+  - precio: double
+  - fechaOperada: datetime
+  - cantidadOperada: double
+  - precioOperado: double
+  - montoOperado: double
+  - plazo: enum [sinValor, a72horas, a24horas, inmediata, a48horas]
+
+================================================================================
+TRADING ENDPOINTS (Operar)
+================================================================================
+
+POST /api/v2/operar/Comprar
+  Body (ComprarBindingModel) - Required: mercado, simbolo, precio, plazo, validez
+    - mercado: enum [bCBA, nYSE, nASDAQ, aMEX, bCS, rOFX]
+    - simbolo: string
+    - cantidad: double
+    - precio: double
+    - plazo: enum [t0, t1, t2, t3]
+    - validez: datetime
+    - tipoOrden: enum [precioLimite, precioMercado] (optional)
+    - monto: double (optional, alternative to cantidad)
+
+POST /api/v2/operar/Vender
+  Body (VenderBindingModel) - Required: mercado, simbolo, cantidad, precio, validez
+    - mercado: enum [bCBA, nYSE, nASDAQ, aMEX, bCS, rOFX]
+    - simbolo: string
+    - cantidad: double
+    - precio: double
+    - validez: datetime
+    - tipoOrden: enum [precioLimite, precioMercado] (optional)
+    - plazo: enum [t0, t1, t2, t3] (optional)
+
+POST /api/v2/operar/ComprarEspecieD - Buy species D
+POST /api/v2/operar/VenderEspecieD - Sell species D
+POST /api/v2/operar/suscripcion/fci - Subscribe to FCI (mutual fund)
+POST /api/v2/operar/rescate/fci - Redeem FCI
+
+================================================================================
+QUOTES & SECURITIES ENDPOINTS (Titulos)
+================================================================================
+
+GET /api/v2/{Mercado}/Titulos/{Simbolo}/Cotizacion
+  Params:
+    - mercado: enum [bCBA, nYSE, nASDAQ, aMEX, bCS, rOFX]
+    - simbolo: string
+    - model.plazo: enum [t0, t1, t2, t3] (optional)
+  Response (CotizacionModel)
+
+CotizacionModel:
+  - ultimoPrecio: double (last price)
+  - variacion: double (daily change %)
+  - apertura: double (open)
+  - maximo: double (high)
+  - minimo: double (low)
+  - fechaHora: datetime
+  - tendencia: enum [sube, baja, mantiene]
+  - cierreAnterior: double (previous close)
+  - montoOperado: double (volume in money)
+  - volumenNominal: double (volume in shares)
+  - precioPromedio: double (average price)
+  - moneda: enum [peso_Argentino, dolar_Estadounidense, ...]
+  - puntas[]: Array of bid/ask (PuntaModel)
+
+GET /api/v2/{mercado}/Titulos/{simbolo}/CotizacionDetalle
+  More detailed quote with full order book
+
+GET /api/v2/{mercado}/Titulos/{simbolo}/Cotizacion/seriehistorica/{fechaDesde}/{fechaHasta}/{ajustada}
+  Historical OHLC prices
+  Params:
+    - mercado: enum [bCBA, nYSE, nASDAQ, aMEX, bCS, rOFX]
+    - simbolo: string
+    - fechaDesde: datetime
+    - fechaHasta: datetime
+    - ajustada: enum [ajustada, sinAjustar]
+  Response: Array of CotizacionModel
+
+GET /api/v2/{mercado}/Titulos/{simbolo}
+  Security details
+
+GET /api/v2/{mercado}/Titulos/{simbolo}/Opciones
+  Options chain for a security
+
+GET /api/v2/{pais}/Titulos/Cotizacion/Instrumentos
+  List instruments by country
+  Instrument types: opciones, cedears, acciones, aDRs, titulosPublicos,
+                    cauciones, cHPD, futuros, obligacionesNegociables, letras
+
+================================================================================
+MUTUAL FUNDS (FCI) ENDPOINTS
+================================================================================
+
+GET /api/v2/Titulos/FCI - List all FCIs
+GET /api/v2/Titulos/FCI/{simbolo} - FCI details
+GET /api/v2/Titulos/FCI/TipoFondos - Fund types
+GET /api/v2/Titulos/FCI/Administradoras - Fund managers
+GET /api/v2/Titulos/FCI/Administradoras/{administradora}/TipoFondos
+GET /api/v2/Titulos/FCI/Administradoras/{administradora}/TipoFondos/{tipoFondo}
+
+================================================================================
+MEP DOLLAR (SIMPLIFIED OPERATIONS)
+================================================================================
+
+GET /api/v2/OperatoriaSimplificada/MontosEstimados/{monto}
+  Calculate MEP conversion estimates
+  Response (MontosEstimadosDTO):
+    - montoDolar: double
+    - montoBrutoPesos: double
+    - montoNetoPesos: double
+    - comisionCompra, comisionVenta: double
+    - comisionCompraIVA, comisionVentaIVA: double
+    - derechoMercadoCompra, derechoMercadoVenta: double
+
+GET /api/v2/OperatoriaSimplificada/VentaMepSimple/MontosEstimados/{monto}
+POST /api/v2/Cotizaciones/MEP - Get MEP reference value
+
+================================================================================
+NOTIFICATIONS
+================================================================================
+
+GET /api/v2/Notificacion
+  Response (NotificacionModel):
+    - titulo: string
+    - mensaje: string
+    - link: string
+
+================================================================================
+MARKETS & ENUMS REFERENCE
+================================================================================
+
+Markets: bCBA, nYSE, nASDAQ, aMEX, bCS, rOFX
+Countries: estados_Unidos, argentina
+Plazo (Settlement): t0 (immediate), t1 (24h), t2 (48h), t3 (72h)
+Currencies: peso_Argentino, dolar_Estadounidense, euro, ...
+Order Types: precioLimite, precioMercado
+
+================================================================================
+NOTES
+================================================================================
+
+- Bearer token expires in 15 minutes, use refresh_token to renew
+- All amounts are doubles
+- Dates are ISO 8601 datetime strings
+- Portfolio endpoint returns pre-calculated P&L (gananciaDinero, gananciaPorcentaje)
+- Quote endpoint returns full market data including bid/ask (puntas)

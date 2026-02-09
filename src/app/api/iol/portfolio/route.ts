@@ -1,0 +1,125 @@
+import { NextResponse } from "next/server";
+import { IOLClient, IOLTokenExpiredError } from "@/services/iol";
+import { getAuthUser } from "@/lib/auth";
+import { db } from "@/db";
+import { userConnections } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
+// Portfolio item formatted for the frontend
+interface PortfolioAsset {
+  id: string;
+  ticker: string;
+  name: string;
+  category: "stock" | "cedear" | "crypto" | "cash";
+  currency: "USD" | "ARS";
+  quantity: number;
+  averagePrice: number;
+  currentPrice: number;
+  currentValue: number;
+  pnl: number;
+  pnlPercent: number;
+}
+
+function mapCategory(tipo: string, pais: string): PortfolioAsset["category"] {
+  const t = tipo?.toLowerCase() || "";
+  const p = pais?.toLowerCase() || "";
+
+  if (t.includes("cedear")) return "cedear";
+  if (t.includes("crypto") || t.includes("cripto")) return "crypto";
+  if (p === "estados_unidos") return "stock";
+  return "stock";
+}
+
+function mapCurrency(moneda: string): "USD" | "ARS" {
+  const m = moneda?.toLowerCase() || "";
+  if (m.includes("dolar") || m.includes("dollar")) return "USD";
+  return "ARS";
+}
+
+export async function GET() {
+  const user = await getAuthUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    // Get IOL credentials
+    const connection = await db.query.userConnections.findFirst({
+      where: and(
+        eq(userConnections.userId, user.id),
+        eq(userConnections.provider, "iol")
+      ),
+    });
+
+    if (!connection) {
+      return NextResponse.json({ connected: false, assets: [] });
+    }
+
+    const token = JSON.parse(connection.credentials);
+    const client = new IOLClient(token);
+
+    // Fetch portfolios from IOL
+    const { argentina, us } = await client.getAllPortfolios();
+
+    // Combine and transform assets
+    const iolAssets = [
+      ...(argentina.activos || []),
+      ...(us.activos || []),
+    ];
+
+    const assets: PortfolioAsset[] = iolAssets
+      .filter((item) => item.titulo?.simbolo && item.cantidad > 0)
+      .map((item) => ({
+        id: item.titulo.simbolo, // Use ticker as ID since we're not storing
+        ticker: item.titulo.simbolo.toUpperCase(),
+        name: item.titulo.descripcion || item.titulo.simbolo,
+        category: mapCategory(item.titulo.tipo, item.titulo.pais),
+        currency: mapCurrency(item.titulo.moneda),
+        quantity: item.cantidad,
+        averagePrice: item.ppc,
+        currentPrice: item.ultimoPrecio,
+        currentValue: item.valorizado,
+        pnl: item.gananciaDinero,
+        pnlPercent: item.gananciaPorcentaje,
+      }));
+
+    // Update token if it was refreshed
+    const newToken = client.getToken();
+    if (newToken && newToken.access_token !== token.access_token) {
+      await db
+        .update(userConnections)
+        .set({
+          credentials: JSON.stringify(newToken),
+          updatedAt: new Date(),
+        })
+        .where(eq(userConnections.id, connection.id));
+    }
+
+    return NextResponse.json({
+      connected: true,
+      assets,
+      totals: {
+        pesos: argentina.totalEnPesos || 0,
+        dolares: (argentina.totalEnDolares || 0) + (us.totalEnDolares || 0),
+      },
+    });
+  } catch (error) {
+    console.error("IOL portfolio fetch error:", error);
+
+    // Token expired - tell frontend to reconnect
+    if (error instanceof IOLTokenExpiredError) {
+      return NextResponse.json({
+        connected: false,
+        expired: true,
+        assets: [],
+        error: "Session expired. Please reconnect your IOL account.",
+      });
+    }
+
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to fetch portfolio" },
+      { status: 500 }
+    );
+  }
+}
