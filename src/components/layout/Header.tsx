@@ -1,6 +1,7 @@
 "use client";
 
-import { Activity, RefreshCw } from "lucide-react";
+import { Activity, RefreshCw, Lightbulb } from "lucide-react";
+import Link from "next/link";
 import { useAppStore } from "@/stores/useAppStore";
 import { relativeDate, cn } from "@/lib/utils";
 import CurrencyToggle from "./CurrencyToggle";
@@ -38,6 +39,13 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-3">
+        <Link
+          href="/insights"
+          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors inline-flex items-center gap-1.5"
+        >
+          <Lightbulb className="h-3.5 w-3.5" />
+          Insights
+        </Link>
         <CompactToggle />
         <CurrencyToggle />
         <UserMenu />
