@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIOLPortfolio, type IOLAsset } from "@/hooks/useIOLPortfolio";
+import { useBinancePortfolio, type BinanceAsset } from "@/hooks/useBinancePortfolio";
 import { useAppStore } from "@/stores/useAppStore";
 import {
   MOCK_USD_ARS_RATE,
@@ -38,7 +39,19 @@ import {
 
 // ── Row type with allocation ─────────────────────────────────────────────────
 
-interface PortfolioRow extends IOLAsset {
+interface PortfolioRow {
+  id: string;
+  ticker: string;
+  name: string;
+  category: "stock" | "cedear" | "crypto" | "cash";
+  currency: "USD" | "ARS";
+  quantity: number;
+  averagePrice: number;
+  currentPrice: number;
+  currentValue: number;
+  pnl: number;
+  pnlPercent: number;
+  source: "iol" | "binance"; // Track data source
   allocation: number; // 0–100
   // Display values (converted to display currency)
   displayPrice: number;
@@ -180,7 +193,8 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function PortfolioTable() {
-  const { data: portfolio, isLoading, error, refetch, isFetching } = useIOLPortfolio();
+  const { data: iolPortfolio, isLoading: iolLoading, error: iolError, refetch: refetchIOL, isFetching: iolFetching } = useIOLPortfolio();
+  const { data: binancePortfolio, isLoading: binanceLoading, refetch: refetchBinance, isFetching: binanceFetching } = useBinancePortfolio();
   const displayCurrency = useAppStore((s) => s.preferences.displayCurrency);
   const compact = useAppStore((s) => s.preferences.compactTable);
   const router = useRouter();
@@ -192,11 +206,26 @@ export default function PortfolioTable() {
     React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
 
-  // ── Convert values to display currency ──────────────────────────────────
+  // Combined loading/fetching state
+  const isLoading = iolLoading || binanceLoading;
+  const isFetching = iolFetching || binanceFetching;
+  const error = iolError; // Show IOL error if any
+
+  // Check connection states
+  const iolConnected = iolPortfolio?.connected;
+  const binanceConnected = binancePortfolio?.connected;
+  const anyConnected = iolConnected || binanceConnected;
+  const iolExpired = iolPortfolio?.expired;
+
+  // Refetch both portfolios
+  const refetch = () => {
+    refetchIOL();
+    refetchBinance();
+  };
+
+  // ── Convert values to display currency and merge data ──────────────────────────────────
 
   const data: PortfolioRow[] = useMemo(() => {
-    if (!portfolio?.assets?.length) return [];
-
     const convertToDisplay = (value: number, assetCurrency: string) => {
       if (assetCurrency === displayCurrency) return value;
       if (assetCurrency === "ARS" && displayCurrency === "USD") {
@@ -208,22 +237,46 @@ export default function PortfolioTable() {
       return value;
     };
 
-    const rows = portfolio.assets.map((asset) => ({
-      ...asset,
-      displayPrice: convertToDisplay(asset.currentPrice, asset.currency),
-      displayAvgPrice: convertToDisplay(asset.averagePrice, asset.currency),
-      displayValue: convertToDisplay(asset.currentValue, asset.currency),
-      displayPnl: convertToDisplay(asset.pnl, asset.currency),
-      allocation: 0, // computed below
-    }));
+    const rows: PortfolioRow[] = [];
 
+    // Add IOL assets
+    if (iolPortfolio?.assets?.length) {
+      for (const asset of iolPortfolio.assets) {
+        rows.push({
+          ...asset,
+          source: "iol",
+          displayPrice: convertToDisplay(asset.currentPrice, asset.currency),
+          displayAvgPrice: convertToDisplay(asset.averagePrice, asset.currency),
+          displayValue: convertToDisplay(asset.currentValue, asset.currency),
+          displayPnl: convertToDisplay(asset.pnl, asset.currency),
+          allocation: 0,
+        });
+      }
+    }
+
+    // Add Binance assets
+    if (binancePortfolio?.assets?.length) {
+      for (const asset of binancePortfolio.assets) {
+        rows.push({
+          ...asset,
+          source: "binance",
+          displayPrice: convertToDisplay(asset.currentPrice, asset.currency),
+          displayAvgPrice: convertToDisplay(asset.averagePrice, asset.currency),
+          displayValue: convertToDisplay(asset.currentValue, asset.currency),
+          displayPnl: convertToDisplay(asset.pnl, asset.currency),
+          allocation: 0,
+        });
+      }
+    }
+
+    // Calculate allocations
     const total = rows.reduce((sum, r) => sum + r.displayValue, 0);
     rows.forEach((r) => {
       r.allocation = total > 0 ? (r.displayValue / total) * 100 : 0;
     });
 
     return rows;
-  }, [portfolio, displayCurrency]);
+  }, [iolPortfolio, binancePortfolio, displayCurrency]);
 
   const columns = useMemo(
     () => buildColumns(displayCurrency),
@@ -260,9 +313,6 @@ export default function PortfolioTable() {
   const totalCost = data.reduce((s, r) => s + r.displayAvgPrice * r.quantity, 0);
   const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
 
-  const isConnected = portfolio?.connected;
-  const isExpired = portfolio?.expired;
-
   return (
     <div className="space-y-4">
       {/* ── Summary Bar ──────────────────────────────────────────────── */}
@@ -296,7 +346,7 @@ export default function PortfolioTable() {
                        px-3 text-sm text-zinc-200 placeholder:text-zinc-600
                        focus:outline-none focus:ring-1 focus:ring-blue-500/50"
           />
-          {isConnected && !isExpired ? (
+          {anyConnected ? (
             <button
               onClick={() => refetch()}
               disabled={isFetching}
@@ -316,13 +366,13 @@ export default function PortfolioTable() {
               onClick={() => router.push("/settings")}
               className={cn(
                 "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-white text-sm font-medium transition-colors",
-                isExpired
+                iolExpired
                   ? "bg-amber-600 hover:bg-amber-500"
                   : "bg-blue-600 hover:bg-blue-500"
               )}
             >
               <Settings className="h-4 w-4" />
-              {isExpired ? "Reconnect IOL" : "Connect IOL"}
+              {iolExpired ? "Reconnect" : "Connect Broker"}
             </button>
           )}
         </div>
@@ -385,7 +435,7 @@ export default function PortfolioTable() {
                   colSpan={columns.length}
                   className="px-4 py-12 text-center text-zinc-600"
                 >
-                  {isExpired ? (
+                  {iolExpired ? (
                     <div className="space-y-2">
                       <p className="text-amber-400">Your IOL session has expired.</p>
                       <button
@@ -395,10 +445,10 @@ export default function PortfolioTable() {
                         Click here to reconnect
                       </button>
                     </div>
-                  ) : isConnected ? (
-                    "No assets in your IOL portfolio."
+                  ) : anyConnected ? (
+                    "No assets found in your connected accounts."
                   ) : (
-                    "Connect your IOL account in Settings to view your portfolio."
+                    "Connect your broker accounts in Settings to view your portfolio."
                   )}
                 </td>
               </tr>
@@ -434,7 +484,11 @@ export default function PortfolioTable() {
           {table.getFilteredRowModel().rows.length} shown
         </span>
         <span>
-          Live from IOL · {isFetching ? "Updating..." : "Click Refresh for latest"}
+          {[
+            iolConnected && "IOL",
+            binanceConnected && "Binance",
+          ].filter(Boolean).join(" + ") || "No connections"}{" "}
+          · {isFetching ? "Updating..." : "Click Refresh for latest"}
         </span>
       </div>
     </div>

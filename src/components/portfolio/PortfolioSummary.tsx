@@ -1,6 +1,7 @@
 "use client";
 
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
+import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
 import { useAppStore } from "@/stores/useAppStore";
 import {
   MOCK_USD_ARS_RATE,
@@ -12,7 +13,8 @@ import { formatCurrency, formatPercent, cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Wallet, PieChart, Activity } from "lucide-react";
 
 export default function PortfolioSummary() {
-  const { data: portfolio } = useIOLPortfolio();
+  const { data: iolPortfolio } = useIOLPortfolio();
+  const { data: binancePortfolio } = useBinancePortfolio();
   const displayCurrency = useAppStore((s) => s.preferences.displayCurrency);
 
   // Convert value from asset's native currency to display currency
@@ -27,8 +29,14 @@ export default function PortfolioSummary() {
     return value;
   };
 
-  // Calculate totals from live IOL data
-  const summary = (portfolio?.assets ?? []).reduce(
+  // Merge assets from both sources
+  const allAssets = [
+    ...(iolPortfolio?.assets ?? []),
+    ...(binancePortfolio?.assets ?? []),
+  ];
+
+  // Calculate totals from all connected sources
+  const summary = allAssets.reduce(
     (acc, asset) => {
       const currentValue = convertToDisplay(asset.currentValue, asset.currency);
       const costBasis = convertToDisplay(asset.averagePrice * asset.quantity, asset.currency);

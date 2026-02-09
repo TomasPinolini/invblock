@@ -60,6 +60,9 @@ export default function SettingsPage() {
 
         {/* IOL Connection */}
         <IOLConnectionCard />
+
+        {/* Binance Connection */}
+        <BinanceConnectionCard />
       </div>
     </div>
   );
@@ -67,6 +70,7 @@ export default function SettingsPage() {
 
 function IOLConnectionCard() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [status, setStatus] = useState<{
     connected: boolean;
     updatedAt: string | null;
@@ -112,12 +116,12 @@ function IOLConnectionCard() {
       }
 
       setStatus({ connected: true, updatedAt: new Date().toISOString() });
-      setSuccess("Successfully connected to IOL!");
-      setUsername("");
-      setPassword("");
+
+      // Invalidate portfolio cache and redirect to dashboard
+      queryClient.invalidateQueries({ queryKey: ["iol-portfolio"] });
+      router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connection failed");
-    } finally {
       setConnecting(false);
     }
   };
@@ -149,17 +153,13 @@ function IOLConnectionCard() {
         throw new Error(data.error || "Sync failed");
       }
 
-      setSuccess(
-        `Synced ${data.total} assets (${data.created} new, ${data.updated} updated)`
-      );
-      setStatus((s) =>
-        s ? { ...s, updatedAt: new Date().toISOString() } : null
-      );
-      // Invalidate assets cache so dashboard shows fresh data
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      // Invalidate portfolio cache so dashboard shows fresh data
+      queryClient.invalidateQueries({ queryKey: ["iol-portfolio"] });
+
+      // Redirect to dashboard after successful sync
+      router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sync failed");
-    } finally {
       setSyncing(false);
     }
   };
@@ -298,6 +298,204 @@ function IOLConnectionCard() {
               <Link2 className="h-4 w-4" />
             )}
             {connecting ? "Connecting..." : "Connect to IOL"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function BinanceConnectionCard() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const [status, setStatus] = useState<{
+    connected: boolean;
+    updatedAt: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form state
+  const [apiKey, setApiKey] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+
+  // Fetch connection status
+  useEffect(() => {
+    fetch("/api/binance/status")
+      .then((res) => res.json())
+      .then((data) => {
+        setStatus(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const handleConnect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setConnecting(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/binance/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey, apiSecret }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Connection failed");
+      }
+
+      setStatus({ connected: true, updatedAt: new Date().toISOString() });
+
+      // Invalidate portfolio cache and redirect to dashboard
+      queryClient.invalidateQueries({ queryKey: ["binance-portfolio"] });
+      router.push("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Connection failed");
+      setConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      await fetch("/api/binance/auth", { method: "DELETE" });
+      setStatus({ connected: false, updatedAt: null });
+      queryClient.invalidateQueries({ queryKey: ["binance-portfolio"] });
+    } catch (err) {
+      setError("Failed to disconnect");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+            <span className="text-yellow-400 font-bold text-sm">₿</span>
+          </div>
+          <div>
+            <h3 className="font-semibold text-zinc-100">Binance</h3>
+            <p className="text-xs text-zinc-500">
+              Sync your crypto holdings
+            </p>
+          </div>
+        </div>
+        {status?.connected && (
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs">
+            <CheckCircle2 className="h-3 w-3" />
+            Connected
+          </span>
+        )}
+      </div>
+
+      {error && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {status?.connected ? (
+        <div className="space-y-4">
+          {status.updatedAt && (
+            <p className="text-xs text-zinc-500">
+              Connected: {relativeDate(status.updatedAt)}
+            </p>
+          )}
+
+          <button
+            onClick={handleDisconnect}
+            className="w-full h-10 rounded-lg border border-zinc-700 bg-zinc-800
+                       text-zinc-300 hover:text-white hover:bg-zinc-700
+                       text-sm font-medium transition-colors
+                       inline-flex items-center justify-center gap-2"
+          >
+            <Unlink className="h-4 w-4" />
+            Disconnect
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleConnect} className="space-y-4">
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                API Key
+              </label>
+              <input
+                type="text"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your Binance API key"
+                required
+                className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           focus:outline-none focus:ring-1 focus:ring-yellow-500/50
+                           font-mono text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                API Secret
+              </label>
+              <input
+                type="password"
+                value={apiSecret}
+                onChange={(e) => setApiSecret(e.target.value)}
+                placeholder="Enter your Binance API secret"
+                required
+                className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           focus:outline-none focus:ring-1 focus:ring-yellow-500/50
+                           font-mono text-xs"
+              />
+            </div>
+          </div>
+
+          <p className="text-xs text-zinc-600">
+            Create an API key at{" "}
+            <a
+              href="https://www.binance.com/en/my/settings/api-management"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-yellow-500 hover:underline"
+            >
+              Binance API Management
+            </a>
+            . Only &quot;Read&quot; permission is required.
+          </p>
+
+          <button
+            type="submit"
+            disabled={connecting}
+            className="w-full h-10 rounded-lg bg-yellow-500 hover:bg-yellow-400
+                       disabled:opacity-50 text-black text-sm font-medium
+                       transition-colors inline-flex items-center justify-center gap-2"
+          >
+            {connecting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Link2 className="h-4 w-4" />
+            )}
+            {connecting ? "Connecting..." : "Connect to Binance"}
           </button>
         </form>
       )}

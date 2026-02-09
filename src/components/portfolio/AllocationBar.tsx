@@ -1,6 +1,7 @@
 "use client";
 
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
+import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
 import { useAppStore } from "@/stores/useAppStore";
 import {
   MOCK_USD_ARS_RATE,
@@ -10,7 +11,8 @@ import {
 } from "@/lib/constants";
 
 export default function AllocationBar() {
-  const { data: portfolio } = useIOLPortfolio();
+  const { data: iolPortfolio } = useIOLPortfolio();
+  const { data: binancePortfolio } = useBinancePortfolio();
   const displayCurrency = useAppStore((s) => s.preferences.displayCurrency);
 
   // Convert value from asset's native currency to display currency
@@ -25,8 +27,14 @@ export default function AllocationBar() {
     return value;
   };
 
-  // Calculate allocation by category from live IOL data
-  const allocation = (portfolio?.assets ?? []).reduce(
+  // Merge assets from both sources
+  const allAssets = [
+    ...(iolPortfolio?.assets ?? []),
+    ...(binancePortfolio?.assets ?? []),
+  ];
+
+  // Calculate allocation by category from all connected sources
+  const allocation = allAssets.reduce(
     (acc, asset) => {
       const currentValue = convertToDisplay(asset.currentValue, asset.currency);
 
@@ -52,7 +60,7 @@ export default function AllocationBar() {
         </p>
         <div className="h-3 rounded-full bg-zinc-800" />
         <p className="text-xs text-zinc-600 mt-2 text-center">
-          Connect IOL to see allocation
+          Connect a broker to see allocation
         </p>
       </div>
     );
