@@ -5,6 +5,12 @@ import type {
   IOLOperation,
   IOLNotification,
   IOLQuote,
+  IOLOrderRequest,
+  IOLOrderResponse,
+  IOLHistoricalPrice,
+  IOLSecurityDetails,
+  IOLSecurityWithQuote,
+  IOLInstrumentType,
 } from "./types";
 
 const IOL_API_BASE = "https://api.invertironline.com";
@@ -223,6 +229,182 @@ export class IOLClient {
 
     await Promise.allSettled(promises);
     return results;
+  }
+
+  /**
+   * Place a buy order
+   * @param order - Order details (market, symbol, quantity, price, settlement, validity)
+   */
+  async placeBuyOrder(order: IOLOrderRequest): Promise<IOLOrderResponse> {
+    const body = {
+      mercado: order.mercado,
+      simbolo: order.simbolo,
+      cantidad: order.cantidad,
+      precio: order.precio,
+      plazo: order.plazo,
+      validez: order.validez,
+      tipoOrden: order.tipoOrden || "precioLimite",
+    };
+
+    try {
+      const result = await this.request<{ numeroOperacion?: number; mensaje?: string }>(
+        "/api/v2/operar/Comprar",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
+
+      return {
+        ok: true,
+        numeroOperacion: result.numeroOperacion,
+        mensaje: result.mensaje || "Orden de compra enviada",
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Error al enviar orden de compra",
+      };
+    }
+  }
+
+  /**
+   * Place a sell order
+   * @param order - Order details (market, symbol, quantity, price, settlement, validity)
+   */
+  async placeSellOrder(order: IOLOrderRequest): Promise<IOLOrderResponse> {
+    const body = {
+      mercado: order.mercado,
+      simbolo: order.simbolo,
+      cantidad: order.cantidad,
+      precio: order.precio,
+      plazo: order.plazo,
+      validez: order.validez,
+      tipoOrden: order.tipoOrden || "precioLimite",
+    };
+
+    try {
+      const result = await this.request<{ numeroOperacion?: number; mensaje?: string }>(
+        "/api/v2/operar/Vender",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
+
+      return {
+        ok: true,
+        numeroOperacion: result.numeroOperacion,
+        mensaje: result.mensaje || "Orden de venta enviada",
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Error al enviar orden de venta",
+      };
+    }
+  }
+
+  /**
+   * Get historical prices for a security
+   * @param market - bCBA, nYSE, nASDAQ, etc.
+   * @param symbol - Ticker symbol
+   * @param from - Start date (YYYY-MM-DD)
+   * @param to - End date (YYYY-MM-DD)
+   * @param adjusted - Whether to adjust for splits/dividends
+   */
+  async getHistoricalPrices(
+    market: string,
+    symbol: string,
+    from: string,
+    to: string,
+    adjusted: boolean = true
+  ): Promise<IOLHistoricalPrice[]> {
+    const adjustedParam = adjusted ? "ajustada" : "sinAjustar";
+    return this.request<IOLHistoricalPrice[]>(
+      `/api/v2/${market}/Titulos/${symbol}/Cotizacion/seriehistorica/${from}/${to}/${adjustedParam}`
+    );
+  }
+
+  /**
+   * Cancel a pending order
+   * @param operationNumber - The operation number to cancel
+   */
+  async cancelOrder(operationNumber: number): Promise<IOLOrderResponse> {
+    try {
+      await this.request<void>(`/api/v2/operaciones/${operationNumber}`, {
+        method: "DELETE",
+      });
+
+      return {
+        ok: true,
+        mensaje: `Orden ${operationNumber} cancelada`,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Error al cancelar orden",
+      };
+    }
+  }
+
+  /**
+   * Get security details
+   * @param market - bCBA, nYSE, nASDAQ, etc.
+   * @param symbol - Ticker symbol
+   */
+  async getSecurityDetails(
+    market: string,
+    symbol: string
+  ): Promise<IOLSecurityDetails> {
+    return this.request<IOLSecurityDetails>(
+      `/api/v2/${market}/Titulos/${symbol}`
+    );
+  }
+
+  /**
+   * List instruments/securities with quotes
+   * @param country - "argentina" or "estados_Unidos"
+   * @param instrumentType - cedears, acciones, etc. (optional)
+   */
+  async listInstruments(
+    country: "argentina" | "estados_Unidos" = "argentina",
+    instrumentType?: IOLInstrumentType
+  ): Promise<IOLSecurityWithQuote[]> {
+    // For acciones, try the panels endpoint (more reliable for stocks)
+    if (country === "argentina" && instrumentType === "acciones") {
+      try {
+        // Try Lideres panel first
+        return await this.getPanel("Lideres");
+      } catch {
+        try {
+          // Then try General panel
+          return await this.getPanel("General");
+        } catch {
+          // Fall through to instruments endpoint
+        }
+      }
+    }
+
+    // Use instruments endpoint for CEDEARs and other types
+    const endpoint = instrumentType
+      ? `/api/v2/${country}/Titulos/Cotizacion/Instrumentos/${instrumentType}`
+      : `/api/v2/${country}/Titulos/Cotizacion/Instrumentos`;
+    return this.request<IOLSecurityWithQuote[]>(endpoint);
+  }
+
+  /**
+   * Search securities by panel (BCBA panels)
+   * @param panel - Panel name (e.g., "Lideres", "General")
+   */
+  async getPanel(
+    panel: string
+  ): Promise<IOLSecurityWithQuote[]> {
+    return this.request<IOLSecurityWithQuote[]>(
+      `/api/v2/Cotizaciones/acciones/argentina/${panel}`
+    );
   }
 
   /**

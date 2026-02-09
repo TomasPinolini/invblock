@@ -113,3 +113,75 @@ export interface IOLQuote {
   fechaHora?: string; // Quote timestamp
   cantidadOperaciones?: number; // Number of trades
 }
+
+// Order types for trading
+export type IOLOrderType = "precioLimite" | "precioMercado";
+export type IOLSettlement = "t0" | "t1" | "t2"; // T+0, T+1, T+2
+
+export interface IOLOrderRequest {
+  mercado: string; // bCBA, nYSE, nASDAQ, etc.
+  simbolo: string; // Ticker
+  cantidad: number; // Quantity
+  precio: number; // Price (ignored for market orders)
+  plazo: IOLSettlement; // Settlement period
+  validez: string; // Validity date (YYYY-MM-DD)
+  tipoOrden?: IOLOrderType; // Order type (default: precioLimite)
+  monto?: number; // Optional: total amount for buy
+}
+
+export interface IOLOrderResponse {
+  ok: boolean;
+  numeroOperacion?: number; // Operation number if successful
+  mensaje?: string; // Message (error or confirmation)
+  error?: string; // Error message if failed
+}
+
+// Historical price data point
+export interface IOLHistoricalPrice {
+  fecha: string; // Date (YYYY-MM-DD)
+  apertura: number; // Open
+  maximo: number; // High
+  minimo: number; // Low
+  ultimoPrecio: number; // Close
+  volumen?: number; // Volume
+  montoOperado?: number; // Money volume
+}
+
+// Security/Instrument details
+export interface IOLSecurityDetails {
+  simbolo: string;
+  descripcion: string;
+  pais: string;
+  mercado: string;
+  tipo: string;
+  plazo: string;
+  moneda: string;
+}
+
+// Security with quote for listings
+export interface IOLSecurityWithQuote {
+  simbolo: string;
+  descripcion: string;
+  ultimoPrecio: number;
+  variacionPorcentual: number;
+  apertura?: number;
+  maximo?: number;
+  minimo?: number;
+  cierreAnterior?: number;
+  volumen?: number;
+  montoOperado?: number;
+  fechaHora?: string;
+}
+
+// Instrument types available in IOL
+export type IOLInstrumentType =
+  | "cedears"
+  | "acciones"
+  | "aDRs"
+  | "titulosPublicos"
+  | "obligacionesNegociables"
+  | "letras"
+  | "cauciones"
+  | "opciones"
+  | "futuros"
+  | "cHPD";

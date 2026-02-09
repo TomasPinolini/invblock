@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, RefreshCw, Lightbulb, Bell, History } from "lucide-react";
+import { Activity, RefreshCw, Lightbulb, Bell, History, Compass } from "lucide-react";
 import Link from "next/link";
 import { useAppStore } from "@/stores/useAppStore";
 import { relativeDate } from "@/lib/utils";
@@ -41,6 +41,13 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <Link
+          href="/explore"
+          className="p-2 sm:px-3 sm:py-1.5 text-xs font-medium rounded-lg border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors inline-flex items-center gap-1.5"
+        >
+          <Compass className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Explorar</span>
+        </Link>
         <Link
           href="/history"
           className="p-2 sm:px-3 sm:py-1.5 text-xs font-medium rounded-lg border border-cyan-500/50 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-colors inline-flex items-center gap-1.5"

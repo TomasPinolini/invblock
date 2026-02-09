@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, TrendingUp, TrendingDown, Loader2, AlertCircle, Activity } from "lucide-react";
+import { X, TrendingUp, TrendingDown, Loader2, AlertCircle, Activity, Database } from "lucide-react";
 import { useTickerHistory } from "@/hooks/useHistoricalPrices";
 import { useIOLQuote } from "@/hooks/useIOLQuotes";
+import { useIOLHistorical, getDateRangeForPeriod } from "@/hooks/useIOLHistorical";
 import type { TimePeriod } from "@/services/yahoo/client";
 import { formatCurrency, formatPercent, cn } from "@/lib/utils";
 import { CATEGORY_COLORS, CATEGORY_LABELS } from "@/lib/constants";
+
+type DataSource = "yahoo" | "iol";
 
 interface AssetDetailModalProps {
   asset: {
@@ -34,6 +37,7 @@ export default function AssetDetailModal({
   onClose,
 }: AssetDetailModalProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("1M");
+  const [dataSource, setDataSource] = useState<DataSource>("yahoo");
 
   // Fetch live quote for IOL assets
   const isIOL = asset.source === "iol";
@@ -43,12 +47,38 @@ export default function AssetDetailModal({
     isIOL
   );
 
-  // Fetch history for this specific ticker
-  const { data: historyData, isLoading, error } = useTickerHistory(
+  // Calculate date range for IOL
+  const dateRange = getDateRangeForPeriod(selectedPeriod);
+
+  // Fetch history from Yahoo Finance
+  const {
+    data: yahooHistoryData,
+    isLoading: yahooLoading,
+    error: yahooError,
+  } = useTickerHistory(
     asset.ticker,
     asset.category,
-    selectedPeriod
+    selectedPeriod,
+    dataSource === "yahoo"
   );
+
+  // Fetch history from IOL (only for IOL assets and when IOL source selected)
+  const {
+    data: iolHistoryData,
+    isLoading: iolLoading,
+    error: iolError,
+  } = useIOLHistorical({
+    symbol: asset.ticker,
+    category: asset.category,
+    from: dateRange.from,
+    to: dateRange.to,
+    enabled: dataSource === "iol" && isIOL,
+  });
+
+  // Use the appropriate data based on selected source
+  const historyData = dataSource === "yahoo" ? yahooHistoryData : iolHistoryData;
+  const isLoading = dataSource === "yahoo" ? yahooLoading : iolLoading;
+  const error = dataSource === "yahoo" ? yahooError : iolError;
 
   // Calculate P&L based on historical data
   const calculatePeriodPnl = () => {
@@ -331,22 +361,59 @@ export default function AssetDetailModal({
             </div>
           )}
 
-          {/* Time Period Selector */}
-          <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-1">
-            {TIME_PERIODS.map((period) => (
-              <button
-                key={period}
-                onClick={() => setSelectedPeriod(period)}
-                className={cn(
-                  "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-                  selectedPeriod === period
-                    ? "bg-zinc-700 text-zinc-100"
-                    : "text-zinc-500 hover:text-zinc-300"
-                )}
-              >
-                {period}
-              </button>
-            ))}
+          {/* Data Source + Time Period Selectors */}
+          <div className="space-y-2">
+            {/* Data Source Toggle (only for IOL assets) */}
+            {isIOL && (
+              <div className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-zinc-500" />
+                <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setDataSource("yahoo")}
+                    className={cn(
+                      "px-3 py-1 text-xs font-medium rounded-md transition-colors",
+                      dataSource === "yahoo"
+                        ? "bg-zinc-700 text-zinc-100"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    )}
+                  >
+                    Yahoo
+                  </button>
+                  <button
+                    onClick={() => setDataSource("iol")}
+                    className={cn(
+                      "px-3 py-1 text-xs font-medium rounded-md transition-colors",
+                      dataSource === "iol"
+                        ? "bg-blue-600 text-white"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    )}
+                  >
+                    IOL
+                  </button>
+                </div>
+                <span className="text-[10px] text-zinc-600">
+                  {dataSource === "iol" ? "Adjusted for AR market" : "Global data"}
+                </span>
+              </div>
+            )}
+
+            {/* Time Period Selector */}
+            <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-1">
+              {TIME_PERIODS.map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setSelectedPeriod(period)}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                    selectedPeriod === period
+                      ? "bg-zinc-700 text-zinc-100"
+                      : "text-zinc-500 hover:text-zinc-300"
+                  )}
+                >
+                  {period}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Chart / Historical Data */}
@@ -386,7 +453,7 @@ export default function AssetDetailModal({
                 )}
 
                 <p className="text-[10px] text-zinc-600 mt-2">
-                  {historyData.history.length} data points · Yahoo Finance
+                  {historyData.history.length} data points · {dataSource === "iol" ? "IOL (adjusted)" : "Yahoo Finance"}
                 </p>
               </div>
             ) : (
@@ -399,7 +466,7 @@ export default function AssetDetailModal({
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-zinc-800 text-xs text-zinc-600">
-          Data from Yahoo Finance · Click outside to close
+          Data from {dataSource === "iol" ? "IOL (adjusted for AR market)" : "Yahoo Finance"} · Click outside to close
         </div>
       </div>
     </div>
