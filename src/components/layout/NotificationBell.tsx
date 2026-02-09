@@ -11,7 +11,7 @@ export default function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { data: status } = useIOLStatus();
-  const { data, isLoading, error } = useIOLNotifications();
+  const { data, isLoading } = useIOLNotifications();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -71,10 +71,6 @@ export default function NotificationBell() {
             {isLoading ? (
               <div className="px-4 py-6 text-center text-sm text-zinc-500">
                 Cargando...
-              </div>
-            ) : error ? (
-              <div className="px-4 py-6 text-center text-sm text-red-400">
-                Error al cargar notificaciones
               </div>
             ) : notifications.length === 0 ? (
               <div className="px-4 py-6 text-center text-sm text-zinc-500">
