@@ -1,5 +1,6 @@
 import PortfolioTable from "@/components/portfolio/PortfolioTable";
 import PortfolioSummary from "@/components/portfolio/PortfolioSummary";
+import AccountBalanceCards from "@/components/portfolio/AccountBalanceCards";
 import AllocationBar from "@/components/portfolio/AllocationBar";
 import AssetEntryDialog from "@/components/forms/AssetEntryDialog";
 import TransactionEntryDialog from "@/components/forms/TransactionEntryDialog";
@@ -11,6 +12,9 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
       {/* Header */}
       <Header />
+
+      {/* Cash Balances (IOL) */}
+      <AccountBalanceCards />
 
       {/* Summary Cards */}
       <PortfolioSummary />

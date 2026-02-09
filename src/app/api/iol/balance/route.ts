@@ -1,0 +1,110 @@
+import { NextResponse } from "next/server";
+import { IOLClient } from "@/services/iol";
+import { getAuthUser } from "@/lib/auth";
+import { db } from "@/db";
+import { userConnections } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
+export async function GET() {
+  const user = await getAuthUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    // Get IOL credentials
+    const connection = await db.query.userConnections.findFirst({
+      where: and(
+        eq(userConnections.userId, user.id),
+        eq(userConnections.provider, "iol")
+      ),
+    });
+
+    if (!connection) {
+      return NextResponse.json(
+        { error: "IOL account not connected" },
+        { status: 400 }
+      );
+    }
+
+    const token = JSON.parse(connection.credentials);
+    const client = new IOLClient(token);
+
+    // Fetch account state from IOL
+    const accountState = await client.getAccountState();
+
+    // Debug: log raw response
+    console.log("[IOL Balance] Raw response:", JSON.stringify(accountState, null, 2));
+
+    // Process accounts into a cleaner format
+    const balances = {
+      ars: {
+        disponible: 0,
+        comprometido: 0,
+        total: 0,
+      },
+      usd: {
+        disponible: 0,
+        comprometido: 0,
+        total: 0,
+      },
+      totalEnPesos: accountState.totalEnPesos || 0,
+    };
+
+    for (const cuenta of accountState.cuentas || []) {
+      const moneda = (cuenta.moneda || "").toLowerCase();
+      const tipo = (cuenta.tipo || "").toLowerCase();
+
+      // Check if USD by moneda or tipo
+      const isUSD = moneda.includes("dolar") || moneda.includes("dollar") ||
+                    tipo.includes("dolar") || tipo.includes("estados_unidos");
+
+      // Get disponibleOperar from saldos array (sum all settlement periods)
+      // The "disponibleOperar" in hrs24/hrs48/hrs72 shows what you can trade with
+      let disponibleOperar = 0;
+      let comprometidoTotal = 0;
+
+      if (cuenta.saldos && Array.isArray(cuenta.saldos)) {
+        // Get the max disponibleOperar (usually from hrs24 or later)
+        for (const saldo of cuenta.saldos) {
+          if (saldo.disponibleOperar > disponibleOperar) {
+            disponibleOperar = saldo.disponibleOperar;
+          }
+          comprometidoTotal += saldo.comprometido || 0;
+        }
+      }
+
+      // Fallback to top-level if saldos not available
+      if (disponibleOperar === 0) {
+        disponibleOperar = cuenta.disponible || 0;
+      }
+      if (comprometidoTotal === 0) {
+        comprometidoTotal = cuenta.comprometido || 0;
+      }
+
+      if (isUSD) {
+        balances.usd.disponible += disponibleOperar;
+        balances.usd.comprometido += comprometidoTotal;
+        balances.usd.total += cuenta.total || cuenta.saldo || 0;
+      } else {
+        balances.ars.disponible += disponibleOperar;
+        balances.ars.comprometido += comprometidoTotal;
+        balances.ars.total += cuenta.total || cuenta.saldo || 0;
+      }
+    }
+
+    console.log("[IOL Balance] Processed balances:", JSON.stringify(balances, null, 2));
+
+    return NextResponse.json({
+      balances,
+      raw: accountState, // Include raw data for debugging
+    });
+  } catch (error) {
+    console.error("[IOL Balance] Error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to fetch balance" },
+      { status: 500 }
+    );
+  }
+}

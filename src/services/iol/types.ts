@@ -39,15 +39,32 @@ export interface IOLPortfolio {
   totalEnDolares?: number;
 }
 
+export interface IOLSaldo {
+  liquidacion: string; // inmediato, hrs24, hrs48, hrs72, masHrs72
+  saldo: number;
+  comprometido: number;
+  disponible: number;
+  disponibleOperar: number; // What you can actually trade with
+}
+
+export interface IOLCuenta {
+  numero: string;
+  tipo: string; // inversion_Argentina_Pesos, inversion_Argentina_Dolares, inversion_Estados_Unidos_Dolares
+  moneda: string; // peso_Argentino, dolar_Estadounidense
+  disponible: number; // Available cash (immediate)
+  comprometido: number; // Committed in open orders
+  saldo: number; // Current balance
+  titulosValorizados?: number; // Securities value
+  total?: number; // Total account value
+  margenDescubierto?: number; // Margin
+  saldos?: IOLSaldo[]; // Settlement period breakdown
+  estado?: string; // operable, etc.
+}
+
 export interface IOLAccountState {
-  cuentas: {
-    numero: string;
-    tipo: string;
-    moneda: string;
-    disponible: number;
-    comprometido: number;
-    saldo: number;
-  }[];
+  cuentas: IOLCuenta[];
+  estadisticas?: unknown[];
+  totalEnPesos?: number;
 }
 
 export interface IOLOperation {
