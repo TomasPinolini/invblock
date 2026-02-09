@@ -32,9 +32,19 @@ export async function GET() {
     const client = new IOLClient(token);
 
     // Fetch notifications from IOL
-    const notifications = await client.getNotifications();
+    // Note: This endpoint may not be available for all account types
+    // or may return different structures
+    try {
+      const result = await client.getNotifications();
 
-    return NextResponse.json({ notifications });
+      // Handle various response formats
+      const notifications = Array.isArray(result) ? result : [];
+
+      return NextResponse.json({ notifications });
+    } catch {
+      // If the notifications endpoint fails, return empty array (non-critical)
+      return NextResponse.json({ notifications: [] });
+    }
   } catch (error) {
     console.error("[IOL Notifications] Error:", error);
     return NextResponse.json(

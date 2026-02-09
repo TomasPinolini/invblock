@@ -8,13 +8,6 @@ interface ConnectionStatus {
   updatedAt: string | null;
 }
 
-interface SyncResult {
-  success: boolean;
-  created: number;
-  updated: number;
-  total: number;
-}
-
 /**
  * Auto-sync hook that runs once on mount to sync connected brokers.
  * Checks IOL and Binance connection status, then triggers sync for each.
@@ -54,47 +47,24 @@ export function useAutoSync() {
 
       // Sync IOL if connected (assets + transactions)
       if (iolStatus?.connected) {
-        console.log("[AutoSync] IOL connected, syncing...");
         syncPromises.push(
           fetch("/api/iol/sync", { method: "POST" })
             .then((res) => res.json())
-            .then(async (data: SyncResult) => {
-              if (data.success) {
-                console.log(
-                  `[AutoSync] IOL assets synced: ${data.created} new, ${data.updated} updated`
-                );
-                // Also sync transactions
-                const txnRes = await fetch("/api/iol/transactions", {
-                  method: "POST",
-                });
-                const txnData = await txnRes.json();
-                if (txnData.success) {
-                  console.log(
-                    `[AutoSync] IOL transactions synced: ${txnData.created} new, ${txnData.skipped} skipped`
-                  );
-                }
+            .then(async (data) => {
+              if (data?.success) {
+                await fetch("/api/iol/transactions", { method: "POST" });
               }
             })
-            .catch((err) => console.error("[AutoSync] IOL sync failed:", err))
+            .catch(() => {}) // Silent fail - sync is best-effort
         );
       }
 
       // Sync Binance if connected
       if (binanceStatus?.connected) {
-        console.log("[AutoSync] Binance connected, syncing...");
         syncPromises.push(
           fetch("/api/binance/sync", { method: "POST" })
-            .then((res) => res.json())
-            .then((data: SyncResult) => {
-              if (data.success) {
-                console.log(
-                  `[AutoSync] Binance synced: ${data.created} new, ${data.updated} updated`
-                );
-              }
-            })
-            .catch((err) =>
-              console.error("[AutoSync] Binance sync failed:", err)
-            )
+            .then(() => {})
+            .catch(() => {})
         );
       }
 

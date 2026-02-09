@@ -10,8 +10,10 @@ interface IOLNotificationsResponse {
 
 async function fetchIOLNotifications(): Promise<IOLNotificationsResponse> {
   const res = await fetch("/api/iol/notifications");
+  // Don't throw on error - notifications are non-critical
+  // Just return empty array if something goes wrong
   if (!res.ok) {
-    throw new Error("Failed to fetch notifications");
+    return { notifications: [] };
   }
   return res.json();
 }

@@ -54,8 +54,6 @@ export async function POST() {
 
     const operations = await client.getOperations("terminadas", fromDate);
 
-    console.log("[IOL Transactions] Fetched operations:", operations.length);
-
     // Get existing assets for this user
     const existingAssets = await db.query.assets.findMany({
       where: eq(assets.userId, user.id),
@@ -89,7 +87,6 @@ export async function POST() {
 
       const txnType = mapOperationType(op.tipo);
       if (!txnType) {
-        console.log("[IOL Transactions] Skipping unknown type:", op.tipo);
         skipped++;
         continue;
       }
@@ -115,7 +112,6 @@ export async function POST() {
 
         asset = newAsset;
         assetsByTicker.set(ticker, asset);
-        console.log("[IOL Transactions] Created asset for:", ticker);
       }
 
       // Parse the operation date
@@ -138,9 +134,6 @@ export async function POST() {
       });
 
       created++;
-      console.log(
-        `[IOL Transactions] Created: ${txnType} ${quantity} ${ticker} @ ${op.precio}`
-      );
     }
 
     // Update token if it was refreshed
@@ -154,13 +147,6 @@ export async function POST() {
         })
         .where(eq(userConnections.id, connection.id));
     }
-
-    console.log(
-      "[IOL Transactions] Done. Created:",
-      created,
-      "Skipped:",
-      skipped
-    );
 
     return NextResponse.json({
       success: true,

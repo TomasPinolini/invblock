@@ -43,8 +43,6 @@ export async function POST() {
     // Filter out tiny dust balances (less than $1)
     const significantAssets = binanceAssets.filter((a) => a.usdValue >= 1);
 
-    console.log("[Binance Sync] Assets found:", significantAssets.length);
-
     // Get existing assets for this user
     const existingAssets = await db.query.assets.findMany({
       where: eq(assets.userId, user.id),
@@ -64,8 +62,6 @@ export async function POST() {
       if (["USDT", "USDC", "BUSD", "DAI", "FDUSD"].includes(ticker)) {
         continue;
       }
-
-      console.log("[Binance Sync] Processing:", ticker, "qty:", item.total);
 
       const existing = existingByTicker.get(ticker);
 
@@ -95,8 +91,6 @@ export async function POST() {
         created++;
       }
     }
-
-    console.log("[Binance Sync] Done. Created:", created, "Updated:", updated);
 
     return NextResponse.json({
       success: true,

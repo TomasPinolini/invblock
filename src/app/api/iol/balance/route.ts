@@ -34,9 +34,6 @@ export async function GET() {
     // Fetch account state from IOL
     const accountState = await client.getAccountState();
 
-    // Debug: log raw response
-    console.log("[IOL Balance] Raw response:", JSON.stringify(accountState, null, 2));
-
     // Process accounts into a cleaner format
     const balances = {
       ars: {
@@ -93,8 +90,6 @@ export async function GET() {
         balances.ars.total += cuenta.total || cuenta.saldo || 0;
       }
     }
-
-    console.log("[IOL Balance] Processed balances:", JSON.stringify(balances, null, 2));
 
     return NextResponse.json({
       balances,
