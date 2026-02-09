@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Loader2,
   Settings,
+  Filter,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIOLPortfolio, type IOLAsset } from "@/hooks/useIOLPortfolio";
@@ -205,6 +206,7 @@ export default function PortfolioTable() {
   const [columnFilters, setColumnFilters] =
     React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
+  const [categoryFilter, setCategoryFilter] = React.useState<string | null>(null);
 
   // Combined loading/fetching state
   const isLoading = iolLoading || binanceLoading;
@@ -221,6 +223,16 @@ export default function PortfolioTable() {
   const refetch = () => {
     refetchIOL();
     refetchBinance();
+  };
+
+  // Handle category filter change
+  const handleCategoryFilter = (category: string | null) => {
+    setCategoryFilter(category);
+    if (category) {
+      setColumnFilters([{ id: "category", value: category }]);
+    } else {
+      setColumnFilters([]);
+    }
   };
 
   // ── Convert values to display currency and merge data ──────────────────────────────────
@@ -277,6 +289,12 @@ export default function PortfolioTable() {
 
     return rows;
   }, [iolPortfolio, binancePortfolio, displayCurrency]);
+
+  // Get unique categories from data for filter buttons
+  const availableCategories = useMemo(() => {
+    const categories = new Set(data.map((row) => row.category));
+    return Array.from(categories) as ("stock" | "cedear" | "crypto" | "cash")[];
+  }, [data]);
 
   const columns = useMemo(
     () => buildColumns(displayCurrency),
@@ -336,6 +354,43 @@ export default function PortfolioTable() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Category filter buttons */}
+          <div className="flex items-center gap-1 mr-2">
+            <Filter className="h-4 w-4 text-zinc-500" />
+            <button
+              onClick={() => handleCategoryFilter(null)}
+              className={cn(
+                "px-2.5 py-1 text-xs font-medium rounded-md transition-colors",
+                categoryFilter === null
+                  ? "bg-zinc-700 text-zinc-100"
+                  : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
+              )}
+            >
+              All
+            </button>
+            {availableCategories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => handleCategoryFilter(cat)}
+                className={cn(
+                  "px-2.5 py-1 text-xs font-medium rounded-md transition-colors",
+                  categoryFilter === cat
+                    ? "text-zinc-100"
+                    : "text-zinc-500 hover:text-zinc-300"
+                )}
+                style={{
+                  backgroundColor:
+                    categoryFilter === cat
+                      ? `${CATEGORY_COLORS[cat]}40`
+                      : undefined,
+                  color: categoryFilter === cat ? CATEGORY_COLORS[cat] : undefined,
+                }}
+              >
+                {CATEGORY_LABELS[cat]}
+              </button>
+            ))}
+          </div>
+
           {/* Global search */}
           <input
             type="text"
