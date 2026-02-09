@@ -25,6 +25,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
 import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
+import { useIOLQuotes } from "@/hooks/useIOLQuotes";
 import { useAppStore } from "@/stores/useAppStore";
 import AssetDetailModal from "./AssetDetailModal";
 import {
@@ -60,6 +61,9 @@ interface PortfolioRow {
   displayAvgPrice: number;
   displayValue: number;
   displayPnl: number;
+  // Live quote data
+  dailyChange: number | null; // Daily change % from live quote
+  hasLiveQuote: boolean; // Whether we have a live quote
 }
 
 // ── Column definitions ──────────────────────────────────────────────────────
@@ -136,12 +140,52 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
 
     col.accessor("displayPrice", {
       header: "Price",
-      cell: (info) => (
-        <span className="font-mono text-zinc-200">
-          {formatCurrency(info.getValue(), displayCurrency)}
-        </span>
-      ),
+      cell: (info) => {
+        const row = info.row.original;
+        const change = row.dailyChange;
+        const hasQuote = row.hasLiveQuote;
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-zinc-200">
+              {formatCurrency(info.getValue(), displayCurrency)}
+            </span>
+            {hasQuote && change !== null && (
+              <span
+                className={cn(
+                  "text-xs font-mono",
+                  change >= 0 ? "text-emerald-400" : "text-red-400"
+                )}
+              >
+                {change >= 0 ? "▲" : "▼"}
+              </span>
+            )}
+          </div>
+        );
+      },
       meta: { hideOnMobile: false },
+    }),
+
+    col.accessor("dailyChange", {
+      header: "Day",
+      cell: (info) => {
+        const v = info.getValue();
+        if (v === null) {
+          return <span className="text-zinc-600 text-xs">--</span>;
+        }
+        const isPositive = v >= 0;
+        return (
+          <span
+            className={cn(
+              "font-mono text-sm",
+              isPositive ? "text-emerald-400" : "text-red-400"
+            )}
+          >
+            {isPositive ? "+" : ""}
+            {v.toFixed(2)}%
+          </span>
+        );
+      },
+      meta: { hideOnMobile: true },
     }),
 
     col.accessor("displayValue", {
@@ -210,6 +254,18 @@ export default function PortfolioTable() {
   const compact = useAppStore((s) => s.preferences.compactTable);
   const router = useRouter();
 
+  // Prepare ticker list for live quotes (IOL assets only)
+  const iolTickers = useMemo(() => {
+    if (!iolPortfolio?.assets?.length) return [];
+    return iolPortfolio.assets.map((a) => ({
+      symbol: a.ticker,
+      category: a.category,
+    }));
+  }, [iolPortfolio?.assets]);
+
+  // Fetch live quotes for IOL assets
+  const { data: quotesData } = useIOLQuotes(iolTickers, iolPortfolio?.connected ?? false);
+
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: "displayValue", desc: true },
   ]);
@@ -249,6 +305,8 @@ export default function PortfolioTable() {
   // ── Convert values to display currency and merge data ──────────────────────────────────
 
   const data: PortfolioRow[] = useMemo(() => {
+    const quotes = quotesData?.quotes || {};
+
     const convertToDisplay = (value: number, assetCurrency: string) => {
       if (assetCurrency === displayCurrency) return value;
       if (assetCurrency === "ARS" && displayCurrency === "USD") {
@@ -272,22 +330,32 @@ export default function PortfolioTable() {
     // Add IOL assets
     if (iolPortfolio?.assets?.length) {
       for (const asset of iolPortfolio.assets) {
-        const { pnl, pnlPercent } = calculatePnl(asset.currentPrice, asset.averagePrice, asset.quantity);
+        // Get live quote if available
+        const quote = quotes[asset.ticker.toUpperCase()];
+        const livePrice = quote?.ultimoPrecio ?? asset.currentPrice;
+        const liveValue = livePrice * asset.quantity;
+        const dailyChange = quote?.variacionPorcentual ?? null;
+
+        const { pnl, pnlPercent } = calculatePnl(livePrice, asset.averagePrice, asset.quantity);
         rows.push({
           ...asset,
+          currentPrice: livePrice,
+          currentValue: liveValue,
           pnl,
           pnlPercent,
           source: "iol",
-          displayPrice: convertToDisplay(asset.currentPrice, asset.currency),
+          displayPrice: convertToDisplay(livePrice, asset.currency),
           displayAvgPrice: convertToDisplay(asset.averagePrice, asset.currency),
-          displayValue: convertToDisplay(asset.currentValue, asset.currency),
+          displayValue: convertToDisplay(liveValue, asset.currency),
           displayPnl: convertToDisplay(pnl, asset.currency),
           allocation: 0,
+          dailyChange,
+          hasLiveQuote: !!quote,
         });
       }
     }
 
-    // Add Binance assets
+    // Add Binance assets (no IOL quotes for crypto)
     if (binancePortfolio?.assets?.length) {
       for (const asset of binancePortfolio.assets) {
         const { pnl, pnlPercent } = calculatePnl(asset.currentPrice, asset.averagePrice, asset.quantity);
@@ -301,6 +369,8 @@ export default function PortfolioTable() {
           displayValue: convertToDisplay(asset.currentValue, asset.currency),
           displayPnl: convertToDisplay(pnl, asset.currency),
           allocation: 0,
+          dailyChange: null, // Binance doesn't provide daily change through this endpoint
+          hasLiveQuote: false,
         });
       }
     }
@@ -312,7 +382,7 @@ export default function PortfolioTable() {
     });
 
     return rows;
-  }, [iolPortfolio, binancePortfolio, displayCurrency]);
+  }, [iolPortfolio, binancePortfolio, displayCurrency, quotesData]);
 
   // Get unique categories from data for filter buttons
   const availableCategories = useMemo(() => {

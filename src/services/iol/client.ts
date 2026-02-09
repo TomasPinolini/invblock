@@ -4,6 +4,7 @@ import type {
   IOLAccountState,
   IOLOperation,
   IOLNotification,
+  IOLQuote,
 } from "./types";
 
 const IOL_API_BASE = "https://api.invertironline.com";
@@ -168,13 +169,14 @@ export class IOLClient {
     from?: Date,
     to?: Date
   ): Promise<IOLOperation[]> {
-    const params = new URLSearchParams({ filtro: { estado: status } as any });
+    const params = new URLSearchParams();
+    params.set("filtro.estado", status);
 
     if (from) {
-      params.set("fechaDesde", from.toISOString().split("T")[0]);
+      params.set("filtro.fechaDesde", from.toISOString().split("T")[0]);
     }
     if (to) {
-      params.set("fechaHasta", to.toISOString().split("T")[0]);
+      params.set("filtro.fechaHasta", to.toISOString().split("T")[0]);
     }
 
     return this.request<IOLOperation[]>(
@@ -187,6 +189,40 @@ export class IOLClient {
    */
   async getNotifications(): Promise<IOLNotification[]> {
     return this.request<IOLNotification[]>("/api/v2/Notificacion");
+  }
+
+  /**
+   * Get real-time quote for a security
+   * @param market - bCBA, nYSE, nASDAQ, aMEX, bCS, rOFX
+   * @param symbol - Ticker (e.g., "GGAL", "AAPL", "KO")
+   */
+  async getQuote(market: string, symbol: string): Promise<IOLQuote> {
+    return this.request<IOLQuote>(
+      `/api/v2/${market}/Titulos/${symbol}/Cotizacion`
+    );
+  }
+
+  /**
+   * Get quotes for multiple securities
+   * Returns a map of ticker -> quote (null if failed)
+   */
+  async getQuotes(
+    tickers: Array<{ market: string; symbol: string }>
+  ): Promise<Map<string, IOLQuote | null>> {
+    const results = new Map<string, IOLQuote | null>();
+
+    // Fetch all quotes in parallel
+    const promises = tickers.map(async ({ market, symbol }) => {
+      try {
+        const quote = await this.getQuote(market, symbol);
+        results.set(symbol.toUpperCase(), quote);
+      } catch {
+        results.set(symbol.toUpperCase(), null);
+      }
+    });
+
+    await Promise.allSettled(promises);
+    return results;
   }
 
   /**

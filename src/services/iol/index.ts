@@ -5,4 +5,6 @@ export type {
   IOLPortfolioItem,
   IOLAccountState,
   IOLOperation,
+  IOLQuote,
+  IOLPunta,
 } from "./types";
