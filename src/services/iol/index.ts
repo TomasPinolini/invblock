@@ -7,4 +7,12 @@ export type {
   IOLOperation,
   IOLQuote,
   IOLPunta,
+  IOLOrderRequest,
+  IOLOrderResponse,
+  IOLSettlement,
+  IOLOrderType,
+  IOLHistoricalPrice,
+  IOLSecurityDetails,
+  IOLSecurityWithQuote,
+  IOLInstrumentType,
 } from "./types";

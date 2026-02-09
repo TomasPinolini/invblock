@@ -68,7 +68,8 @@ interface TickerHistoryResponse {
 export function useTickerHistory(
   ticker: string | null,
   category: string | null,
-  period: TimePeriod
+  period: TimePeriod,
+  enabled: boolean = true
 ) {
   return useQuery<TickerHistoryResponse>({
     queryKey: ["ticker-history", ticker, period],
@@ -85,7 +86,7 @@ export function useTickerHistory(
 
       return response.json();
     },
-    enabled: !!ticker && !!category,
+    enabled: enabled && !!ticker && !!category,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,

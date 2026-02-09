@@ -119,6 +119,8 @@ export async function POST() {
 
       // Calculate quantity (use cantidadOperada if available, otherwise cantidad)
       const quantity = op.cantidadOperada || op.cantidad;
+      const pricePerUnit = op.precioOperado || op.precio || 0;
+      const totalAmount = op.montoOperado || op.montoTotal || (quantity * pricePerUnit);
 
       // Create transaction
       await db.insert(transactions).values({
@@ -126,8 +128,8 @@ export async function POST() {
         assetId: asset.id,
         type: txnType,
         quantity: quantity.toString(),
-        pricePerUnit: op.precio.toString(),
-        totalAmount: op.montoTotal.toString(),
+        pricePerUnit: pricePerUnit.toString(),
+        totalAmount: totalAmount.toString(),
         currency: mapCurrency(op.mercado),
         executedAt,
         notes: `IOL#${op.numero}`,

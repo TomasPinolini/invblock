@@ -21,6 +21,8 @@ import {
   Loader2,
   Settings,
   Filter,
+  ShoppingCart,
+  Banknote,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
@@ -28,6 +30,7 @@ import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
 import { useIOLQuotes } from "@/hooks/useIOLQuotes";
 import { useAppStore } from "@/stores/useAppStore";
 import AssetDetailModal from "./AssetDetailModal";
+import TradeDialog from "./TradeDialog";
 import {
   MOCK_USD_ARS_RATE,
   CATEGORY_LABELS,
@@ -245,6 +248,45 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
   ];
 }
 
+// Actions column (separate to pass callbacks)
+function buildActionsColumn(
+  onBuy: (row: PortfolioRow) => void,
+  onSell: (row: PortfolioRow) => void
+) {
+  return col.display({
+    id: "actions",
+    header: "",
+    cell: (info) => {
+      const row = info.row.original;
+      // Only show trade buttons for IOL assets (not crypto/binance)
+      if (row.source !== "iol") {
+        return null;
+      }
+      return (
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => onBuy(row)}
+            className="p-1.5 rounded-md bg-emerald-900/30 hover:bg-emerald-800/50
+                       text-emerald-400 transition-colors"
+            title="Comprar"
+          >
+            <ShoppingCart className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => onSell(row)}
+            className="p-1.5 rounded-md bg-red-900/30 hover:bg-red-800/50
+                       text-red-400 transition-colors"
+            title="Vender"
+          >
+            <Banknote className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      );
+    },
+    meta: { hideOnMobile: true },
+  });
+}
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function PortfolioTable() {
@@ -274,6 +316,8 @@ export default function PortfolioTable() {
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = React.useState<PortfolioRow | null>(null);
+  const [tradeAsset, setTradeAsset] = React.useState<PortfolioRow | null>(null);
+  const [tradeAction, setTradeAction] = React.useState<"buy" | "sell">("buy");
 
   // Combined loading/fetching state
   const isLoading = iolLoading || binanceLoading;
@@ -390,8 +434,19 @@ export default function PortfolioTable() {
     return Array.from(categories) as ("stock" | "cedear" | "crypto" | "cash")[];
   }, [data]);
 
+  // Handlers for trade buttons
+  const handleBuy = (row: PortfolioRow) => {
+    setTradeAsset(row);
+    setTradeAction("buy");
+  };
+
+  const handleSell = (row: PortfolioRow) => {
+    setTradeAsset(row);
+    setTradeAction("sell");
+  };
+
   const columns = useMemo(
-    () => buildColumns(displayCurrency),
+    () => [...buildColumns(displayCurrency), buildActionsColumn(handleBuy, handleSell)],
     [displayCurrency]
   );
 
@@ -664,6 +719,26 @@ export default function PortfolioTable() {
           asset={selectedAsset}
           displayCurrency={displayCurrency}
           onClose={() => setSelectedAsset(null)}
+        />
+      )}
+
+      {/* ── Trade Dialog ─────────────────────────────────────────────────── */}
+      {tradeAsset && (
+        <TradeDialog
+          asset={{
+            ticker: tradeAsset.ticker,
+            name: tradeAsset.name,
+            category: tradeAsset.category,
+            currency: tradeAsset.currency,
+            quantity: tradeAsset.quantity,
+            currentPrice: tradeAsset.currentPrice,
+            market: tradeAsset.category === "cedear" ? "bCBA" : "bCBA",
+          }}
+          action={tradeAction}
+          onClose={() => setTradeAsset(null)}
+          onSuccess={() => {
+            refetch();
+          }}
         />
       )}
     </div>
