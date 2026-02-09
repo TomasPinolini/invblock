@@ -3,6 +3,7 @@ import PortfolioSummary from "@/components/portfolio/PortfolioSummary";
 import AllocationBar from "@/components/portfolio/AllocationBar";
 import AssetEntryDialog from "@/components/forms/AssetEntryDialog";
 import TransactionEntryDialog from "@/components/forms/TransactionEntryDialog";
+import PriceAlertsDialog from "@/components/forms/PriceAlertsDialog";
 import Header from "@/components/layout/Header";
 
 export default function DashboardPage() {
@@ -23,6 +24,7 @@ export default function DashboardPage() {
       {/* Dialogs (rendered globally, controlled by Zustand) */}
       <AssetEntryDialog />
       <TransactionEntryDialog />
+      <PriceAlertsDialog />
     </div>
   );
 }
