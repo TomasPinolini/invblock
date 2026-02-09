@@ -59,25 +59,25 @@ export default function OperationsTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-zinc-800/60">
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
               Fecha
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
               Ticker
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
               Tipo
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 hidden sm:table-cell">
+            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 hidden sm:table-cell">
               Cantidad
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 hidden sm:table-cell">
+            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 hidden sm:table-cell">
               Precio
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
               Total
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
               Estado
             </th>
           </tr>
@@ -101,17 +101,17 @@ export default function OperationsTable({
                 key={op.numero}
                 className="border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors"
               >
-                <td className="px-4 py-3">
+                <td className="px-3 py-2">
                   <span className="text-zinc-400 text-xs">
                     {formatDate(op.fechaOrden)}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 py-2">
                   <span className="font-mono font-semibold text-zinc-100">
                     {op.simbolo}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 py-2">
                   <span className={cn("inline-flex items-center gap-1 font-medium", type.color)}>
                     {isBuy ? (
                       <ArrowDownRight className="h-3.5 w-3.5" />
@@ -121,7 +121,7 @@ export default function OperationsTable({
                     {type.label}
                   </span>
                 </td>
-                <td className="px-4 py-3 hidden sm:table-cell">
+                <td className="px-3 py-2 hidden sm:table-cell">
                   <span className="font-mono text-zinc-300">
                     {executedQty.toLocaleString()}
                   </span>
@@ -132,17 +132,17 @@ export default function OperationsTable({
                       </span>
                     )}
                 </td>
-                <td className="px-4 py-3 hidden sm:table-cell">
+                <td className="px-3 py-2 hidden sm:table-cell">
                   <span className="font-mono text-zinc-300">
                     {formatCurrency(executedPrice, currency)}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 py-2">
                   <span className={cn("font-mono font-semibold", type.color)}>
                     {formatCurrency(executedTotal, currency)}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 py-2">
                   <span
                     className={cn(
                       "text-xs font-medium px-2 py-0.5 rounded-full",
