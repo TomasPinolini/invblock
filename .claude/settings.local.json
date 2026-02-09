@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Binance API integration for crypto holdings\n\n- Add Binance service with HMAC SHA256 signature authentication\n- Create API routes for auth, status, and live portfolio\n- Add useBinancePortfolio hook with TanStack Query\n- Update Settings page with Binance connection card \\(API key/secret\\)\n- Merge IOL + Binance assets in dashboard components\n- Support multi-source portfolio aggregation with currency conversion\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npm run build:*)"
     ]
   }
 }

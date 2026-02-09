@@ -357,9 +357,9 @@ export default function PortfolioTable() {
 
   return (
     <div className="space-y-4">
-      {/* ── Summary Bar ──────────────────────────────────────────────── */}
+      {/* ── Summary Bar (hidden on mobile - PortfolioSummary shows same info) ── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
+        <div className="hidden sm:block space-y-1">
           <p className="text-xs uppercase tracking-widest text-zinc-500">
             Total Portfolio Value
           </p>
@@ -374,11 +374,11 @@ export default function PortfolioTable() {
           >
             {formatCurrency(totalPnl, displayCurrency)}{" "}
             ({formatPercent(totalPnlPct)})
-            <span className="text-zinc-500 font-normal ml-2 hidden sm:inline">total return</span>
+            <span className="text-zinc-500 font-normal ml-2">total return</span>
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:ml-auto">
           {/* Category filter buttons - hidden on mobile */}
           <div className="hidden md:flex items-center gap-1 mr-2">
             <Filter className="h-4 w-4 text-zinc-500" />

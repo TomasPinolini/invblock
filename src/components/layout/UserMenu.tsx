@@ -34,23 +34,19 @@ export default function UserMenu() {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/50 border border-zinc-800">
+    <div className="flex items-center gap-1 sm:gap-2">
+      {/* Avatar only on mobile, avatar + email on desktop */}
+      <button
+        onClick={() => router.push("/settings")}
+        className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:bg-zinc-800 transition-colors"
+        title="Settings"
+      >
         <div className="h-6 w-6 rounded-full bg-blue-600/20 flex items-center justify-center">
           <User className="h-3.5 w-3.5 text-blue-400" />
         </div>
-        <span className="text-sm text-zinc-400 max-w-[150px] truncate">
+        <span className="hidden sm:block text-sm text-zinc-400 max-w-[120px] truncate">
           {user.email}
         </span>
-      </div>
-      <button
-        onClick={() => router.push("/settings")}
-        className="h-9 w-9 rounded-lg border border-zinc-800 bg-zinc-900/50
-                   text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800
-                   transition-colors flex items-center justify-center"
-        title="Settings"
-      >
-        <Settings className="h-4 w-4" />
       </button>
       <button
         onClick={handleSignOut}

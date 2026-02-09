@@ -52,9 +52,10 @@ export default function AllocationBar() {
     }
   );
 
+  // Hide on mobile - the Allocation card in PortfolioSummary shows same info
   if (allocation.total === 0) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+      <div className="hidden sm:block rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
         <p className="text-xs uppercase tracking-wider text-zinc-500 mb-3">
           Portfolio Allocation
         </p>
@@ -73,7 +74,7 @@ export default function AllocationBar() {
   categories.sort((a, b) => b[1] - a[1]); // Sort by value desc
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+    <div className="hidden sm:block rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
       <p className="text-xs uppercase tracking-wider text-zinc-500 mb-3">
         Portfolio Allocation
       </p>
