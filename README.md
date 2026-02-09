@@ -4,13 +4,37 @@ A multi-asset portfolio tracker and analysis tool built with Next.js, Supabase, 
 
 ## Features
 
+### Portfolio Management
 - **Multi-Broker Integration**: Connect IOL (InvertirOnline) for Argentine stocks/CEDEARs and Binance for crypto
 - **Auto-Sync**: Automatically syncs portfolio holdings and transactions on login
-- **Real-Time Prices**: Live prices via Yahoo Finance API
-- **AI-Powered Insights**: Upload PPI market reports for Claude-powered analysis
+- **Real-Time Quotes**: Live prices from IOL API (replaces static mock data)
+- **Account Balance**: View IOL account balances (ARS/USD) with buying power
+
+### Trading
+- **Buy/Sell from App**: Execute trades directly with 2-step confirmation flow
+- **Settlement Options**: Choose between Contado (T+0), 24hs (T+1), or 48hs (T+2)
+- **Live Quote Preview**: See current price and daily change before trading
+
+### Market Exploration
+- **Security Search**: Browse all IOL instruments (CEDEARs, stocks, bonds, ONs)
+- **Filter by Type**: Quick tabs for different instrument categories
+- **Real-Time Data**: Price, daily change %, OHLC, and volume for each security
+
+### Analysis & History
 - **Historical Charts**: Asset detail modal with sparkline charts and period P&L
+- **Dual Data Sources**: Toggle between Yahoo Finance and IOL historical data
+- **Transaction History**: View all your IOL operations with status badges
+- **AI-Powered Insights**: Upload PPI market reports for Claude-powered analysis
+
+### Notifications & Alerts
+- **Price Alerts**: Set target prices and get notified when reached
+- **In-App Notifications**: Real-time notification bell with unread count
+- **Automated Reports**: Daily email summaries at market close
+
+### UX
 - **Mobile Responsive**: Optimized for desktop and mobile viewing
-- **Automated Reports**: Daily email summaries and price alerts via Supabase Edge Functions
+- **Currency Toggle**: Switch between ARS and USD display
+- **Dark Theme**: Modern dark UI with zinc color palette
 
 ## Tech Stack
 
@@ -58,13 +82,23 @@ src/
 │   │   ├── assets/        # Asset CRUD
 │   │   ├── transactions/  # Transaction recording
 │   │   ├── iol/           # IOL broker integration
+│   │   │   ├── portfolio/ # Portfolio sync
+│   │   │   ├── quote/     # Live quotes
+│   │   │   ├── trade/     # Buy/sell orders
+│   │   │   ├── historical/# Historical prices
+│   │   │   ├── securities/# Instrument listing
+│   │   │   └── transactions/ # Operation history
 │   │   ├── binance/       # Binance integration
 │   │   ├── prices/        # Yahoo Finance historical
 │   │   └── insights/      # AI analysis
 │   ├── auth/              # Login & callback
+│   ├── explore/           # Security search & browse
+│   ├── history/           # Transaction history
 │   ├── settings/          # Broker connections
 │   └── insights/          # PDF upload & analysis
 ├── components/            # React components
+│   ├── portfolio/         # Tables, modals, trade dialog
+│   └── layout/            # Header, navigation
 ├── hooks/                 # TanStack Query hooks
 ├── services/              # External API clients (IOL, Binance, Yahoo)
 ├── db/                    # Drizzle schema
