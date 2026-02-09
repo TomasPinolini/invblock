@@ -7,11 +7,12 @@ export function formatCurrency(
   value: number,
   currency: "USD" | "ARS" = "USD"
 ): string {
+  const decimals = currency === "ARS" ? 0 : 2;
   return new Intl.NumberFormat(currency === "ARS" ? "es-AR" : "en-US", {
     style: "currency",
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   }).format(value);
 }
 
