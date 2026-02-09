@@ -1,9 +1,9 @@
 "use client";
 
-import { Activity, RefreshCw, Lightbulb } from "lucide-react";
+import { Activity, RefreshCw, Lightbulb, Bell } from "lucide-react";
 import Link from "next/link";
 import { useAppStore } from "@/stores/useAppStore";
-import { relativeDate, cn } from "@/lib/utils";
+import { relativeDate } from "@/lib/utils";
 import CurrencyToggle from "./CurrencyToggle";
 import UserMenu from "./UserMenu";
 
@@ -47,7 +47,7 @@ export default function Header() {
           <Lightbulb className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Insights</span>
         </Link>
-        <span className="hidden md:block"><CompactToggle /></span>
+        <PriceAlertsButton />
         <CurrencyToggle />
         <UserMenu />
       </div>
@@ -55,21 +55,17 @@ export default function Header() {
   );
 }
 
-function CompactToggle() {
-  const compact = useAppStore((s) => s.preferences.compactTable);
-  const toggle = useAppStore((s) => s.toggleCompactTable);
+function PriceAlertsButton() {
+  const openDialog = useAppStore((s) => s.openPriceAlertsDialog);
 
   return (
     <button
-      onClick={toggle}
-      className={cn(
-        "px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors",
-        compact
-          ? "border-blue-500/50 bg-blue-500/10 text-blue-400"
-          : "border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:text-zinc-300"
-      )}
+      onClick={openDialog}
+      className="p-2 sm:px-3 sm:py-1.5 text-xs font-medium rounded-lg border border-purple-500/50 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors inline-flex items-center gap-1.5"
+      title="Price Alerts"
     >
-      {compact ? "Compact" : "Comfortable"}
+      <Bell className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">Alerts</span>
     </button>
   );
 }

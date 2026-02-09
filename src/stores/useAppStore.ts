@@ -35,11 +35,14 @@ interface AppState {
   // ── UI State ──
   isAssetDialogOpen: boolean;
   isTransactionDialogOpen: boolean;
+  isPriceAlertsDialogOpen: boolean;
   selectedAssetId: string | null;
   openAssetDialog: () => void;
   closeAssetDialog: () => void;
   openTransactionDialog: (assetId?: string) => void;
   closeTransactionDialog: () => void;
+  openPriceAlertsDialog: () => void;
+  closePriceAlertsDialog: () => void;
 }
 
 // ── Store ───────────────────────────────────────────────────────────────────
@@ -52,7 +55,7 @@ export const useAppStore = create<AppState>()(
         preferences: {
           displayCurrency: "USD",
           defaultCategory: "stock",
-          compactTable: false,
+          compactTable: true, // Default to compact mode
         },
         setDisplayCurrency: (currency) =>
           set(
@@ -120,6 +123,7 @@ export const useAppStore = create<AppState>()(
         // ── UI State ──
         isAssetDialogOpen: false,
         isTransactionDialogOpen: false,
+        isPriceAlertsDialogOpen: false,
         selectedAssetId: null,
         openAssetDialog: () =>
           set({ isAssetDialogOpen: true }, false, "openAssetDialog"),
@@ -140,6 +144,10 @@ export const useAppStore = create<AppState>()(
             false,
             "closeTransactionDialog"
           ),
+        openPriceAlertsDialog: () =>
+          set({ isPriceAlertsDialogOpen: true }, false, "openPriceAlertsDialog"),
+        closePriceAlertsDialog: () =>
+          set({ isPriceAlertsDialogOpen: false }, false, "closePriceAlertsDialog"),
       }),
       {
         name: "fcc-preferences",
