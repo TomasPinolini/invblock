@@ -79,3 +79,9 @@ export interface IOLOperation {
   montoTotal: number;
   cantidadOperada?: number;
 }
+
+export interface IOLNotification {
+  titulo: string;
+  mensaje: string;
+  link?: string;
+}
