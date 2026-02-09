@@ -53,16 +53,11 @@ export async function POST() {
     // Fetch portfolios from IOL
     const { argentina, us } = await client.getAllPortfolios();
 
-    console.log("[IOL Sync] Argentina portfolio:", JSON.stringify(argentina, null, 2));
-    console.log("[IOL Sync] US portfolio:", JSON.stringify(us, null, 2));
-
     // Combine all assets
     const iolAssets = [
       ...(argentina.activos || []),
       ...(us.activos || []),
     ];
-
-    console.log("[IOL Sync] Total assets found:", iolAssets.length);
 
     // Get existing assets for this user
     const existingAssets = await db.query.assets.findMany({
@@ -78,10 +73,8 @@ export async function POST() {
 
     for (const item of iolAssets) {
       const simbolo = item.titulo?.simbolo;
-      console.log("[IOL Sync] Processing item:", simbolo, "cantidad:", item.cantidad);
 
       if (!simbolo || item.cantidad <= 0) {
-        console.log("[IOL Sync] Skipping - no simbolo or cantidad <= 0");
         continue;
       }
 
@@ -90,7 +83,6 @@ export async function POST() {
 
       if (existing) {
         // Update existing asset
-        console.log("[IOL Sync] Updating existing asset:", ticker);
         await db
           .update(assets)
           .set({
@@ -113,13 +105,10 @@ export async function POST() {
           averagePrice: item.ppc.toString(),
           currentPrice: item.ultimoPrecio.toString(),
         };
-        console.log("[IOL Sync] Creating new asset:", JSON.stringify(newAsset));
         await db.insert(assets).values(newAsset);
         created++;
       }
     }
-
-    console.log("[IOL Sync] Done. Created:", created, "Updated:", updated);
 
     // Update token if it was refreshed
     const newToken = client.getToken();

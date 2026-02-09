@@ -40,13 +40,9 @@ export async function GET() {
       // Handle various response formats
       const notifications = Array.isArray(result) ? result : [];
 
-      console.log("[IOL Notifications] Response:", JSON.stringify(result, null, 2));
-
       return NextResponse.json({ notifications });
-    } catch (apiError) {
-      // If the notifications endpoint fails, return empty array
-      // This is non-critical functionality
-      console.warn("[IOL Notifications] API error (non-critical):", apiError);
+    } catch {
+      // If the notifications endpoint fails, return empty array (non-critical)
       return NextResponse.json({ notifications: [] });
     }
   } catch (error) {
