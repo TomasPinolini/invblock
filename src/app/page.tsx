@@ -7,7 +7,7 @@ import Header from "@/components/layout/Header";
 
 export default function DashboardPage() {
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8 space-y-6">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
       {/* Header */}
       <Header />
 

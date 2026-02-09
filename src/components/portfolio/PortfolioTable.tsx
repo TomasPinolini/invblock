@@ -23,9 +23,10 @@ import {
   Filter,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useIOLPortfolio, type IOLAsset } from "@/hooks/useIOLPortfolio";
-import { useBinancePortfolio, type BinanceAsset } from "@/hooks/useBinancePortfolio";
+import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
+import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
 import { useAppStore } from "@/stores/useAppStore";
+import AssetDetailModal from "./AssetDetailModal";
 import {
   MOCK_USD_ARS_RATE,
   CATEGORY_LABELS,
@@ -83,6 +84,7 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
           </span>
         </div>
       ),
+      meta: { hideOnMobile: false },
     }),
 
     col.accessor("name", {
@@ -92,6 +94,7 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
           {info.getValue()}
         </span>
       ),
+      meta: { hideOnMobile: true },
     }),
 
     col.accessor("category", {
@@ -108,6 +111,7 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
         </span>
       ),
       filterFn: "equals",
+      meta: { hideOnMobile: true },
     }),
 
     col.accessor("quantity", {
@@ -117,6 +121,7 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
           {formatQuantity(info.getValue())}
         </span>
       ),
+      meta: { hideOnMobile: true },
     }),
 
     col.accessor("displayAvgPrice", {
@@ -126,6 +131,7 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
           {formatCurrency(info.getValue(), displayCurrency)}
         </span>
       ),
+      meta: { hideOnMobile: true },
     }),
 
     col.accessor("displayPrice", {
@@ -135,6 +141,7 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
           {formatCurrency(info.getValue(), displayCurrency)}
         </span>
       ),
+      meta: { hideOnMobile: false },
     }),
 
     col.accessor("displayValue", {
@@ -144,6 +151,7 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
           {formatCurrency(info.getValue(), displayCurrency)}
         </span>
       ),
+      meta: { hideOnMobile: false },
     }),
 
     col.accessor("pnlPercent", {
@@ -167,6 +175,7 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
           </span>
         );
       },
+      meta: { hideOnMobile: false },
     }),
 
     col.accessor("allocation", {
@@ -187,6 +196,7 @@ function buildColumns(displayCurrency: "USD" | "ARS") {
           </div>
         );
       },
+      meta: { hideOnMobile: true },
     }),
   ];
 }
@@ -207,6 +217,7 @@ export default function PortfolioTable() {
     React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState<string | null>(null);
+  const [selectedAsset, setSelectedAsset] = React.useState<PortfolioRow | null>(null);
 
   // Combined loading/fetching state
   const isLoading = iolLoading || binanceLoading;
@@ -249,18 +260,28 @@ export default function PortfolioTable() {
       return value;
     };
 
+    // Calculate P&L (total return since purchase)
+    const calculatePnl = (currentPrice: number, averagePrice: number, quantity: number) => {
+      const pnl = (currentPrice - averagePrice) * quantity;
+      const pnlPercent = averagePrice > 0 ? ((currentPrice - averagePrice) / averagePrice) * 100 : 0;
+      return { pnl, pnlPercent };
+    };
+
     const rows: PortfolioRow[] = [];
 
     // Add IOL assets
     if (iolPortfolio?.assets?.length) {
       for (const asset of iolPortfolio.assets) {
+        const { pnl, pnlPercent } = calculatePnl(asset.currentPrice, asset.averagePrice, asset.quantity);
         rows.push({
           ...asset,
+          pnl,
+          pnlPercent,
           source: "iol",
           displayPrice: convertToDisplay(asset.currentPrice, asset.currency),
           displayAvgPrice: convertToDisplay(asset.averagePrice, asset.currency),
           displayValue: convertToDisplay(asset.currentValue, asset.currency),
-          displayPnl: convertToDisplay(asset.pnl, asset.currency),
+          displayPnl: convertToDisplay(pnl, asset.currency),
           allocation: 0,
         });
       }
@@ -269,13 +290,16 @@ export default function PortfolioTable() {
     // Add Binance assets
     if (binancePortfolio?.assets?.length) {
       for (const asset of binancePortfolio.assets) {
+        const { pnl, pnlPercent } = calculatePnl(asset.currentPrice, asset.averagePrice, asset.quantity);
         rows.push({
           ...asset,
+          pnl,
+          pnlPercent,
           source: "binance",
           displayPrice: convertToDisplay(asset.currentPrice, asset.currency),
           displayAvgPrice: convertToDisplay(asset.averagePrice, asset.currency),
           displayValue: convertToDisplay(asset.currentValue, asset.currency),
-          displayPnl: convertToDisplay(asset.pnl, asset.currency),
+          displayPnl: convertToDisplay(pnl, asset.currency),
           allocation: 0,
         });
       }
@@ -334,12 +358,12 @@ export default function PortfolioTable() {
   return (
     <div className="space-y-4">
       {/* ── Summary Bar ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
           <p className="text-xs uppercase tracking-widest text-zinc-500">
             Total Portfolio Value
           </p>
-          <p className="text-2xl font-bold font-mono text-zinc-50">
+          <p className="text-xl sm:text-2xl font-bold font-mono text-zinc-50">
             {formatCurrency(totalValue, displayCurrency)}
           </p>
           <p
@@ -350,12 +374,13 @@ export default function PortfolioTable() {
           >
             {formatCurrency(totalPnl, displayCurrency)}{" "}
             ({formatPercent(totalPnlPct)})
+            <span className="text-zinc-500 font-normal ml-2 hidden sm:inline">total return</span>
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Category filter buttons */}
-          <div className="flex items-center gap-1 mr-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {/* Category filter buttons - hidden on mobile */}
+          <div className="hidden md:flex items-center gap-1 mr-2">
             <Filter className="h-4 w-4 text-zinc-500" />
             <button
               onClick={() => handleCategoryFilter(null)}
@@ -391,45 +416,48 @@ export default function PortfolioTable() {
             ))}
           </div>
 
-          {/* Global search */}
-          <input
-            type="text"
-            placeholder="Search assets..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-9 w-48 rounded-lg border border-zinc-800 bg-zinc-900/50
-                       px-3 text-sm text-zinc-200 placeholder:text-zinc-600
-                       focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-          />
-          {anyConnected ? (
-            <button
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg
-                         bg-blue-600 hover:bg-blue-500 disabled:opacity-50
-                         text-white text-sm font-medium transition-colors"
-            >
-              {isFetching ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              {isFetching ? "Loading..." : "Refresh"}
-            </button>
-          ) : (
-            <button
-              onClick={() => router.push("/settings")}
-              className={cn(
-                "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-white text-sm font-medium transition-colors",
-                iolExpired
-                  ? "bg-amber-600 hover:bg-amber-500"
-                  : "bg-blue-600 hover:bg-blue-500"
-              )}
-            >
-              <Settings className="h-4 w-4" />
-              {iolExpired ? "Reconnect" : "Connect Broker"}
-            </button>
-          )}
+          {/* Controls row */}
+          <div className="flex items-center gap-2">
+            {/* Global search */}
+            <input
+              type="text"
+              placeholder="Search..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="h-9 w-full sm:w-40 rounded-lg border border-zinc-800 bg-zinc-900/50
+                         px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                         focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+            />
+            {anyConnected ? (
+              <button
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg
+                           bg-blue-600 hover:bg-blue-500 disabled:opacity-50
+                           text-white text-sm font-medium transition-colors whitespace-nowrap"
+              >
+                {isFetching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">{isFetching ? "Loading..." : "Refresh"}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push("/settings")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-white text-sm font-medium transition-colors whitespace-nowrap",
+                  iolExpired
+                    ? "bg-amber-600 hover:bg-amber-500"
+                    : "bg-blue-600 hover:bg-blue-500"
+                )}
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">{iolExpired ? "Reconnect" : "Connect"}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -440,34 +468,38 @@ export default function PortfolioTable() {
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b border-zinc-800/60">
-                {hg.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    onClick={header.column.getToggleSortingHandler()}
-                    className={cn(
-                      "px-4 text-left text-xs font-medium uppercase",
-                      "tracking-wider text-zinc-500 select-none",
-                      compact ? "py-2" : "py-3",
-                      header.column.getCanSort() &&
-                        "cursor-pointer hover:text-zinc-300 transition-colors"
-                    )}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
+                {hg.headers.map((header) => {
+                  const hideOnMobile = (header.column.columnDef.meta as { hideOnMobile?: boolean })?.hideOnMobile;
+                  return (
+                    <th
+                      key={header.id}
+                      onClick={header.column.getToggleSortingHandler()}
+                      className={cn(
+                        "px-2 sm:px-4 text-left text-xs font-medium uppercase",
+                        "tracking-wider text-zinc-500 select-none",
+                        compact ? "py-2" : "py-3",
+                        header.column.getCanSort() &&
+                          "cursor-pointer hover:text-zinc-300 transition-colors",
+                        hideOnMobile && "hidden sm:table-cell"
                       )}
-                      {{
-                        asc: <ArrowUp className="h-3 w-3 text-blue-400" />,
-                        desc: <ArrowDown className="h-3 w-3 text-blue-400" />,
-                      }[header.column.getIsSorted() as string] ?? (
-                        header.column.getCanSort() && (
-                          <ArrowUpDown className="h-3 w-3 opacity-30" />
-                        )
-                      )}
-                    </span>
-                  </th>
-                ))}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                        {{
+                          asc: <ArrowUp className="h-3 w-3 text-blue-400" />,
+                          desc: <ArrowDown className="h-3 w-3 text-blue-400" />,
+                        }[header.column.getIsSorted() as string] ?? (
+                          header.column.getCanSort() && (
+                            <ArrowUpDown className="h-3 w-3 opacity-30" />
+                          )
+                        )}
+                      </span>
+                    </th>
+                  );
+                })}
               </tr>
             ))}
           </thead>
@@ -511,20 +543,28 @@ export default function PortfolioTable() {
               table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
+                  onClick={() => setSelectedAsset(row.original)}
                   className="border-b border-zinc-800/30 hover:bg-zinc-800/20
-                             transition-colors"
+                             transition-colors cursor-pointer"
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className={cn("px-4", compact ? "py-2" : "py-3")}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const hideOnMobile = (cell.column.columnDef.meta as { hideOnMobile?: boolean })?.hideOnMobile;
+                    return (
+                      <td
+                        key={cell.id}
+                        className={cn(
+                          "px-2 sm:px-4",
+                          compact ? "py-2" : "py-3",
+                          hideOnMobile && "hidden sm:table-cell"
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             )}
@@ -537,6 +577,7 @@ export default function PortfolioTable() {
         <span>
           {data.length} asset{data.length !== 1 && "s"} ·{" "}
           {table.getFilteredRowModel().rows.length} shown
+          <span className="text-zinc-700 ml-2">· Click row for details</span>
         </span>
         <span>
           {[
@@ -546,6 +587,15 @@ export default function PortfolioTable() {
           · {isFetching ? "Updating..." : "Click Refresh for latest"}
         </span>
       </div>
+
+      {/* ── Asset Detail Modal ─────────────────────────────────────────── */}
+      {selectedAsset && (
+        <AssetDetailModal
+          asset={selectedAsset}
+          displayCurrency={displayCurrency}
+          onClose={() => setSelectedAsset(null)}
+        />
+      )}
     </div>
   );
 }

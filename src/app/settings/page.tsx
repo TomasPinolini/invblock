@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/Toast";
 import {
   Settings,
   Link2,
@@ -14,7 +15,7 @@ import {
   AlertCircle,
   ArrowLeft,
 } from "lucide-react";
-import { relativeDate, cn } from "@/lib/utils";
+import { relativeDate } from "@/lib/utils";
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -71,6 +72,7 @@ export default function SettingsPage() {
 function IOLConnectionCard() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { addToast } = useToast();
   const [status, setStatus] = useState<{
     connected: boolean;
     updatedAt: string | null;
@@ -78,8 +80,6 @@ function IOLConnectionCard() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   // Form state
   const [username, setUsername] = useState("");
@@ -99,8 +99,6 @@ function IOLConnectionCard() {
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     setConnecting(true);
-    setError(null);
-    setSuccess(null);
 
     try {
       const res = await fetch("/api/iol/auth", {
@@ -116,25 +114,26 @@ function IOLConnectionCard() {
       }
 
       setStatus({ connected: true, updatedAt: new Date().toISOString() });
+      addToast("IOL connected successfully!", "success");
 
       // Invalidate portfolio cache and redirect to dashboard
       queryClient.invalidateQueries({ queryKey: ["iol-portfolio"] });
       router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Connection failed");
+      addToast(err instanceof Error ? err.message : "Connection failed", "error");
       setConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
     setLoading(true);
-    setError(null);
 
     try {
       await fetch("/api/iol/auth", { method: "DELETE" });
       setStatus({ connected: false, updatedAt: null });
-    } catch (err) {
-      setError("Failed to disconnect");
+      addToast("IOL disconnected", "info");
+    } catch {
+      addToast("Failed to disconnect", "error");
     } finally {
       setLoading(false);
     }
@@ -142,8 +141,6 @@ function IOLConnectionCard() {
 
   const handleSync = async () => {
     setSyncing(true);
-    setError(null);
-    setSuccess(null);
 
     try {
       const res = await fetch("/api/iol/sync", { method: "POST" });
@@ -153,13 +150,15 @@ function IOLConnectionCard() {
         throw new Error(data.error || "Sync failed");
       }
 
+      addToast("Portfolio synced successfully!", "success");
+
       // Invalidate portfolio cache so dashboard shows fresh data
       queryClient.invalidateQueries({ queryKey: ["iol-portfolio"] });
 
       // Redirect to dashboard after successful sync
       router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sync failed");
+      addToast(err instanceof Error ? err.message : "Sync failed", "error");
       setSyncing(false);
     }
   };
@@ -195,20 +194,6 @@ function IOLConnectionCard() {
           </span>
         )}
       </div>
-
-      {error && (
-        <div className="mb-4 flex items-center gap-2 text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-4 flex items-center gap-2 text-sm text-emerald-400 bg-emerald-950/30 border border-emerald-900/50 rounded-lg px-3 py-2">
-          <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-          {success}
-        </div>
-      )}
 
       {status?.connected ? (
         <div className="space-y-4">
@@ -308,13 +293,13 @@ function IOLConnectionCard() {
 function BinanceConnectionCard() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { addToast } = useToast();
   const [status, setStatus] = useState<{
     connected: boolean;
     updatedAt: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Form state
   const [apiKey, setApiKey] = useState("");
@@ -334,7 +319,6 @@ function BinanceConnectionCard() {
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     setConnecting(true);
-    setError(null);
 
     try {
       const res = await fetch("/api/binance/auth", {
@@ -350,26 +334,27 @@ function BinanceConnectionCard() {
       }
 
       setStatus({ connected: true, updatedAt: new Date().toISOString() });
+      addToast("Binance connected successfully!", "success");
 
       // Invalidate portfolio cache and redirect to dashboard
       queryClient.invalidateQueries({ queryKey: ["binance-portfolio"] });
       router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Connection failed");
+      addToast(err instanceof Error ? err.message : "Connection failed", "error");
       setConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
     setLoading(true);
-    setError(null);
 
     try {
       await fetch("/api/binance/auth", { method: "DELETE" });
       setStatus({ connected: false, updatedAt: null });
       queryClient.invalidateQueries({ queryKey: ["binance-portfolio"] });
-    } catch (err) {
-      setError("Failed to disconnect");
+      addToast("Binance disconnected", "info");
+    } catch {
+      addToast("Failed to disconnect", "error");
     } finally {
       setLoading(false);
     }
@@ -406,13 +391,6 @@ function BinanceConnectionCard() {
           </span>
         )}
       </div>
-
-      {error && (
-        <div className="mb-4 flex items-center gap-2 text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          {error}
-        </div>
-      )}
 
       {status?.connected ? (
         <div className="space-y-4">
