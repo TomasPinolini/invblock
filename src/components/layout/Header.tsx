@@ -6,6 +6,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { relativeDate } from "@/lib/utils";
 import CurrencyToggle from "./CurrencyToggle";
 import UserMenu from "./UserMenu";
+import NotificationBell from "./NotificationBell";
 
 export default function Header() {
   const sync = useAppStore((s) => s.sync);
@@ -48,6 +49,7 @@ export default function Header() {
           <span className="hidden sm:inline">Insights</span>
         </Link>
         <PriceAlertsButton />
+        <NotificationBell />
         <CurrencyToggle />
         <UserMenu />
       </div>

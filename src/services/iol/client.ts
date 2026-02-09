@@ -3,6 +3,7 @@ import type {
   IOLPortfolio,
   IOLAccountState,
   IOLOperation,
+  IOLNotification,
 } from "./types";
 
 const IOL_API_BASE = "https://api.invertironline.com";
@@ -179,6 +180,13 @@ export class IOLClient {
     return this.request<IOLOperation[]>(
       `/api/v2/operaciones?${params.toString()}`
     );
+  }
+
+  /**
+   * Get notifications from IOL
+   */
+  async getNotifications(): Promise<IOLNotification[]> {
+    return this.request<IOLNotification[]>("/api/v2/Notificacion");
   }
 
   /**
