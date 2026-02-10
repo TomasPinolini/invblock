@@ -14,11 +14,14 @@ import {
   Lightbulb,
   X,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
 import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import PortfolioHealthCard from "@/components/portfolio/PortfolioHealthCard";
+import TradeEvaluatorCard from "@/components/portfolio/TradeEvaluatorCard";
 
 type Recommendation = {
   ticker: string;
@@ -289,6 +292,22 @@ export default function InsightsPage() {
               Portfolio data will be included ({portfolioData.length} assets)
             </p>
           )}
+        </div>
+
+        {/* Portfolio Intelligence Section */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="h-5 w-5 text-amber-400" />
+            <h2 className="text-lg font-semibold">Portfolio Intelligence</h2>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            <ErrorBoundary>
+              <PortfolioHealthCard />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <TradeEvaluatorCard />
+            </ErrorBoundary>
+          </div>
         </div>
 
         {/* Analysis Results */}
