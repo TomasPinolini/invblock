@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { IOLClient } from "@/services/iol";
+import { IOLClient, IOLTokenExpiredError } from "@/services/iol";
 import type { IOLToken } from "@/services/iol";
 import { getAuthUser } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -71,6 +71,9 @@ export async function GET(request: Request) {
       status,
     });
   } catch (error) {
+    if (error instanceof IOLTokenExpiredError) {
+      return NextResponse.json({ expired: true, operations: [], error: "Session expired" });
+    }
     console.error("IOL operations fetch error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Fetch failed" },

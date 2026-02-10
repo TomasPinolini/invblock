@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { IOLClient, type IOLPortfolioItem } from "@/services/iol";
+import { IOLClient, IOLTokenExpiredError, type IOLPortfolioItem } from "@/services/iol";
 import type { IOLToken } from "@/services/iol";
 import { getAuthUser } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -135,6 +135,13 @@ export async function POST() {
       total: iolAssets.length,
     });
   } catch (error) {
+    if (error instanceof IOLTokenExpiredError) {
+      return NextResponse.json({
+        success: false,
+        expired: true,
+        error: "Session expired. Please reconnect your IOL account.",
+      });
+    }
     console.error("IOL sync error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Sync failed" },

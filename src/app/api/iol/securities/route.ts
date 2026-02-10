@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { IOLClient } from "@/services/iol";
+import { IOLClient, IOLTokenExpiredError } from "@/services/iol";
 import type { IOLToken } from "@/services/iol";
 import type { IOLInstrumentType } from "@/services/iol";
 import { getAuthUser } from "@/lib/auth";
@@ -115,6 +115,9 @@ export async function GET(request: Request) {
       panel: panel || null,
     });
   } catch (error) {
+    if (error instanceof IOLTokenExpiredError) {
+      return NextResponse.json({ expired: true, securities: [], error: "Session expired" });
+    }
     console.error("Securities list error:", error);
     return NextResponse.json(
       {
