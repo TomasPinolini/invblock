@@ -185,3 +185,52 @@ export type IOLInstrumentType =
   | "opciones"
   | "futuros"
   | "cHPD";
+
+// MEP Dollar types
+export interface IOLMepPair {
+  bond: string;
+  arsSymbol: string;
+  usdSymbol: string;
+  arsPrice: number;
+  usdPrice: number;
+  implicitRate: number;
+}
+
+export interface IOLMepRates {
+  pairs: IOLMepPair[];
+  averageRate: number;
+  timestamp: string;
+}
+
+// FCI (Fondos Comunes de Inversión) types
+export interface IOLFCIFund {
+  simbolo: string;
+  descripcion: string;
+  moneda: string;
+  tipoFondo: string;
+  administradora: string;
+  ultimoOperado?: number;
+  variacionPorcentual?: number;
+  horizonteInversion?: string;
+}
+
+export interface IOLFCIDetails extends IOLFCIFund {
+  perfilInversor?: string;
+  objetivoInversion?: string;
+  patrimonio?: number;
+  rentabilidadAnual?: number;
+  rentabilidadMensual?: number;
+  comisionAdministracion?: number;
+  montoMinimo?: number;
+  plazosRescate?: string;
+}
+
+export interface IOLFCIType {
+  tipo: string;
+  descripcion: string;
+}
+
+export interface IOLFCIManager {
+  nombre: string;
+  descripcion?: string;
+}

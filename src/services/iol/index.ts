@@ -15,4 +15,9 @@ export type {
   IOLSecurityDetails,
   IOLSecurityWithQuote,
   IOLInstrumentType,
+  IOLMepPair,
+  IOLMepRates,
+  IOLFCIFund,
+  IOLFCIDetails,
+  IOLFCIType,
 } from "./types";
