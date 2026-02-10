@@ -11,6 +11,11 @@ import type {
   IOLSecurityDetails,
   IOLSecurityWithQuote,
   IOLInstrumentType,
+  IOLMepPair,
+  IOLMepRates,
+  IOLFCIFund,
+  IOLFCIDetails,
+  IOLFCIType,
 } from "./types";
 
 const IOL_API_BASE = "https://api.invertironline.com";
@@ -405,6 +410,76 @@ export class IOLClient {
     return this.request<IOLSecurityWithQuote[]>(
       `/api/v2/Cotizaciones/acciones/argentina/${panel}`
     );
+  }
+
+  /**
+   * Calculate implicit MEP dollar rate from bond pair quotes.
+   * MEP Rate = ARS bond price / USD bond price
+   */
+  async getMepRates(): Promise<IOLMepRates> {
+    const bondPairs = [
+      { bond: "AL30", arsSymbol: "AL30", usdSymbol: "AL30D" },
+      { bond: "GD30", arsSymbol: "GD30", usdSymbol: "GD30D" },
+      { bond: "AE38", arsSymbol: "AE38", usdSymbol: "AE38D" },
+    ];
+
+    const pairs: IOLMepPair[] = [];
+
+    await Promise.allSettled(
+      bondPairs.map(async ({ bond, arsSymbol, usdSymbol }) => {
+        try {
+          const [arsQuote, usdQuote] = await Promise.all([
+            this.getQuote("bCBA", arsSymbol),
+            this.getQuote("bCBA", usdSymbol),
+          ]);
+
+          if (arsQuote?.ultimoPrecio > 0 && usdQuote?.ultimoPrecio > 0) {
+            pairs.push({
+              bond,
+              arsSymbol,
+              usdSymbol,
+              arsPrice: arsQuote.ultimoPrecio,
+              usdPrice: usdQuote.ultimoPrecio,
+              implicitRate: arsQuote.ultimoPrecio / usdQuote.ultimoPrecio,
+            });
+          }
+        } catch {
+          // Skip pairs that fail (market closed, no liquidity)
+        }
+      })
+    );
+
+    const averageRate =
+      pairs.length > 0
+        ? pairs.reduce((sum, p) => sum + p.implicitRate, 0) / pairs.length
+        : 0;
+
+    return {
+      pairs,
+      averageRate,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * List all FCIs (Fondos Comunes de Inversión)
+   */
+  async listFCIs(): Promise<IOLFCIFund[]> {
+    return this.request<IOLFCIFund[]>("/api/v2/Titulos/FCI");
+  }
+
+  /**
+   * Get FCI details by symbol
+   */
+  async getFCIDetails(symbol: string): Promise<IOLFCIDetails> {
+    return this.request<IOLFCIDetails>(`/api/v2/Titulos/FCI/${encodeURIComponent(symbol)}`);
+  }
+
+  /**
+   * Get FCI fund type categories
+   */
+  async getFCITypes(): Promise<IOLFCIType[]> {
+    return this.request<IOLFCIType[]>("/api/v2/Titulos/FCI/TipoFondos");
   }
 
   /**

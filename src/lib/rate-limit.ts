@@ -36,6 +36,7 @@ export const RATE_LIMITS = {
   quote: { limit: 60, windowSeconds: 60 },
   securities: { limit: 30, windowSeconds: 60 },
   insights: { limit: 5, windowSeconds: 60 },
+  mep: { limit: 30, windowSeconds: 60 },
   default: { limit: 120, windowSeconds: 60 },
 } as const;
 
