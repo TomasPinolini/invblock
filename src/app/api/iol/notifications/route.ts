@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { IOLClient } from "@/services/iol";
+import type { IOLToken } from "@/services/iol";
 import { getAuthUser } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { decryptCredentials, encryptCredentials } from "@/lib/crypto";
 import { db } from "@/db";
 import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -11,6 +14,9 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rateLimited = checkRateLimit(user.id, "iol-notifications", RATE_LIMITS.default);
+  if (rateLimited) return rateLimited;
 
   try {
     // Get IOL credentials
@@ -28,7 +34,7 @@ export async function GET() {
       );
     }
 
-    const token = JSON.parse(connection.credentials);
+    const token = decryptCredentials<IOLToken>(connection.credentials);
     const client = new IOLClient(token);
 
     // Fetch notifications from IOL

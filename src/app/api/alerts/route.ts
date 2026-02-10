@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAlertSchema, updateAlertSchema, parseBody } from "@/lib/api-schemas";
 
 // GET /api/alerts - List all alerts for current user
 export async function GET() {
@@ -39,22 +40,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json();
+  const raw = await req.json();
+  const [body, validationError] = parseBody(createAlertSchema, raw);
+  if (validationError) return validationError;
+
   const { ticker, condition, targetPrice } = body;
-
-  if (!ticker || !condition || targetPrice === undefined) {
-    return NextResponse.json(
-      { error: "Missing required fields: ticker, condition, targetPrice" },
-      { status: 400 }
-    );
-  }
-
-  if (!["above", "below"].includes(condition)) {
-    return NextResponse.json(
-      { error: "Condition must be 'above' or 'below'" },
-      { status: 400 }
-    );
-  }
 
   // Get current price from user's assets
   const { data: asset } = await supabase
@@ -97,12 +87,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json();
-  const { id, condition, targetPrice } = body;
+  const raw = await req.json();
+  const [body, validationError] = parseBody(updateAlertSchema, raw);
+  if (validationError) return validationError;
 
-  if (!id) {
-    return NextResponse.json({ error: "Missing alert id" }, { status: 400 });
-  }
+  const { id, condition, targetPrice } = body;
 
   // Verify ownership
   const { data: existing } = await supabase

@@ -1,11 +1,21 @@
+import dynamic from "next/dynamic";
 import PortfolioTable from "@/components/portfolio/PortfolioTable";
 import PortfolioSummary from "@/components/portfolio/PortfolioSummary";
 import AccountBalanceCards from "@/components/portfolio/AccountBalanceCards";
 import AllocationBar from "@/components/portfolio/AllocationBar";
-import AssetEntryDialog from "@/components/forms/AssetEntryDialog";
-import TransactionEntryDialog from "@/components/forms/TransactionEntryDialog";
-import PriceAlertsDialog from "@/components/forms/PriceAlertsDialog";
 import Header from "@/components/layout/Header";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+
+// Lazy-load dialogs — they're hidden by default (Zustand-controlled)
+const AssetEntryDialog = dynamic(
+  () => import("@/components/forms/AssetEntryDialog")
+);
+const TransactionEntryDialog = dynamic(
+  () => import("@/components/forms/TransactionEntryDialog")
+);
+const PriceAlertsDialog = dynamic(
+  () => import("@/components/forms/PriceAlertsDialog")
+);
 
 export default function DashboardPage() {
   return (
@@ -14,16 +24,24 @@ export default function DashboardPage() {
       <Header />
 
       {/* Cash Balances (IOL) */}
-      <AccountBalanceCards />
+      <ErrorBoundary>
+        <AccountBalanceCards />
+      </ErrorBoundary>
 
       {/* Summary Cards */}
-      <PortfolioSummary />
+      <ErrorBoundary>
+        <PortfolioSummary />
+      </ErrorBoundary>
 
       {/* Allocation Bar */}
-      <AllocationBar />
+      <ErrorBoundary>
+        <AllocationBar />
+      </ErrorBoundary>
 
       {/* Portfolio Table */}
-      <PortfolioTable />
+      <ErrorBoundary>
+        <PortfolioTable />
+      </ErrorBoundary>
 
       {/* Dialogs (rendered globally, controlled by Zustand) */}
       <AssetEntryDialog />

@@ -58,7 +58,7 @@ export function useIOLOperations(options: UseIOLOperationsOptions = {}) {
     ],
     queryFn: () => fetchOperations(status, from, to),
     enabled,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 2 * 60 * 1000, // 2 minutes
     refetchOnWindowFocus: true,
   });
 }

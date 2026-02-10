@@ -60,6 +60,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
 
   return (
     <div
+      role="status"
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg",
         "animate-in slide-in-from-right-full duration-300",
@@ -70,6 +71,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
       <p className="text-sm font-medium flex-1">{toast.message}</p>
       <button
         onClick={onRemove}
+        aria-label="Dismiss notification"
         className="p-1 rounded hover:bg-white/10 transition-colors"
       >
         <X className="h-4 w-4" />
@@ -97,7 +99,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
       {/* Toast container */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm" aria-live="polite" aria-atomic="true">
         {toasts.map((toast) => (
           <ToastItem
             key={toast.id}

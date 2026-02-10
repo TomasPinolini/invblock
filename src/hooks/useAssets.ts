@@ -62,7 +62,7 @@ export function useAssets() {
   return useQuery({
     queryKey: ASSETS_KEY,
     queryFn: fetchAssets,
-    staleTime: 1000 * 60 * 2, // 2 min — prices are mock anyway
+    staleTime: 2 * 60 * 1000, // 2 minutes
     refetchOnWindowFocus: true,
   });
 }

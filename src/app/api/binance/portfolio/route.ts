@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { BinanceClient, type BinanceCredentials } from "@/services/binance";
 import { getAuthUser } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { decryptCredentials } from "@/lib/crypto";
 import { db } from "@/db";
 import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -31,6 +33,9 @@ export async function GET() {
       );
     }
 
+    const rateLimited = checkRateLimit(user.id, "binance-portfolio", RATE_LIMITS.default);
+    if (rateLimited) return rateLimited;
+
     // Get Binance credentials
     const connection = await db
       .select()
@@ -47,7 +52,7 @@ export async function GET() {
       return NextResponse.json({ connected: false, assets: [] });
     }
 
-    const credentials: BinanceCredentials = JSON.parse(
+    const credentials: BinanceCredentials = decryptCredentials<BinanceCredentials>(
       connection[0].credentials
     );
     const client = new BinanceClient(credentials);

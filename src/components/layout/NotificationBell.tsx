@@ -46,6 +46,7 @@ export default function NotificationBell() {
             : "border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:bg-zinc-800"
         )}
         title="IOL Notifications"
+        aria-label="IOL Notifications"
       >
         <Bell className="h-3.5 w-3.5" />
         {hasNotifications && (
@@ -61,6 +62,7 @@ export default function NotificationBell() {
             <h3 className="text-sm font-semibold text-zinc-100">Notificaciones IOL</h3>
             <button
               onClick={() => setIsOpen(false)}
+              aria-label="Close notifications"
               className="p-1 rounded hover:bg-zinc-800 text-zinc-500"
             >
               <X className="h-4 w-4" />
@@ -69,7 +71,7 @@ export default function NotificationBell() {
 
           <div className="py-2">
             {isLoading ? (
-              <div className="px-4 py-6 text-center text-sm text-zinc-500">
+              <div className="px-4 py-6 text-center text-sm text-zinc-500" aria-live="polite">
                 Cargando...
               </div>
             ) : notifications.length === 0 ? (

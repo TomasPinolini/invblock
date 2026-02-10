@@ -192,10 +192,16 @@ export default function AssetDetailModal({
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-2 sm:mx-4 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${asset.ticker} detail`}
+        className="relative z-10 w-full max-w-lg mx-2 sm:mx-4 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <div className="flex items-center gap-3">
@@ -219,6 +225,7 @@ export default function AssetDetailModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors"
           >
             <X className="h-5 w-5 text-zinc-400" />
@@ -419,7 +426,7 @@ export default function AssetDetailModal({
           {/* Chart / Historical Data */}
           <div className="bg-zinc-800/50 rounded-lg p-3 min-h-[140px]">
             {isLoading ? (
-              <div className="flex items-center justify-center h-24">
+              <div className="flex items-center justify-center h-24" aria-live="polite">
                 <Loader2 className="h-6 w-6 animate-spin text-blue-400" />
                 <span className="ml-2 text-sm text-zinc-500">Loading history...</span>
               </div>

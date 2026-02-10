@@ -45,7 +45,7 @@ export function useIOLQuotes(tickers: TickerRequest[], enabled = true) {
     queryFn: () => fetchQuotes(tickers),
     enabled: enabled && tickers.length > 0,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchInterval: 3 * 60 * 1000, // Auto-refresh every 3 minutes
+    refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes (matches staleTime)
     refetchOnWindowFocus: true,
   });
 }
@@ -72,7 +72,7 @@ export function useIOLQuote(
     },
     enabled: enabled && !!symbol,
     staleTime: 2 * 60 * 1000,
-    refetchInterval: 3 * 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
     refetchOnWindowFocus: true,
   });
 }

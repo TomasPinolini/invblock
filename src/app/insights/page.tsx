@@ -18,6 +18,7 @@ import {
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
 import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
 import { cn } from "@/lib/utils";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 type Recommendation = {
   ticker: string;
@@ -152,6 +153,7 @@ export default function InsightsPage() {
   };
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
@@ -402,5 +404,6 @@ export default function InsightsPage() {
         )}
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { BinanceClient } from "@/services/binance";
 import { getAuthUser } from "@/lib/auth";
+import { encryptCredentials } from "@/lib/crypto";
+import { binanceAuthSchema, parseBody } from "@/lib/api-schemas";
 import { db } from "@/db";
 import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -13,14 +15,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { apiKey, apiSecret } = await request.json();
+    const raw = await request.json();
+    const [body, validationError] = parseBody(binanceAuthSchema, raw);
+    if (validationError) return validationError;
 
-    if (!apiKey || !apiSecret) {
-      return NextResponse.json(
-        { error: "API key and secret are required" },
-        { status: 400 }
-      );
-    }
+    const { apiKey, apiSecret } = body;
 
     // Test the credentials
     const client = new BinanceClient({ apiKey, apiSecret });
@@ -45,7 +44,7 @@ export async function POST(request: Request) {
       )
       .limit(1);
 
-    const credentials = JSON.stringify({ apiKey, apiSecret });
+    const credentials = encryptCredentials({ apiKey, apiSecret });
 
     if (existing.length > 0) {
       // Update existing connection

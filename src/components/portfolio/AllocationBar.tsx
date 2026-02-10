@@ -2,9 +2,8 @@
 
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
 import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
-import { useAppStore } from "@/stores/useAppStore";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 import {
-  MOCK_USD_ARS_RATE,
   CATEGORY_COLORS,
   CATEGORY_LABELS,
   type AssetCategory,
@@ -13,19 +12,7 @@ import {
 export default function AllocationBar() {
   const { data: iolPortfolio } = useIOLPortfolio();
   const { data: binancePortfolio } = useBinancePortfolio();
-  const displayCurrency = useAppStore((s) => s.preferences.displayCurrency);
-
-  // Convert value from asset's native currency to display currency
-  const convertToDisplay = (value: number, assetCurrency: string) => {
-    if (assetCurrency === displayCurrency) return value;
-    if (assetCurrency === "ARS" && displayCurrency === "USD") {
-      return value / MOCK_USD_ARS_RATE;
-    }
-    if (assetCurrency === "USD" && displayCurrency === "ARS") {
-      return value * MOCK_USD_ARS_RATE;
-    }
-    return value;
-  };
+  const { convertToDisplay } = useCurrencyConversion();
 
   // Merge assets from both sources
   const allAssets = [

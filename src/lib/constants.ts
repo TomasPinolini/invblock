@@ -28,9 +28,6 @@ export const MOCK_PRICES: Record<string, number> = {
   USD: 1.0,
 };
 
-// Blue dollar rate for ARS ↔ USD conversion (mock)
-export const MOCK_USD_ARS_RATE = 1250;
-
 export const CATEGORY_LABELS: Record<AssetCategory, string> = {
   stock: "Stocks",
   cedear: "CEDEARs",

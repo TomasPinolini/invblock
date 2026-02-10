@@ -49,6 +49,7 @@ export default function UserMenu() {
                    text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800
                    transition-colors flex items-center justify-center"
         title="Settings"
+        aria-label="Settings"
       >
         <Settings className="h-4 w-4" />
       </button>
@@ -58,6 +59,7 @@ export default function UserMenu() {
                    text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800
                    transition-colors flex items-center justify-center"
         title="Sign out"
+        aria-label="Sign out"
       >
         <LogOut className="h-4 w-4" />
       </button>

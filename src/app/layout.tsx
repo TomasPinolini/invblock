@@ -21,7 +21,7 @@ export default function RootLayout({
         className={`${inter.variable} font-sans antialiased
                     bg-zinc-950 text-zinc-100 min-h-screen`}
       >
-        <Providers>{children}</Providers>
+        <Providers><main id="main-content">{children}</main></Providers>
       </body>
     </html>
   );

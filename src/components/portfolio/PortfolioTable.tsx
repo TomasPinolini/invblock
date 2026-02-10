@@ -7,7 +7,6 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
   flexRender,
-  createColumnHelper,
   type SortingState,
   type ColumnFiltersState,
 } from "@tanstack/react-table";
@@ -15,298 +14,47 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  TrendingUp,
-  TrendingDown,
   RefreshCw,
   Loader2,
   Settings,
   Filter,
-  ShoppingCart,
-  Banknote,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
-import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
-import { useIOLQuotes } from "@/hooks/useIOLQuotes";
 import { useAppStore } from "@/stores/useAppStore";
-import AssetDetailModal from "./AssetDetailModal";
-import TradeDialog from "./TradeDialog";
-import {
-  MOCK_USD_ARS_RATE,
-  CATEGORY_LABELS,
-  CATEGORY_COLORS,
-} from "@/lib/constants";
-import {
-  formatCurrency,
-  formatPercent,
-  formatQuantity,
-  cn,
-} from "@/lib/utils";
+import { CATEGORY_LABELS, CATEGORY_COLORS } from "@/lib/constants";
+import { usePortfolioData } from "@/hooks/usePortfolioData";
+import { buildColumns, buildActionsColumn, type PortfolioRow } from "./columns";
+import { PortfolioTableSkeleton } from "./PortfolioTableSkeleton";
+import { PortfolioCardList, PortfolioCardListSkeleton } from "./PortfolioCardList";
+import { formatCurrency, formatPercent, cn } from "@/lib/utils";
 
-// ── Row type with allocation ─────────────────────────────────────────────────
-
-interface PortfolioRow {
-  id: string;
-  ticker: string;
-  name: string;
-  category: "stock" | "cedear" | "crypto" | "cash";
-  currency: "USD" | "ARS";
-  quantity: number;
-  averagePrice: number;
-  currentPrice: number;
-  currentValue: number;
-  pnl: number;
-  pnlPercent: number;
-  source: "iol" | "binance"; // Track data source
-  allocation: number; // 0–100
-  // Display values (converted to display currency)
-  displayPrice: number;
-  displayAvgPrice: number;
-  displayValue: number;
-  displayPnl: number;
-  // Live quote data
-  dailyChange: number | null; // Daily change % from live quote
-  hasLiveQuote: boolean; // Whether we have a live quote
-}
-
-// ── Column definitions ──────────────────────────────────────────────────────
-
-const col = createColumnHelper<PortfolioRow>();
-
-function buildColumns(displayCurrency: "USD" | "ARS") {
-  return [
-    col.accessor("ticker", {
-      header: "Ticker",
-      cell: (info) => (
-        <div className="flex items-center gap-2">
-          <span
-            className="h-2 w-2 rounded-full"
-            style={{
-              backgroundColor:
-                CATEGORY_COLORS[info.row.original.category] ?? "#6b7280",
-            }}
-          />
-          <span className="font-mono font-semibold text-zinc-100">
-            {info.getValue()}
-          </span>
-        </div>
-      ),
-      meta: { hideOnMobile: false },
-    }),
-
-    col.accessor("name", {
-      header: "Name",
-      cell: (info) => (
-        <span className="text-zinc-400 truncate max-w-[180px] block">
-          {info.getValue()}
-        </span>
-      ),
-      meta: { hideOnMobile: true },
-    }),
-
-    col.accessor("category", {
-      header: "Category",
-      cell: (info) => (
-        <span
-          className="text-xs font-medium px-2 py-0.5 rounded-full"
-          style={{
-            backgroundColor: `${CATEGORY_COLORS[info.getValue()]}20`,
-            color: CATEGORY_COLORS[info.getValue()],
-          }}
-        >
-          {CATEGORY_LABELS[info.getValue()]}
-        </span>
-      ),
-      filterFn: "equals",
-      meta: { hideOnMobile: true },
-    }),
-
-    col.accessor("quantity", {
-      header: "Qty",
-      cell: (info) => (
-        <span className="font-mono text-zinc-300">
-          {formatQuantity(info.getValue())}
-        </span>
-      ),
-      meta: { hideOnMobile: true },
-    }),
-
-    col.accessor("displayAvgPrice", {
-      header: "Avg Cost",
-      cell: (info) => (
-        <span className="font-mono text-zinc-400">
-          {formatCurrency(info.getValue(), displayCurrency)}
-        </span>
-      ),
-      meta: { hideOnMobile: true },
-    }),
-
-    col.accessor("displayPrice", {
-      header: "Price",
-      cell: (info) => {
-        const row = info.row.original;
-        const change = row.dailyChange;
-        const hasQuote = row.hasLiveQuote;
-        return (
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono text-zinc-200">
-              {formatCurrency(info.getValue(), displayCurrency)}
-            </span>
-            {hasQuote && change !== null && (
-              <span
-                className={cn(
-                  "text-xs font-mono",
-                  change >= 0 ? "text-emerald-400" : "text-red-400"
-                )}
-              >
-                {change >= 0 ? "▲" : "▼"}
-              </span>
-            )}
-          </div>
-        );
-      },
-      meta: { hideOnMobile: false },
-    }),
-
-    col.accessor("dailyChange", {
-      header: "Day",
-      cell: (info) => {
-        const v = info.getValue();
-        if (v === null) {
-          return <span className="text-zinc-600 text-xs">--</span>;
-        }
-        const isPositive = v >= 0;
-        return (
-          <span
-            className={cn(
-              "font-mono text-sm",
-              isPositive ? "text-emerald-400" : "text-red-400"
-            )}
-          >
-            {isPositive ? "+" : ""}
-            {v.toFixed(2)}%
-          </span>
-        );
-      },
-      meta: { hideOnMobile: true },
-    }),
-
-    col.accessor("displayValue", {
-      header: "Value",
-      cell: (info) => (
-        <span className="font-mono font-semibold text-zinc-100">
-          {formatCurrency(info.getValue(), displayCurrency)}
-        </span>
-      ),
-      meta: { hideOnMobile: false },
-    }),
-
-    col.accessor("pnlPercent", {
-      header: "P&L %",
-      cell: (info) => {
-        const v = info.getValue();
-        const isPositive = v >= 0;
-        return (
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 font-mono font-semibold",
-              isPositive ? "text-emerald-400" : "text-red-400"
-            )}
-          >
-            {isPositive ? (
-              <TrendingUp className="h-3.5 w-3.5" />
-            ) : (
-              <TrendingDown className="h-3.5 w-3.5" />
-            )}
-            {formatPercent(v)}
-          </span>
-        );
-      },
-      meta: { hideOnMobile: false },
-    }),
-
-    col.accessor("allocation", {
-      header: "Alloc %",
-      cell: (info) => {
-        const v = info.getValue();
-        return (
-          <div className="flex items-center gap-2">
-            <div className="h-1.5 w-16 rounded-full bg-zinc-800 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-blue-500"
-                style={{ width: `${Math.min(v, 100)}%` }}
-              />
-            </div>
-            <span className="font-mono text-xs text-zinc-400">
-              {v.toFixed(1)}%
-            </span>
-          </div>
-        );
-      },
-      meta: { hideOnMobile: true },
-    }),
-  ];
-}
-
-// Actions column (separate to pass callbacks)
-function buildActionsColumn(
-  onBuy: (row: PortfolioRow) => void,
-  onSell: (row: PortfolioRow) => void
-) {
-  return col.display({
-    id: "actions",
-    header: "",
-    cell: (info) => {
-      const row = info.row.original;
-      // Only show trade buttons for IOL assets (not crypto/binance)
-      if (row.source !== "iol") {
-        return null;
-      }
-      return (
-        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => onBuy(row)}
-            className="p-1.5 rounded-md bg-emerald-900/30 hover:bg-emerald-800/50
-                       text-emerald-400 transition-colors"
-            title="Comprar"
-          >
-            <ShoppingCart className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => onSell(row)}
-            className="p-1.5 rounded-md bg-red-900/30 hover:bg-red-800/50
-                       text-red-400 transition-colors"
-            title="Vender"
-          >
-            <Banknote className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      );
-    },
-    meta: { hideOnMobile: true },
-  });
-}
+// Lazy-load heavy modals — only rendered when user clicks a row / trade button
+const AssetDetailModal = dynamic(() => import("./AssetDetailModal"), {
+  ssr: false,
+});
+const TradeDialog = dynamic(() => import("./TradeDialog"), {
+  ssr: false,
+});
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function PortfolioTable() {
-  const { data: iolPortfolio, isLoading: iolLoading, error: iolError, refetch: refetchIOL, isFetching: iolFetching } = useIOLPortfolio();
-  const { data: binancePortfolio, isLoading: binanceLoading, refetch: refetchBinance, isFetching: binanceFetching } = useBinancePortfolio();
-  const displayCurrency = useAppStore((s) => s.preferences.displayCurrency);
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+    displayCurrency,
+    iolConnected,
+    binanceConnected,
+    anyConnected,
+    iolExpired,
+  } = usePortfolioData();
+
   const compact = useAppStore((s) => s.preferences.compactTable);
   const router = useRouter();
-
-  // Prepare ticker list for live quotes (IOL assets only)
-  const iolTickers = useMemo(() => {
-    if (!iolPortfolio?.assets?.length) return [];
-    return iolPortfolio.assets.map((a) => ({
-      symbol: a.ticker,
-      category: a.category,
-    }));
-  }, [iolPortfolio?.assets]);
-
-  // Fetch live quotes for IOL assets
-  const { data: quotesData } = useIOLQuotes(iolTickers, iolPortfolio?.connected ?? false);
 
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: "displayValue", desc: true },
@@ -319,23 +67,6 @@ export default function PortfolioTable() {
   const [tradeAsset, setTradeAsset] = React.useState<PortfolioRow | null>(null);
   const [tradeAction, setTradeAction] = React.useState<"buy" | "sell">("buy");
 
-  // Combined loading/fetching state
-  const isLoading = iolLoading || binanceLoading;
-  const isFetching = iolFetching || binanceFetching;
-  const error = iolError; // Show IOL error if any
-
-  // Check connection states
-  const iolConnected = iolPortfolio?.connected;
-  const binanceConnected = binancePortfolio?.connected;
-  const anyConnected = iolConnected || binanceConnected;
-  const iolExpired = iolPortfolio?.expired;
-
-  // Refetch both portfolios
-  const refetch = () => {
-    refetchIOL();
-    refetchBinance();
-  };
-
   // Handle category filter change
   const handleCategoryFilter = (category: string | null) => {
     setCategoryFilter(category);
@@ -345,88 +76,6 @@ export default function PortfolioTable() {
       setColumnFilters([]);
     }
   };
-
-  // ── Convert values to display currency and merge data ──────────────────────────────────
-
-  const data: PortfolioRow[] = useMemo(() => {
-    const quotes = quotesData?.quotes || {};
-
-    const convertToDisplay = (value: number, assetCurrency: string) => {
-      if (assetCurrency === displayCurrency) return value;
-      if (assetCurrency === "ARS" && displayCurrency === "USD") {
-        return value / MOCK_USD_ARS_RATE;
-      }
-      if (assetCurrency === "USD" && displayCurrency === "ARS") {
-        return value * MOCK_USD_ARS_RATE;
-      }
-      return value;
-    };
-
-    // Calculate P&L (total return since purchase)
-    const calculatePnl = (currentPrice: number, averagePrice: number, quantity: number) => {
-      const pnl = (currentPrice - averagePrice) * quantity;
-      const pnlPercent = averagePrice > 0 ? ((currentPrice - averagePrice) / averagePrice) * 100 : 0;
-      return { pnl, pnlPercent };
-    };
-
-    const rows: PortfolioRow[] = [];
-
-    // Add IOL assets
-    if (iolPortfolio?.assets?.length) {
-      for (const asset of iolPortfolio.assets) {
-        // Get live quote if available
-        const quote = quotes[asset.ticker.toUpperCase()];
-        const livePrice = quote?.ultimoPrecio ?? asset.currentPrice;
-        const liveValue = livePrice * asset.quantity;
-        const dailyChange = quote?.variacionPorcentual ?? null;
-
-        const { pnl, pnlPercent } = calculatePnl(livePrice, asset.averagePrice, asset.quantity);
-        rows.push({
-          ...asset,
-          currentPrice: livePrice,
-          currentValue: liveValue,
-          pnl,
-          pnlPercent,
-          source: "iol",
-          displayPrice: convertToDisplay(livePrice, asset.currency),
-          displayAvgPrice: convertToDisplay(asset.averagePrice, asset.currency),
-          displayValue: convertToDisplay(liveValue, asset.currency),
-          displayPnl: convertToDisplay(pnl, asset.currency),
-          allocation: 0,
-          dailyChange,
-          hasLiveQuote: !!quote,
-        });
-      }
-    }
-
-    // Add Binance assets (no IOL quotes for crypto)
-    if (binancePortfolio?.assets?.length) {
-      for (const asset of binancePortfolio.assets) {
-        const { pnl, pnlPercent } = calculatePnl(asset.currentPrice, asset.averagePrice, asset.quantity);
-        rows.push({
-          ...asset,
-          pnl,
-          pnlPercent,
-          source: "binance",
-          displayPrice: convertToDisplay(asset.currentPrice, asset.currency),
-          displayAvgPrice: convertToDisplay(asset.averagePrice, asset.currency),
-          displayValue: convertToDisplay(asset.currentValue, asset.currency),
-          displayPnl: convertToDisplay(pnl, asset.currency),
-          allocation: 0,
-          dailyChange: null, // Binance doesn't provide daily change through this endpoint
-          hasLiveQuote: false,
-        });
-      }
-    }
-
-    // Calculate allocations
-    const total = rows.reduce((sum, r) => sum + r.displayValue, 0);
-    rows.forEach((r) => {
-      r.allocation = total > 0 ? (r.displayValue / total) * 100 : 0;
-    });
-
-    return rows;
-  }, [iolPortfolio, binancePortfolio, displayCurrency, quotesData]);
 
   // Get unique categories from data for filter buttons
   const availableCategories = useMemo(() => {
@@ -547,6 +196,7 @@ export default function PortfolioTable() {
             <input
               type="text"
               placeholder="Search..."
+              aria-label="Search portfolio assets"
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="h-9 w-full sm:w-40 rounded-lg border border-zinc-800 bg-zinc-900/50
@@ -557,6 +207,7 @@ export default function PortfolioTable() {
               <button
                 onClick={() => refetch()}
                 disabled={isFetching}
+                aria-label="Refresh portfolio data"
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg
                            bg-blue-600 hover:bg-blue-500 disabled:opacity-50
                            text-white text-sm font-medium transition-colors whitespace-nowrap"
@@ -571,6 +222,7 @@ export default function PortfolioTable() {
             ) : (
               <button
                 onClick={() => router.push("/settings")}
+                aria-label={iolExpired ? "Reconnect broker account" : "Connect broker account"}
                 className={cn(
                   "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-white text-sm font-medium transition-colors whitespace-nowrap",
                   iolExpired
@@ -586,8 +238,21 @@ export default function PortfolioTable() {
         </div>
       </div>
 
-      {/* ── Table ────────────────────────────────────────────────────── */}
-      <div className="overflow-x-auto rounded-xl border border-zinc-800/80
+      {/* ── Mobile Card Layout ─────────────────────────────────────── */}
+      <div className="sm:hidden">
+        {isLoading ? (
+          <PortfolioCardListSkeleton />
+        ) : (
+          <PortfolioCardList
+            rows={table.getRowModel().rows.map((r) => r.original)}
+            displayCurrency={displayCurrency}
+            onSelectAsset={setSelectedAsset}
+          />
+        )}
+      </div>
+
+      {/* ── Desktop Table ─────────────────────────────────────────────── */}
+      <div className="hidden sm:block overflow-x-auto rounded-xl border border-zinc-800/80
                       bg-zinc-950/50 backdrop-blur-sm">
         <table className="w-full text-sm">
           <thead>
@@ -631,16 +296,7 @@ export default function PortfolioTable() {
 
           <tbody>
             {isLoading ? (
-              // Skeleton rows
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-zinc-800/30">
-                  {Array.from({ length: columns.length }).map((_, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div className="h-4 w-20 animate-pulse rounded bg-zinc-800" />
-                    </td>
-                  ))}
-                </tr>
-              ))
+              <PortfolioTableSkeleton columns={columns.length} />
             ) : table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td
@@ -698,7 +354,7 @@ export default function PortfolioTable() {
       </div>
 
       {/* ── Footer Stats ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between text-xs text-zinc-600">
+      <div className="flex items-center justify-between text-xs text-zinc-600" aria-live="polite">
         <span>
           {data.length} asset{data.length !== 1 && "s"} ·{" "}
           {table.getFilteredRowModel().rows.length} shown
@@ -732,7 +388,7 @@ export default function PortfolioTable() {
             currency: tradeAsset.currency,
             quantity: tradeAsset.quantity,
             currentPrice: tradeAsset.currentPrice,
-            market: tradeAsset.category === "cedear" ? "bCBA" : "bCBA",
+            market: tradeAsset.category === "stock" ? "nYSE" : "bCBA",
           }}
           action={tradeAction}
           onClose={() => setTradeAsset(null)}

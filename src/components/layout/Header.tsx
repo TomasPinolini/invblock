@@ -12,7 +12,7 @@ export default function Header() {
   const sync = useAppStore((s) => s.sync);
 
   return (
-    <header className="flex items-center justify-between gap-2">
+    <header className="flex items-center justify-between gap-2" role="banner">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-blue-600/20 flex items-center justify-center shrink-0">
           <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
@@ -25,7 +25,7 @@ export default function Header() {
           <div className="flex items-center gap-2 text-xs text-zinc-500">
             <span className="hidden sm:inline">Multi-asset portfolio</span>
             {sync.isActive && (
-              <span className="inline-flex items-center gap-1 text-blue-400">
+              <span className="inline-flex items-center gap-1 text-blue-400" aria-live="polite">
                 <RefreshCw className="h-3 w-3 animate-spin" />
                 <span className="hidden xs:inline">Syncing...</span>
               </span>
@@ -34,13 +34,13 @@ export default function Header() {
               <span className="hidden md:inline">Last synced {relativeDate(sync.lastSyncedAt)}</span>
             )}
             {sync.error && (
-              <span className="text-red-400">Sync failed</span>
+              <span className="text-red-400" aria-live="assertive">Sync failed</span>
             )}
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+      <nav aria-label="Main navigation" className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         <Link
           href="/explore"
           className="p-2 sm:px-3 sm:py-1.5 text-xs font-medium rounded-lg border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors inline-flex items-center gap-1.5"
@@ -66,7 +66,7 @@ export default function Header() {
         <NotificationBell />
         <CurrencyToggle />
         <UserMenu />
-      </div>
+      </nav>
     </header>
   );
 }
@@ -79,6 +79,7 @@ function PriceAlertsButton() {
       onClick={openDialog}
       className="p-2 sm:px-3 sm:py-1.5 text-xs font-medium rounded-lg border border-purple-500/50 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors inline-flex items-center gap-1.5"
       title="Price Alerts"
+      aria-label="Price Alerts"
     >
       <Bell className="h-3.5 w-3.5" />
       <span className="hidden sm:inline">Alerts</span>

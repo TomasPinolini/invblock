@@ -16,6 +16,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { relativeDate } from "@/lib/utils";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -35,12 +36,14 @@ export default function SettingsPage() {
   }
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-zinc-950 px-6 py-8">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push("/")}
+            aria-label="Back to portfolio"
             className="p-2 rounded-lg text-zinc-500 hover:text-zinc-200
                        hover:bg-zinc-800 transition-colors"
           >
@@ -66,6 +69,7 @@ export default function SettingsPage() {
         <BinanceConnectionCard />
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
 
@@ -242,6 +246,7 @@ function IOLConnectionCard() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="your@email.com"
+                aria-label="IOL Username or Email"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
                            px-3 text-sm text-zinc-200 placeholder:text-zinc-600
@@ -257,6 +262,7 @@ function IOLConnectionCard() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                aria-label="IOL Password"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
                            px-3 text-sm text-zinc-200 placeholder:text-zinc-600
@@ -423,6 +429,7 @@ function BinanceConnectionCard() {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="Enter your Binance API key"
+                aria-label="Binance API Key"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
                            px-3 text-sm text-zinc-200 placeholder:text-zinc-600
@@ -439,6 +446,7 @@ function BinanceConnectionCard() {
                 value={apiSecret}
                 onChange={(e) => setApiSecret(e.target.value)}
                 placeholder="Enter your Binance API secret"
+                aria-label="Binance API Secret"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
                            px-3 text-sm text-zinc-200 placeholder:text-zinc-600

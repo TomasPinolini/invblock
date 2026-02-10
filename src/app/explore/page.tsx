@@ -19,6 +19,7 @@ import {
 } from "@/hooks/useIOLSecurities";
 import type { IOLInstrumentType, IOLSecurityWithQuote } from "@/services/iol";
 import { cn } from "@/lib/utils";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 export default function ExplorePage() {
   const [instrumentType, setInstrumentType] = useState<IOLInstrumentType | "all">("cedears");
@@ -49,6 +50,7 @@ export default function ExplorePage() {
   const securities = data?.securities || [];
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <div className="max-w-6xl mx-auto px-4 py-6">
         {/* Header */}
@@ -74,6 +76,7 @@ export default function ExplorePage() {
             <input
               type="text"
               placeholder="Buscar por símbolo o nombre..."
+              aria-label="Search securities by symbol or name"
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg
@@ -86,6 +89,7 @@ export default function ExplorePage() {
           <button
             onClick={() => refetch()}
             disabled={isFetching}
+            aria-label="Refresh market data"
             className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg
                      text-zinc-300 font-medium transition-colors
                      disabled:opacity-50 flex items-center gap-2"
@@ -121,7 +125,7 @@ export default function ExplorePage() {
         {/* Results Count */}
         <div className="text-sm text-zinc-500 mb-4">
           {isLoading ? (
-            "Cargando..."
+            <span aria-live="polite">Cargando...</span>
           ) : (
             <>
               {securities.length} instrumento{securities.length !== 1 && "s"} encontrado{securities.length !== 1 && "s"}
@@ -132,7 +136,7 @@ export default function ExplorePage() {
 
         {/* Securities Grid */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-20" aria-live="polite">
             <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
             <span className="ml-3 text-zinc-500">Cargando instrumentos...</span>
           </div>
@@ -171,6 +175,7 @@ export default function ExplorePage() {
         )}
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
 
