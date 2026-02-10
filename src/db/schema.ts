@@ -128,6 +128,39 @@ export const userConnections = pgTable(
   })
 );
 
+// ── Trade Audit Log ─────────────────────────────────────────────────────────
+
+export const tradeAuditLog = pgTable(
+  "trade_audit_log",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull(),
+    action: varchar("action", { length: 10 }).notNull(), // "buy", "sell", "cancel"
+    mercado: varchar("mercado", { length: 20 }),
+    simbolo: varchar("simbolo", { length: 20 }).notNull(),
+    cantidad: numeric("cantidad", { precision: 18, scale: 8 }),
+    precio: numeric("precio", { precision: 18, scale: 8 }),
+    plazo: varchar("plazo", { length: 10 }),
+    tipoOrden: varchar("tipo_orden", { length: 30 }),
+    status: varchar("status", { length: 20 }).notNull(), // "attempted", "success", "failed"
+    responseCode: varchar("response_code", { length: 10 }),
+    responseMessage: text("response_message"),
+    numeroOperacion: varchar("numero_operacion", { length: 50 }),
+    ip: varchar("ip", { length: 45 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: index("audit_user_idx").on(table.userId),
+    dateIdx: index("audit_date_idx").on(table.createdAt),
+    simboloIdx: index("audit_simbolo_idx").on(table.simbolo),
+  })
+);
+
+export type TradeAuditEntry = typeof tradeAuditLog.$inferSelect;
+export type NewTradeAuditEntry = typeof tradeAuditLog.$inferInsert;
+
 // Inferred types for use across the app
 export type Asset = typeof assets.$inferSelect;
 export type NewAsset = typeof assets.$inferInsert;

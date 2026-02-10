@@ -13,12 +13,10 @@ export interface IOLBalances {
     comprometido: number;
     total: number;
   };
-  totalEnPesos: number;
 }
 
 interface IOLBalanceResponse {
   balances: IOLBalances;
-  raw?: unknown;
   error?: string;
 }
 

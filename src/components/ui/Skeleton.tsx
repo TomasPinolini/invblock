@@ -8,7 +8,7 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-md bg-zinc-800/50",
+        "animate-pulse rounded-md bg-zinc-700/50",
         className
       )}
     />

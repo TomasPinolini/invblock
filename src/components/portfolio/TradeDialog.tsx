@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useIOLTrade, SETTLEMENT_OPTIONS, formatOrderSummary } from "@/hooks/useIOLTrade";
 import { useIOLQuote } from "@/hooks/useIOLQuotes";
+import { useIOLBalance } from "@/hooks/useIOLBalance";
 import { formatCurrency, cn } from "@/lib/utils";
 import type { IOLSettlement } from "@/services/iol";
 
@@ -45,6 +46,7 @@ export default function TradeDialog({
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const tradeMutation = useIOLTrade();
+  const { data: balanceData, isLoading: balanceLoading } = useIOLBalance();
 
   // Fetch live quote for current price
   const { data: liveQuote } = useIOLQuote(asset.ticker, asset.market, true);
@@ -63,7 +65,7 @@ export default function TradeDialog({
   // For sells, max quantity is what user owns
   const maxQuantity = action === "sell" ? asset.quantity : undefined;
 
-  const market = asset.market || (asset.category === "cedear" ? "bCBA" : "bCBA");
+  const market = asset.market || (asset.category === "stock" ? "nYSE" : "bCBA");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +98,8 @@ export default function TradeDialog({
         cantidad: parsedCantidad,
         precio: parsedPrecio,
         plazo,
+        validez: new Date().toISOString().split("T")[0],
+        tipoOrden: "precioLimite",
       });
       setStep("success");
       onSuccess?.();
@@ -118,10 +122,16 @@ export default function TradeDialog({
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-2 sm:mx-4 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${actionLabel} ${asset.ticker}`}
+        className="relative z-10 w-full max-w-md mx-2 sm:mx-4 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl"
+      >
         {/* Header */}
         <div
           className={cn(
@@ -145,6 +155,7 @@ export default function TradeDialog({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors"
           >
             <X className="h-5 w-5 text-zinc-400" />
@@ -155,6 +166,25 @@ export default function TradeDialog({
         <div className="p-4">
           {step === "form" && (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Available Balance */}
+              {balanceLoading ? (
+                <div className="bg-zinc-800/50 rounded-lg px-3 py-2 animate-pulse">
+                  <div className="h-4 w-40 bg-zinc-700 rounded" />
+                </div>
+              ) : balanceData?.balances ? (
+                <div className="bg-zinc-800/50 rounded-lg px-3 py-2 flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Disponible</span>
+                  <span className="text-sm font-mono text-zinc-300">
+                    {formatCurrency(
+                      asset.currency === "USD"
+                        ? balanceData.balances.usd.disponible
+                        : balanceData.balances.ars.disponible,
+                      asset.currency,
+                    )}
+                  </span>
+                </div>
+              ) : null}
+
               {/* Current Price Info */}
               <div className="bg-zinc-800/50 rounded-lg p-3">
                 <div className="flex justify-between items-center">
@@ -203,7 +233,7 @@ export default function TradeDialog({
                     value={cantidad}
                     onChange={(e) => setCantidad(e.target.value)}
                     placeholder="0"
-                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     required
                   />
                   {action === "sell" && (
@@ -230,9 +260,14 @@ export default function TradeDialog({
                   value={precio}
                   onChange={(e) => setPrecio(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   required
                 />
+                {parsedCantidad > 0 && parsedPrecio > 0 && (
+                  <p className="text-sm text-zinc-400 font-mono mt-1">
+                    Total: {formatCurrency(totalAmount, asset.currency)}
+                  </p>
+                )}
               </div>
 
               {/* Settlement */}

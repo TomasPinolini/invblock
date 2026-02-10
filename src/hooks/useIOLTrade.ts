@@ -9,9 +9,9 @@ interface TradeRequest {
   simbolo: string;
   cantidad: number;
   precio: number;
-  plazo?: IOLSettlement;
-  validez?: string;
-  tipoOrden?: IOLOrderType;
+  plazo: IOLSettlement;
+  validez: string;
+  tipoOrden: IOLOrderType;
 }
 
 interface TradeResponse {
@@ -75,7 +75,9 @@ export function useIOLTrade() {
     mutationFn: executeTrade,
     onSuccess: () => {
       // Invalidate portfolio and operations queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["iol-portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["binance-portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["iol-balance"] });
       queryClient.invalidateQueries({ queryKey: ["iol-operations"] });
       queryClient.invalidateQueries({ queryKey: ["iol-quotes"] });
     },

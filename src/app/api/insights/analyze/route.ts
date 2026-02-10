@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const maxDuration = 60; // Allow up to 60 seconds for AI processing
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const rateLimited = checkRateLimit(user.id, "insights", RATE_LIMITS.insights);
+    if (rateLimited) return rateLimited;
+
     // Get the form data with PDF file
     const formData = await request.formData();
     const file = formData.get("pdf") as File | null;
@@ -22,6 +26,23 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "No PDF file provided" }, { status: 400 });
+    }
+
+    // Validate file size (max 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File too large. Maximum size is 10MB." },
+        { status: 400 }
+      );
+    }
+
+    // Validate MIME type
+    if (file.type !== "application/pdf") {
+      return NextResponse.json(
+        { error: "Invalid file type. Only PDF files are accepted." },
+        { status: 400 }
+      );
     }
 
     // Parse portfolio data
@@ -48,6 +69,14 @@ export async function POST(request: NextRequest) {
     const pdfParse = (await import("pdf-parse")).default;
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // Validate PDF magic bytes (%PDF-)
+    if (buffer.length < 5 || buffer.subarray(0, 5).toString("ascii") !== "%PDF-") {
+      return NextResponse.json(
+        { error: "Invalid PDF file. File does not contain valid PDF data." },
+        { status: 400 }
+      );
+    }
     const pdfData = await pdfParse(buffer);
     const emailContent = pdfData.text as string;
 

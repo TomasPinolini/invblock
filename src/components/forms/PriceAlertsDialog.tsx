@@ -91,8 +91,13 @@ export default function PriceAlertsDialog() {
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && close()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm
+                     data-[state=open]:animate-in data-[state=closed]:animate-out
+                     data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl max-h-[85vh] overflow-hidden flex flex-col
+                     data-[state=open]:animate-in data-[state=closed]:animate-out
+                     data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0
+                     data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-zinc-800">
             <div className="flex items-center gap-2">
@@ -103,13 +108,16 @@ export default function PriceAlertsDialog() {
                 <Dialog.Title className="text-lg font-bold text-zinc-100">
                   Price Alerts
                 </Dialog.Title>
-                <p className="text-xs text-zinc-500">
+                <Dialog.Description className="text-xs text-zinc-500">
                   Get notified when prices hit your targets
-                </p>
+                </Dialog.Description>
               </div>
             </div>
             <Dialog.Close asChild>
-              <button className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors">
+              <button
+                aria-label="Close dialog"
+                className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors"
+              >
                 <X className="h-5 w-5 text-zinc-400" />
               </button>
             </Dialog.Close>
@@ -126,7 +134,8 @@ export default function PriceAlertsDialog() {
               <select
                 value={selectedTicker}
                 onChange={(e) => setSelectedTicker(e.target.value)}
-                className="flex-1 px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                aria-label="Select asset for alert"
+                className="flex-1 px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
               >
                 <option value="">Select asset...</option>
                 {allAssets.map((asset) => (
@@ -140,6 +149,7 @@ export default function PriceAlertsDialog() {
               <button
                 type="button"
                 onClick={() => setCondition(condition === "above" ? "below" : "above")}
+                aria-label={`Alert condition: ${condition}. Click to toggle.`}
                 className={cn(
                   "px-4 py-2 text-xs font-medium rounded-lg border transition-colors flex items-center gap-1.5",
                   condition === "above"
@@ -160,9 +170,10 @@ export default function PriceAlertsDialog() {
                 type="number"
                 step="0.01"
                 placeholder="Target price"
+                aria-label="Target price"
                 value={targetPrice}
                 onChange={(e) => setTargetPrice(e.target.value)}
-                className="w-28 px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-28 px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
               />
 
               {/* Create Button */}
@@ -242,13 +253,15 @@ export default function PriceAlertsDialog() {
                             step="0.01"
                             value={editTargetPrice}
                             onChange={(e) => setEditTargetPrice(e.target.value)}
-                            className="w-24 px-2 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded text-zinc-100 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                            aria-label="Edit target price"
+                            className="w-24 px-2 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded text-zinc-100 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
                           />
                         </div>
                         <div className="flex items-center gap-1">
                           <button
                             onClick={handleUpdate}
                             disabled={updateAlert.isPending}
+                            aria-label="Save alert changes"
                             className="p-1.5 rounded-lg hover:bg-zinc-700 text-emerald-400 transition-colors"
                           >
                             {updateAlert.isPending ? (
@@ -259,6 +272,7 @@ export default function PriceAlertsDialog() {
                           </button>
                           <button
                             onClick={cancelEdit}
+                            aria-label="Cancel editing"
                             className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-500 transition-colors"
                           >
                             <X className="h-4 w-4" />
@@ -304,6 +318,7 @@ export default function PriceAlertsDialog() {
                           {alert.is_active && (
                             <button
                               onClick={() => startEdit(alert)}
+                              aria-label={`Edit alert for ${alert.ticker}`}
                               className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-500 hover:text-blue-400 transition-colors"
                             >
                               <Pencil className="h-4 w-4" />
@@ -312,6 +327,7 @@ export default function PriceAlertsDialog() {
                           <button
                             onClick={() => handleDelete(alert.id)}
                             disabled={deleteAlert.isPending}
+                            aria-label={`Delete alert for ${alert.ticker}`}
                             className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-500 hover:text-red-400 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />

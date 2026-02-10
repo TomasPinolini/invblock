@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { IOLClient } from "@/services/iol";
 import { getAuthUser } from "@/lib/auth";
+import { encryptCredentials } from "@/lib/crypto";
+import { iolAuthSchema, parseBody } from "@/lib/api-schemas";
 import { db } from "@/db";
 import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -13,20 +15,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { username, password } = await req.json();
+    const raw = await req.json();
+    const [body, validationError] = parseBody(iolAuthSchema, raw);
+    if (validationError) return validationError;
 
-    if (!username || !password) {
-      return NextResponse.json(
-        { error: "Username and password are required" },
-        { status: 400 }
-      );
-    }
+    const { username, password } = body;
 
     // Authenticate with IOL
     const token = await IOLClient.authenticate(username, password);
 
-    // Store token in database (encrypted in production)
-    // For now, we store it as JSON
+    // Store token in database (encrypted with AES-256-GCM)
     const existingConnection = await db.query.userConnections.findFirst({
       where: and(
         eq(userConnections.userId, user.id),
@@ -38,7 +36,7 @@ export async function POST(req: NextRequest) {
       await db
         .update(userConnections)
         .set({
-          credentials: JSON.stringify(token),
+          credentials: encryptCredentials(token),
           updatedAt: new Date(),
         })
         .where(eq(userConnections.id, existingConnection.id));

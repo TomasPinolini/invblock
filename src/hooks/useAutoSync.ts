@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppStore } from "@/stores/useAppStore";
 
 interface ConnectionStatus {
   connected: boolean;
@@ -15,6 +16,7 @@ interface ConnectionStatus {
 export function useAutoSync() {
   const queryClient = useQueryClient();
   const hasSynced = useRef(false);
+  const { startSync, completeSync, failSync } = useAppStore();
 
   // Check IOL connection status
   const { data: iolStatus } = useQuery<ConnectionStatus>({
@@ -43,41 +45,58 @@ export function useAutoSync() {
 
     const runSync = async () => {
       hasSynced.current = true;
-      const syncPromises: Promise<void>[] = [];
+      const errors: string[] = [];
+
+      const hasIOL = iolStatus?.connected;
+      const hasBinance = binanceStatus?.connected;
+
+      if (!hasIOL && !hasBinance) return;
+
+      startSync(hasIOL && hasBinance ? "all" : hasIOL ? "iol" : "binance");
 
       // Sync IOL if connected (assets + transactions)
-      if (iolStatus?.connected) {
-        syncPromises.push(
-          fetch("/api/iol/sync", { method: "POST" })
-            .then((res) => res.json())
-            .then(async (data) => {
-              if (data?.success) {
-                await fetch("/api/iol/transactions", { method: "POST" });
-              }
-            })
-            .catch(() => {}) // Silent fail - sync is best-effort
-        );
+      if (hasIOL) {
+        try {
+          const res = await fetch("/api/iol/sync", { method: "POST" });
+          const data = await res.json();
+          if (!res.ok) {
+            errors.push(`IOL sync: ${data.error || "failed"}`);
+          } else if (data?.success) {
+            await fetch("/api/iol/transactions", { method: "POST" });
+          }
+        } catch (err) {
+          console.error("IOL auto-sync failed:", err);
+          errors.push("IOL sync: network error");
+        }
       }
 
       // Sync Binance if connected
-      if (binanceStatus?.connected) {
-        syncPromises.push(
-          fetch("/api/binance/sync", { method: "POST" })
-            .then(() => {})
-            .catch(() => {})
-        );
+      if (hasBinance) {
+        try {
+          const res = await fetch("/api/binance/sync", { method: "POST" });
+          if (!res.ok) {
+            const data = await res.json();
+            errors.push(`Binance sync: ${data.error || "failed"}`);
+          }
+        } catch (err) {
+          console.error("Binance auto-sync failed:", err);
+          errors.push("Binance sync: network error");
+        }
       }
 
-      if (syncPromises.length > 0) {
-        await Promise.allSettled(syncPromises);
-        // Invalidate queries to refresh the UI
-        queryClient.invalidateQueries({ queryKey: ["assets"] });
-        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      // Invalidate queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+
+      if (errors.length > 0) {
+        failSync(errors.join("; "));
+      } else {
+        completeSync();
       }
     };
 
     runSync();
-  }, [iolStatus, binanceStatus, queryClient]);
+  }, [iolStatus, binanceStatus, queryClient, startSync, completeSync, failSync]);
 
   return {
     iolConnected: iolStatus?.connected ?? false,

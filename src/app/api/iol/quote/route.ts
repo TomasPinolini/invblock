@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { IOLClient } from "@/services/iol";
+import type { IOLToken } from "@/services/iol";
 import { getAuthUser } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { decryptCredentials, encryptCredentials } from "@/lib/crypto";
+import { batchQuoteSchema, parseBody } from "@/lib/api-schemas";
 import { db } from "@/db";
 import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -32,6 +36,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const rateLimited = checkRateLimit(user.id, "quote", RATE_LIMITS.quote);
+  if (rateLimited) return rateLimited;
+
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get("symbol");
   const market = searchParams.get("market");
@@ -59,7 +66,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const token = JSON.parse(connection.credentials);
+    const token = decryptCredentials<IOLToken>(connection.credentials);
     const client = new IOLClient(token);
 
     // Use provided market or infer from ticker
@@ -73,7 +80,7 @@ export async function GET(request: Request) {
       await db
         .update(userConnections)
         .set({
-          credentials: JSON.stringify(newToken),
+          credentials: encryptCredentials(newToken),
           updatedAt: new Date(),
         })
         .where(eq(userConnections.id, connection.id));
@@ -103,10 +110,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const rateLimited = checkRateLimit(user.id, "quote", RATE_LIMITS.quote);
+  if (rateLimited) return rateLimited;
+
   try {
-    const body = await request.json();
-    const tickers: Array<{ symbol: string; market?: string; category?: string }> =
-      body.tickers || [];
+    const raw = await request.json();
+    const [body, validationError] = parseBody(batchQuoteSchema, raw);
+    if (validationError) return validationError;
+
+    const tickers = body.tickers;
 
     if (!tickers.length) {
       return NextResponse.json({ quotes: {} });
@@ -127,7 +139,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const token = JSON.parse(connection.credentials);
+    const token = decryptCredentials<IOLToken>(connection.credentials);
     const client = new IOLClient(token);
 
     // Prepare tickers with markets
@@ -151,7 +163,7 @@ export async function POST(request: Request) {
       await db
         .update(userConnections)
         .set({
-          credentials: JSON.stringify(newToken),
+          credentials: encryptCredentials(newToken),
           updatedAt: new Date(),
         })
         .where(eq(userConnections.id, connection.id));

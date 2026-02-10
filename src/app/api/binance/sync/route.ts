@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { BinanceClient, type BinanceCredentials } from "@/services/binance";
 import { getAuthUser } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { decryptCredentials } from "@/lib/crypto";
 import { db } from "@/db";
 import { userConnections, assets } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -11,6 +13,9 @@ export async function POST() {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rateLimited = checkRateLimit(user.id, "binance-sync", RATE_LIMITS.default);
+  if (rateLimited) return rateLimited;
 
   try {
     // Get Binance credentials
@@ -32,7 +37,7 @@ export async function POST() {
       );
     }
 
-    const credentials: BinanceCredentials = JSON.parse(
+    const credentials: BinanceCredentials = decryptCredentials<BinanceCredentials>(
       connection[0].credentials
     );
     const client = new BinanceClient(credentials);

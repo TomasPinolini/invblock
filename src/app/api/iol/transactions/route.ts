@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { IOLClient } from "@/services/iol";
+import type { IOLToken } from "@/services/iol";
 import { getAuthUser } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { decryptCredentials, encryptCredentials } from "@/lib/crypto";
 import { db } from "@/db";
 import { userConnections, assets, transactions } from "@/db/schema";
 import { eq, and, like } from "drizzle-orm";
@@ -22,12 +25,24 @@ function mapCurrency(mercado: string): "USD" | "ARS" {
   return "ARS";
 }
 
+// Infer asset category from IOL market
+function inferCategory(mercado: string): "stock" | "cedear" | "crypto" | "cash" {
+  const m = mercado.toLowerCase();
+  if (m.includes("nyse") || m.includes("nasdaq") || m.includes("amex")) {
+    return "stock";
+  }
+  return "cedear";
+}
+
 export async function POST() {
   const user = await getAuthUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rateLimited = checkRateLimit(user.id, "iol-transactions", RATE_LIMITS.default);
+  if (rateLimited) return rateLimited;
 
   try {
     // Get IOL credentials
@@ -45,7 +60,7 @@ export async function POST() {
       );
     }
 
-    const token = JSON.parse(connection.credentials);
+    const token = decryptCredentials<IOLToken>(connection.credentials);
     const client = new IOLClient(token);
 
     // Fetch completed operations from the last 90 days
@@ -102,7 +117,7 @@ export async function POST() {
             userId: user.id,
             ticker,
             name: ticker, // We don't have the full name from operations
-            category: "cedear", // Default, could be improved
+            category: inferCategory(op.mercado),
             currency: mapCurrency(op.mercado),
             quantity: "0",
             averagePrice: "0",
@@ -144,7 +159,7 @@ export async function POST() {
       await db
         .update(userConnections)
         .set({
-          credentials: JSON.stringify(newToken),
+          credentials: encryptCredentials(newToken),
           updatedAt: new Date(),
         })
         .where(eq(userConnections.id, connection.id));
@@ -172,6 +187,9 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rateLimited = checkRateLimit(user.id, "iol-transactions", RATE_LIMITS.default);
+  if (rateLimited) return rateLimited;
 
   try {
     const txns = await db.query.transactions.findMany({

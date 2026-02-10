@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { IOLClient } from "@/services/iol";
+import type { IOLToken } from "@/services/iol";
 import { getAuthUser } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { decryptCredentials } from "@/lib/crypto";
 import { db } from "@/db";
 import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -11,6 +14,9 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rateLimited = checkRateLimit(user.id, "iol-balance", RATE_LIMITS.default);
+  if (rateLimited) return rateLimited;
 
   try {
     // Get IOL credentials
@@ -28,13 +34,13 @@ export async function GET() {
       );
     }
 
-    const token = JSON.parse(connection.credentials);
+    const token = decryptCredentials<IOLToken>(connection.credentials);
     const client = new IOLClient(token);
 
     // Fetch account state from IOL
     const accountState = await client.getAccountState();
 
-    // Process accounts into a cleaner format
+    // Process accounts into a sanitized format — only expose what the frontend needs
     const balances = {
       ars: {
         disponible: 0,
@@ -46,7 +52,6 @@ export async function GET() {
         comprometido: 0,
         total: 0,
       },
-      totalEnPesos: accountState.totalEnPesos || 0,
     };
 
     for (const cuenta of accountState.cuentas || []) {
@@ -91,9 +96,9 @@ export async function GET() {
       }
     }
 
+    // Return only the sanitized balances — never expose raw IOL API data
     return NextResponse.json({
       balances,
-      raw: accountState, // Include raw data for debugging
     });
   } catch (error) {
     console.error("[IOL Balance] Error:", error);

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { IOLClient, type IOLPortfolioItem } from "@/services/iol";
+import type { IOLToken } from "@/services/iol";
 import { getAuthUser } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { decryptCredentials, encryptCredentials } from "@/lib/crypto";
 import { db } from "@/db";
 import { userConnections, assets } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -31,6 +34,9 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const rateLimited = checkRateLimit(user.id, "iol-sync", RATE_LIMITS.default);
+  if (rateLimited) return rateLimited;
+
   try {
     // Get IOL credentials
     const connection = await db.query.userConnections.findFirst({
@@ -47,7 +53,7 @@ export async function POST() {
       );
     }
 
-    const token = JSON.parse(connection.credentials);
+    const token = decryptCredentials<IOLToken>(connection.credentials);
     const client = new IOLClient(token);
 
     // Fetch portfolios from IOL
@@ -116,7 +122,7 @@ export async function POST() {
       await db
         .update(userConnections)
         .set({
-          credentials: JSON.stringify(newToken),
+          credentials: encryptCredentials(newToken),
           updatedAt: new Date(),
         })
         .where(eq(userConnections.id, connection.id));

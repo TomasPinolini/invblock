@@ -1,20 +1,21 @@
 import { NextResponse } from "next/server";
 import { IOLClient } from "@/services/iol";
 import { getAuthUser } from "@/lib/auth";
+import { decryptCredentials, encryptCredentials } from "@/lib/crypto";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { tradeSchema, parseBody } from "@/lib/api-schemas";
 import { db } from "@/db";
-import { userConnections } from "@/db/schema";
+import { userConnections, tradeAuditLog } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import type { IOLOrderRequest, IOLSettlement, IOLOrderType } from "@/services/iol";
+import type { IOLToken, IOLOrderRequest } from "@/services/iol";
 
-interface TradeRequestBody {
-  action: "buy" | "sell";
-  mercado: string;
-  simbolo: string;
-  cantidad: number;
-  precio: number;
-  plazo?: IOLSettlement;
-  validez?: string;
-  tipoOrden?: IOLOrderType;
+function getClientIp(request: Request): string {
+  const headers = new Headers(request.headers);
+  return (
+    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    headers.get("x-real-ip") ||
+    "unknown"
+  );
 }
 
 export async function POST(request: Request) {
@@ -24,37 +25,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit: max 5 trades per minute
+  const rateLimited = checkRateLimit(user.id, "trade", RATE_LIMITS.trade);
+  if (rateLimited) return rateLimited;
+
   try {
-    const body: TradeRequestBody = await request.json();
-
-    // Validate required fields
-    if (!body.action || !["buy", "sell"].includes(body.action)) {
-      return NextResponse.json(
-        { error: "Invalid action. Must be 'buy' or 'sell'" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.mercado || !body.simbolo) {
-      return NextResponse.json(
-        { error: "Missing mercado or simbolo" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.cantidad || body.cantidad <= 0) {
-      return NextResponse.json(
-        { error: "Invalid cantidad. Must be positive" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.precio || body.precio <= 0) {
-      return NextResponse.json(
-        { error: "Invalid precio. Must be positive" },
-        { status: 400 }
-      );
-    }
+    const raw = await request.json();
+    const [body, validationError] = parseBody(tradeSchema, raw);
+    if (validationError) return validationError;
 
     // Get IOL credentials
     const connection = await db.query.userConnections.findFirst({
@@ -71,7 +49,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const token = JSON.parse(connection.credentials);
+    const token = decryptCredentials<IOLToken>(connection.credentials);
     const client = new IOLClient(token);
 
     // Build order request
@@ -80,10 +58,26 @@ export async function POST(request: Request) {
       simbolo: body.simbolo.toUpperCase(),
       cantidad: body.cantidad,
       precio: body.precio,
-      plazo: body.plazo || "t2", // Default to T+2 settlement
-      validez: body.validez || new Date().toISOString().split("T")[0], // Default to today
-      tipoOrden: body.tipoOrden || "precioLimite",
+      plazo: body.plazo,
+      validez: body.validez,
+      tipoOrden: body.tipoOrden,
     };
+
+    const clientIp = getClientIp(request);
+
+    // Log trade attempt
+    await db.insert(tradeAuditLog).values({
+      userId: user.id,
+      action: body.action,
+      mercado: body.mercado,
+      simbolo: order.simbolo,
+      cantidad: String(order.cantidad),
+      precio: String(order.precio),
+      plazo: order.plazo,
+      tipoOrden: order.tipoOrden,
+      status: "attempted",
+      ip: clientIp,
+    });
 
     // Execute the trade
     const result =
@@ -97,13 +91,28 @@ export async function POST(request: Request) {
       await db
         .update(userConnections)
         .set({
-          credentials: JSON.stringify(newToken),
+          credentials: encryptCredentials(newToken),
           updatedAt: new Date(),
         })
         .where(eq(userConnections.id, connection.id));
     }
 
     if (!result.ok) {
+      // Log failed trade
+      await db.insert(tradeAuditLog).values({
+        userId: user.id,
+        action: body.action,
+        mercado: body.mercado,
+        simbolo: order.simbolo,
+        cantidad: String(order.cantidad),
+        precio: String(order.precio),
+        plazo: order.plazo,
+        tipoOrden: order.tipoOrden,
+        status: "failed",
+        responseMessage: result.error || "Trade failed",
+        ip: clientIp,
+      });
+
       return NextResponse.json(
         {
           ok: false,
@@ -112,6 +121,22 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Log successful trade
+    await db.insert(tradeAuditLog).values({
+      userId: user.id,
+      action: body.action,
+      mercado: body.mercado,
+      simbolo: order.simbolo,
+      cantidad: String(order.cantidad),
+      precio: String(order.precio),
+      plazo: order.plazo,
+      tipoOrden: order.tipoOrden,
+      status: "success",
+      numeroOperacion: result.numeroOperacion ? String(result.numeroOperacion) : undefined,
+      responseMessage: result.mensaje,
+      ip: clientIp,
+    });
 
     return NextResponse.json({
       ok: true,
@@ -179,8 +204,19 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const token = JSON.parse(connection.credentials);
+    const token = decryptCredentials<IOLToken>(connection.credentials);
     const client = new IOLClient(token);
+
+    const clientIp = getClientIp(request);
+
+    // Log cancel attempt
+    await db.insert(tradeAuditLog).values({
+      userId: user.id,
+      action: "cancel",
+      simbolo: String(opNum),
+      status: "attempted",
+      ip: clientIp,
+    });
 
     const result = await client.cancelOrder(opNum);
 
@@ -190,13 +226,22 @@ export async function DELETE(request: Request) {
       await db
         .update(userConnections)
         .set({
-          credentials: JSON.stringify(newToken),
+          credentials: encryptCredentials(newToken),
           updatedAt: new Date(),
         })
         .where(eq(userConnections.id, connection.id));
     }
 
     if (!result.ok) {
+      await db.insert(tradeAuditLog).values({
+        userId: user.id,
+        action: "cancel",
+        simbolo: String(opNum),
+        status: "failed",
+        responseMessage: result.error || "Cancel failed",
+        ip: clientIp,
+      });
+
       return NextResponse.json(
         {
           ok: false,
@@ -205,6 +250,15 @@ export async function DELETE(request: Request) {
         { status: 400 }
       );
     }
+
+    await db.insert(tradeAuditLog).values({
+      userId: user.id,
+      action: "cancel",
+      simbolo: String(opNum),
+      status: "success",
+      responseMessage: result.mensaje,
+      ip: clientIp,
+    });
 
     return NextResponse.json({
       ok: true,

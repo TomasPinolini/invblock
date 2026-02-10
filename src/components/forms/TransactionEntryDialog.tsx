@@ -131,12 +131,18 @@ export default function TransactionEntryDialog() {
               Record Transaction
             </Dialog.Title>
             <Dialog.Close asChild>
-              <button className="p-1 rounded-md text-zinc-500 hover:text-zinc-200
-                                 hover:bg-zinc-800 transition-colors">
+              <button
+                aria-label="Close dialog"
+                className="p-1 rounded-md text-zinc-500 hover:text-zinc-200
+                                 hover:bg-zinc-800 transition-colors"
+              >
                 <X className="h-4 w-4" />
               </button>
             </Dialog.Close>
           </div>
+          <Dialog.Description className="sr-only">
+            Record a buy or sell transaction for an asset in your portfolio.
+          </Dialog.Description>
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
