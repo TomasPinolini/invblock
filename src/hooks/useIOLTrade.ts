@@ -76,7 +76,6 @@ export function useIOLTrade() {
     onSuccess: () => {
       // Invalidate portfolio and operations queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["iol-portfolio"] });
-      queryClient.invalidateQueries({ queryKey: ["binance-portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["iol-balance"] });
       queryClient.invalidateQueries({ queryKey: ["iol-operations"] });
       queryClient.invalidateQueries({ queryKey: ["iol-quotes"] });

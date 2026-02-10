@@ -26,6 +26,13 @@
 .DS_Store
 *.pem
 plan.txt
+nul
+
+# editor / AI tool configs
+.cursor/
+.windsurf/
+.claude/
+.agents/
 
 # debug
 npm-debug.log*

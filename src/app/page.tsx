@@ -16,6 +16,9 @@ const TransactionEntryDialog = dynamic(
 const PriceAlertsDialog = dynamic(
   () => import("@/components/forms/PriceAlertsDialog")
 );
+const PortfolioHealthCard = dynamic(
+  () => import("@/components/portfolio/PortfolioHealthCard")
+);
 
 export default function DashboardPage() {
   return (
@@ -36,6 +39,11 @@ export default function DashboardPage() {
       {/* Allocation Bar */}
       <ErrorBoundary>
         <AllocationBar />
+      </ErrorBoundary>
+
+      {/* Portfolio Health Score */}
+      <ErrorBoundary>
+        <PortfolioHealthCard />
       </ErrorBoundary>
 
       {/* Portfolio Table */}

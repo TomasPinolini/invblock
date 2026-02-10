@@ -62,7 +62,11 @@ export function useAutoSync() {
           if (!res.ok) {
             errors.push(`IOL sync: ${data.error || "failed"}`);
           } else if (data?.success) {
-            await fetch("/api/iol/transactions", { method: "POST" });
+            const txRes = await fetch("/api/iol/transactions", { method: "POST" });
+            if (!txRes.ok) {
+              const txData = await txRes.json().catch(() => ({}));
+              errors.push(`IOL transactions: ${txData.error || "sync failed"}`);
+            }
           }
         } catch (err) {
           console.error("IOL auto-sync failed:", err);

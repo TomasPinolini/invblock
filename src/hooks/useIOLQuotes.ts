@@ -26,7 +26,8 @@ async function fetchQuotes(tickers: TickerRequest[]): Promise<QuotesResponse> {
   });
 
   if (!res.ok) {
-    return { quotes: {} };
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to fetch quotes");
   }
 
   return res.json();

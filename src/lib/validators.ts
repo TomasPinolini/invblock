@@ -60,3 +60,27 @@ export const transactionInsertSchema = transactionFormSchema.transform(
     totalAmount: data.quantity * data.pricePerUnit,
   })
 );
+
+// ── AI Analysis Response Validation ─────────────────────────────────────────
+
+const recommendationSchema = z.object({
+  ticker: z.string().min(1),
+  reason: z.string().min(1),
+  confidence: z.enum(["high", "medium", "low"]),
+});
+
+export const analysisResponseSchema = z.object({
+  summary: z.array(z.string()).min(1),
+  mentionedAssets: z.array(z.string()),
+  recommendations: z.object({
+    buy: z.array(recommendationSchema),
+    sell: z.array(recommendationSchema),
+    hold: z.array(recommendationSchema),
+  }),
+  risks: z.array(z.string()),
+  sentiment: z.enum(["Bullish", "Neutral", "Bearish"]),
+  sentimentReason: z.string(),
+});
+
+export type AnalysisResponse = z.infer<typeof analysisResponseSchema>;
+export type RecommendationItem = z.infer<typeof recommendationSchema>;

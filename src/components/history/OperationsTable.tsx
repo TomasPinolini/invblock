@@ -87,9 +87,9 @@ export default function OperationsTable({
             const type = formatOperationType(op.tipo);
             const status = formatOperationStatus(op.estado);
             const isBuy = op.tipo.toLowerCase().includes("compra");
-            const executedQty = op.cantidadOperada ?? op.cantidad;
-            const executedPrice = op.precioOperado ?? op.precio;
-            const executedTotal = op.montoOperado ?? op.montoTotal;
+            const executedQty = op.cantidadOperada ?? op.cantidad ?? 0;
+            const executedPrice = op.precioOperado ?? op.precio ?? 0;
+            const executedTotal = op.montoOperado ?? op.montoTotal ?? 0;
 
             // Determine currency from market
             const currency = op.mercado?.toLowerCase().includes("estados")

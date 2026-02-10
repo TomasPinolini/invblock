@@ -14,15 +14,19 @@ import {
   Lightbulb,
   X,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
 import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import PortfolioHealthCard from "@/components/portfolio/PortfolioHealthCard";
+import TradeEvaluatorCard from "@/components/portfolio/TradeEvaluatorCard";
 
 type Recommendation = {
   ticker: string;
   reason: string;
+  confidence?: "high" | "medium" | "low";
 };
 
 type Analysis = {
@@ -37,6 +41,26 @@ type Analysis = {
   sentiment: "Bullish" | "Neutral" | "Bearish";
   sentimentReason: string;
 };
+
+const confidenceBadgeStyles = {
+  high: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  medium: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  low: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
+} as const;
+
+function ConfidenceBadge({ confidence }: { confidence?: "high" | "medium" | "low" }) {
+  if (!confidence) return null;
+  return (
+    <span
+      className={cn(
+        "text-[10px] px-1.5 py-0.5 rounded-full border font-medium leading-none",
+        confidenceBadgeStyles[confidence],
+      )}
+    >
+      {confidence}
+    </span>
+  );
+}
 
 export default function InsightsPage() {
   const router = useRouter();
@@ -270,6 +294,22 @@ export default function InsightsPage() {
           )}
         </div>
 
+        {/* Portfolio Intelligence Section */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="h-5 w-5 text-amber-400" />
+            <h2 className="text-lg font-semibold">Portfolio Intelligence</h2>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            <ErrorBoundary>
+              <PortfolioHealthCard />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <TradeEvaluatorCard />
+            </ErrorBoundary>
+          </div>
+        </div>
+
         {/* Analysis Results */}
         {analysis && (
           <div className="space-y-6">
@@ -307,7 +347,10 @@ export default function InsightsPage() {
                   <ul className="space-y-3">
                     {analysis.recommendations.buy.map((rec, i) => (
                       <li key={i}>
-                        <span className="font-mono text-sm text-emerald-300">{rec.ticker}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm text-emerald-300">{rec.ticker}</span>
+                          <ConfidenceBadge confidence={rec.confidence} />
+                        </div>
                         <p className="text-xs text-zinc-400 mt-0.5">{rec.reason}</p>
                       </li>
                     ))}
@@ -327,7 +370,10 @@ export default function InsightsPage() {
                   <ul className="space-y-3">
                     {analysis.recommendations.sell.map((rec, i) => (
                       <li key={i}>
-                        <span className="font-mono text-sm text-red-300">{rec.ticker}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm text-red-300">{rec.ticker}</span>
+                          <ConfidenceBadge confidence={rec.confidence} />
+                        </div>
                         <p className="text-xs text-zinc-400 mt-0.5">{rec.reason}</p>
                       </li>
                     ))}
@@ -347,7 +393,10 @@ export default function InsightsPage() {
                   <ul className="space-y-3">
                     {analysis.recommendations.hold.map((rec, i) => (
                       <li key={i}>
-                        <span className="font-mono text-sm text-zinc-300">{rec.ticker}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm text-zinc-300">{rec.ticker}</span>
+                          <ConfidenceBadge confidence={rec.confidence} />
+                        </div>
                         <p className="text-xs text-zinc-400 mt-0.5">{rec.reason}</p>
                       </li>
                     ))}
