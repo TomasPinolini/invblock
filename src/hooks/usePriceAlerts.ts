@@ -2,6 +2,12 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+export interface AlertNarrative {
+  narrative: string;
+  factors: string[];
+  sentiment: "positive" | "negative" | "neutral";
+}
+
 export interface PriceAlert {
   id: string;
   user_id: string;
@@ -12,6 +18,8 @@ export interface PriceAlert {
   is_active: boolean;
   triggered_at: string | null;
   created_at: string;
+  narrative: AlertNarrative | null;
+  narrative_generated_at: string | null;
 }
 
 interface AlertsResponse {

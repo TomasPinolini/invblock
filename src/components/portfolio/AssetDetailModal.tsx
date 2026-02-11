@@ -38,6 +38,7 @@ export default function AssetDetailModal({
 }: AssetDetailModalProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("1M");
   const [dataSource, setDataSource] = useState<DataSource>("yahoo");
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   // Fetch live quote for IOL assets
   const isIOL = asset.source === "iol";
@@ -127,7 +128,7 @@ export default function AssetDetailModal({
     return price.toFixed(4);
   };
 
-  // Chart with axis labels
+  // Interactive chart with gradient fill, crosshair, and hover tooltip
   const renderChart = () => {
     if (!historyData?.history?.length) return null;
 
@@ -135,52 +136,166 @@ export default function AssetDetailModal({
     if (history.length < 2) return null;
 
     const prices = history.map((h) => h.close);
+    const dates = history.map((h) => h.date);
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     const range = max - min || 1;
+    const padding = range * 0.05;
+    const chartMin = min - padding;
+    const chartMax = max + padding;
+    const chartRange = chartMax - chartMin;
 
-    const width = 100;
-    const height = 50;
-    const points = prices.map((price, i) => {
-      const x = (i / (prices.length - 1)) * width;
-      const y = height - ((price - min) / range) * height;
-      return `${x},${y}`;
-    }).join(" ");
+    const svgW = 500;
+    const svgH = 200;
+
+    const chartPoints = prices.map((price, i) => ({
+      x: (i / (prices.length - 1)) * svgW,
+      y: svgH - ((price - chartMin) / chartRange) * svgH,
+      price,
+      date: dates[i],
+    }));
+
+    const linePoints = chartPoints.map((p) => `${p.x},${p.y}`).join(" ");
+    const areaPoints = `0,${svgH} ${linePoints} ${svgW},${svgH}`;
 
     const isPositive = prices[prices.length - 1] >= prices[0];
-    const startDate = history[0]?.date;
-    const endDate = history[history.length - 1]?.date;
+    const color = isPositive ? "#34d399" : "#f87171";
+
+    const safeIndex =
+      hoveredIndex !== null && hoveredIndex < chartPoints.length
+        ? hoveredIndex
+        : null;
+    const hovered = safeIndex !== null ? chartPoints[safeIndex] : null;
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const xRatio = (e.clientX - rect.left) / rect.width;
+      const idx = Math.round(xRatio * (chartPoints.length - 1));
+      setHoveredIndex(Math.max(0, Math.min(idx, chartPoints.length - 1)));
+    };
+
+    // Y-axis: 5 evenly spaced labels
+    const yLabelCount = 5;
+    const yLabels = Array.from({ length: yLabelCount }, (_, i) => {
+      const price = chartMax - (i / (yLabelCount - 1)) * chartRange;
+      return { price, yPct: (i / (yLabelCount - 1)) * 100 };
+    });
+
+    // X-axis: 5 evenly spaced date labels
+    const xLabelCount = 5;
+    const xLabels = Array.from({ length: xLabelCount }, (_, i) => {
+      const idx = Math.round((i / (xLabelCount - 1)) * (dates.length - 1));
+      return dates[idx];
+    });
 
     return (
-      <div className="space-y-1">
-        {/* Y-axis labels + Chart */}
+      <div className="space-y-1.5">
+        {/* Hover price display */}
+        <div className="h-6 flex items-center gap-2">
+          {hovered ? (
+            <>
+              <span className="text-sm font-mono font-bold text-zinc-100">
+                {formatCurrency(hovered.price, asset.currency)}
+              </span>
+              <span className="text-xs font-mono text-zinc-500">
+                {hovered.date ? formatAxisDate(hovered.date) : ""}
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-zinc-500">Hover chart for details</span>
+          )}
+        </div>
+
         <div className="flex gap-2">
-          {/* Y-axis */}
-          <div className="flex flex-col justify-between text-[10px] font-mono text-zinc-500 w-12 text-right">
-            <span>{formatAxisPrice(max)}</span>
-            <span>{formatAxisPrice(min)}</span>
+          {/* Y-axis labels */}
+          <div className="flex flex-col justify-between text-[10px] font-mono text-zinc-500 w-14 text-right shrink-0 py-0.5">
+            {yLabels.map((label, i) => (
+              <span key={i}>{formatAxisPrice(label.price)}</span>
+            ))}
           </div>
-          {/* Chart */}
-          <div className="flex-1">
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-20" preserveAspectRatio="none">
-              {/* Grid lines */}
-              <line x1="0" y1="0" x2={width} y2="0" stroke="#3f3f46" strokeWidth="0.5" strokeDasharray="2" />
-              <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="#3f3f46" strokeWidth="0.5" strokeDasharray="2" />
-              <line x1="0" y1={height} x2={width} y2={height} stroke="#3f3f46" strokeWidth="0.5" strokeDasharray="2" />
+
+          {/* Chart area */}
+          <div
+            className="flex-1 relative cursor-crosshair"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={() => setHoveredIndex(null)}
+          >
+            <svg
+              viewBox={`0 0 ${svgW} ${svgH}`}
+              className="w-full h-48"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="chart-area-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+                  <stop offset="80%" stopColor={color} stopOpacity="0.05" />
+                  <stop offset="100%" stopColor={color} stopOpacity="0" />
+                </linearGradient>
+              </defs>
+
+              {/* Horizontal grid lines */}
+              {yLabels.map((_, i) => (
+                <line
+                  key={i}
+                  x1="0"
+                  y1={(i / (yLabelCount - 1)) * svgH}
+                  x2={svgW}
+                  y2={(i / (yLabelCount - 1)) * svgH}
+                  stroke="#27272a"
+                  strokeWidth="0.5"
+                />
+              ))}
+
+              {/* Gradient area fill */}
+              <polygon points={areaPoints} fill="url(#chart-area-fill)" />
+
               {/* Price line */}
               <polyline
                 fill="none"
-                stroke={isPositive ? "#34d399" : "#f87171"}
+                stroke={color}
                 strokeWidth="2"
-                points={points}
+                points={linePoints}
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
             </svg>
+
+            {/* Crosshair + dot (HTML overlay for correct aspect ratio) */}
+            {hovered && (
+              <>
+                <div
+                  className="absolute top-0 bottom-0 w-px pointer-events-none"
+                  style={{
+                    left: `${(hovered.x / svgW) * 100}%`,
+                    backgroundColor: "#52525b",
+                  }}
+                />
+                <div
+                  className="absolute left-0 right-0 h-px pointer-events-none"
+                  style={{
+                    top: `${(hovered.y / svgH) * 100}%`,
+                    backgroundColor: "#52525b",
+                  }}
+                />
+                <div
+                  className="absolute w-3 h-3 rounded-full border-2 border-zinc-900 pointer-events-none -translate-x-1/2 -translate-y-1/2"
+                  style={{
+                    left: `${(hovered.x / svgW) * 100}%`,
+                    top: `${(hovered.y / svgH) * 100}%`,
+                    backgroundColor: color,
+                    boxShadow: `0 0 8px ${color}80`,
+                  }}
+                />
+              </>
+            )}
           </div>
         </div>
+
         {/* X-axis labels */}
-        <div className="flex justify-between text-[10px] font-mono text-zinc-500 pl-14">
-          <span>{startDate ? formatAxisDate(startDate) : ""}</span>
-          <span>{endDate ? formatAxisDate(endDate) : ""}</span>
+        <div className="flex justify-between text-[10px] font-mono text-zinc-500 pl-16">
+          {xLabels.map((date, i) => (
+            <span key={i}>{date ? formatAxisDate(date) : ""}</span>
+          ))}
         </div>
       </div>
     );
@@ -424,7 +539,7 @@ export default function AssetDetailModal({
           </div>
 
           {/* Chart / Historical Data */}
-          <div className="bg-zinc-800/50 rounded-lg p-3 min-h-[140px]">
+          <div className="bg-zinc-800/50 rounded-lg p-3 min-h-[300px]">
             {isLoading ? (
               <div className="flex items-center justify-center h-24" aria-live="polite">
                 <Loader2 className="h-6 w-6 animate-spin text-blue-400" />

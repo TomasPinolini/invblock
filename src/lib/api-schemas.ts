@@ -32,6 +32,18 @@ export const updateAlertSchema = z.object({
   targetPrice: z.number().positive("targetPrice must be positive").optional(),
 });
 
+// ── Alert Narrative ─────────────────────────────────────────────────────────
+
+export const alertNarrativeRequestSchema = z.object({
+  alertId: z.string().uuid("Invalid alert id"),
+});
+
+export const alertNarrativeResponseSchema = z.object({
+  narrative: z.string().min(10).max(2000),
+  factors: z.array(z.string().min(1)).min(1).max(5),
+  sentiment: z.enum(["positive", "negative", "neutral"]),
+});
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 export const iolAuthSchema = z.object({

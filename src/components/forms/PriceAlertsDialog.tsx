@@ -2,14 +2,80 @@
 
 import React, { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X, Bell, Plus, Trash2, TrendingUp, TrendingDown, Loader2, Pencil, Check } from "lucide-react";
+import { X, Bell, Plus, Trash2, TrendingUp, TrendingDown, Loader2, Pencil, Check, Sparkles } from "lucide-react";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
 import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
-import { usePriceAlerts, useCreateAlert, useUpdateAlert, useDeleteAlert } from "@/hooks/usePriceAlerts";
+import { usePriceAlerts, useCreateAlert, useUpdateAlert, useDeleteAlert, type PriceAlert } from "@/hooks/usePriceAlerts";
+import { useAlertNarrative } from "@/hooks/useAlertNarrative";
 import { formatCurrency, cn } from "@/lib/utils";
 
 type Condition = "above" | "below";
+
+function NarrativePanel({
+  alert,
+  isPending,
+  error,
+}: {
+  alert: PriceAlert;
+  isPending: boolean;
+  error: Error | null;
+}) {
+  if (isPending) {
+    return (
+      <div className="px-4 py-3 rounded-b-lg border border-t-0 border-zinc-800 bg-zinc-900/80">
+        <div className="flex items-center gap-2 text-sm text-zinc-400">
+          <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+          Analyzing price movement...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="px-4 py-3 rounded-b-lg border border-t-0 border-zinc-800 bg-zinc-900/80">
+        <p className="text-xs text-red-400">{error.message}</p>
+      </div>
+    );
+  }
+
+  if (!alert.narrative) return null;
+
+  const sentimentColors = {
+    positive: "bg-emerald-600/20 text-emerald-400 border-emerald-500/30",
+    negative: "bg-red-600/20 text-red-400 border-red-500/30",
+    neutral: "bg-zinc-600/20 text-zinc-400 border-zinc-500/30",
+  };
+
+  return (
+    <div className="px-4 py-3 rounded-b-lg border border-t-0 border-zinc-800 bg-zinc-900/80 space-y-2">
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            "px-2 py-0.5 text-[10px] font-medium rounded-full border",
+            sentimentColors[alert.narrative.sentiment]
+          )}
+        >
+          {alert.narrative.sentiment}
+        </span>
+      </div>
+      <p className="text-sm text-zinc-300 leading-relaxed">
+        {alert.narrative.narrative}
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {alert.narrative.factors.map((factor, i) => (
+          <span
+            key={i}
+            className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700"
+          >
+            {factor}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function PriceAlertsDialog() {
   const isOpen = useAppStore((s) => s.isPriceAlertsDialogOpen);
@@ -43,6 +109,10 @@ export default function PriceAlertsDialog() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCondition, setEditCondition] = useState<Condition>("above");
   const [editTargetPrice, setEditTargetPrice] = useState("");
+
+  // Narrative state
+  const [expandedNarrativeId, setExpandedNarrativeId] = useState<string | null>(null);
+  const narrativeMutation = useAlertNarrative();
 
   const selectedAsset = allAssets.find((a) => a.ticker === selectedTicker);
 
@@ -86,6 +156,17 @@ export default function PriceAlertsDialog() {
     });
 
     cancelEdit();
+  };
+
+  const handleWhyClick = (alert: PriceAlert) => {
+    if (expandedNarrativeId === alert.id) {
+      setExpandedNarrativeId(null);
+      return;
+    }
+    setExpandedNarrativeId(alert.id);
+    if (!alert.narrative) {
+      narrativeMutation.mutate(alert.id);
+    }
   };
 
   return (
@@ -217,123 +298,143 @@ export default function PriceAlertsDialog() {
             ) : (
               <div className="space-y-2">
                 {alerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-lg border",
-                      alert.is_active
-                        ? "bg-zinc-800/50 border-zinc-700"
-                        : "bg-zinc-800/20 border-zinc-800 opacity-60"
-                    )}
-                  >
-                    {editingId === alert.id ? (
-                      /* Edit Mode */
-                      <>
-                        <div className="flex items-center gap-2 flex-1">
-                          <span className="text-sm font-medium text-zinc-100">{alert.ticker}</span>
-                          <button
-                            type="button"
-                            onClick={() => setEditCondition(editCondition === "above" ? "below" : "above")}
-                            className={cn(
-                              "px-2 py-1 text-xs font-medium rounded border transition-colors flex items-center gap-1",
-                              editCondition === "above"
-                                ? "border-emerald-500/50 bg-emerald-600/20 text-emerald-400"
-                                : "border-red-500/50 bg-red-600/20 text-red-400"
-                            )}
-                          >
-                            {editCondition === "above" ? (
-                              <TrendingUp className="h-3 w-3" />
-                            ) : (
-                              <TrendingDown className="h-3 w-3" />
-                            )}
-                            {editCondition === "above" ? "Above" : "Below"}
-                          </button>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={editTargetPrice}
-                            onChange={(e) => setEditTargetPrice(e.target.value)}
-                            aria-label="Edit target price"
-                            className="w-24 px-2 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded text-zinc-100 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={handleUpdate}
-                            disabled={updateAlert.isPending}
-                            aria-label="Save alert changes"
-                            className="p-1.5 rounded-lg hover:bg-zinc-700 text-emerald-400 transition-colors"
-                          >
-                            {updateAlert.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Check className="h-4 w-4" />
-                            )}
-                          </button>
-                          <button
-                            onClick={cancelEdit}
-                            aria-label="Cancel editing"
-                            className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-500 transition-colors"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      /* View Mode */
-                      <>
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              "h-8 w-8 rounded-full flex items-center justify-center",
-                              alert.condition === "above"
-                                ? "bg-emerald-600/20"
-                                : "bg-red-600/20"
-                            )}
-                          >
-                            {alert.condition === "above" ? (
-                              <TrendingUp className="h-4 w-4 text-emerald-400" />
-                            ) : (
-                              <TrendingDown className="h-4 w-4 text-red-400" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-zinc-100">
-                              {alert.ticker}
-                              <span className="text-zinc-500 ml-1.5">
-                                {alert.condition} {formatCurrency(alert.target_price, "USD")}
-                              </span>
-                            </p>
-                            <p className="text-xs text-zinc-500">
-                              {alert.is_active ? (
-                                <>Current: {formatCurrency(alert.current_price || 0, "USD")}</>
-                              ) : (
-                                <>Triggered {new Date(alert.triggered_at!).toLocaleDateString()}</>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          {alert.is_active && (
+                  <div key={alert.id}>
+                    <div
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border",
+                        alert.is_active
+                          ? "bg-zinc-800/50 border-zinc-700"
+                          : "bg-zinc-800/20 border-zinc-800 opacity-60",
+                        expandedNarrativeId === alert.id && "rounded-b-none border-b-0"
+                      )}
+                    >
+                      {editingId === alert.id ? (
+                        /* Edit Mode */
+                        <>
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="text-sm font-medium text-zinc-100">{alert.ticker}</span>
                             <button
-                              onClick={() => startEdit(alert)}
-                              aria-label={`Edit alert for ${alert.ticker}`}
-                              className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-500 hover:text-blue-400 transition-colors"
+                              type="button"
+                              onClick={() => setEditCondition(editCondition === "above" ? "below" : "above")}
+                              className={cn(
+                                "px-2 py-1 text-xs font-medium rounded border transition-colors flex items-center gap-1",
+                                editCondition === "above"
+                                  ? "border-emerald-500/50 bg-emerald-600/20 text-emerald-400"
+                                  : "border-red-500/50 bg-red-600/20 text-red-400"
+                              )}
                             >
-                              <Pencil className="h-4 w-4" />
+                              {editCondition === "above" ? (
+                                <TrendingUp className="h-3 w-3" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3" />
+                              )}
+                              {editCondition === "above" ? "Above" : "Below"}
                             </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(alert.id)}
-                            disabled={deleteAlert.isPending}
-                            aria-label={`Delete alert for ${alert.ticker}`}
-                            className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-500 hover:text-red-400 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editTargetPrice}
+                              onChange={(e) => setEditTargetPrice(e.target.value)}
+                              aria-label="Edit target price"
+                              className="w-24 px-2 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded text-zinc-100 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={handleUpdate}
+                              disabled={updateAlert.isPending}
+                              aria-label="Save alert changes"
+                              className="p-1.5 rounded-lg hover:bg-zinc-700 text-emerald-400 transition-colors"
+                            >
+                              {updateAlert.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              aria-label="Cancel editing"
+                              className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-500 transition-colors"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        /* View Mode */
+                        <>
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={cn(
+                                "h-8 w-8 rounded-full flex items-center justify-center",
+                                alert.condition === "above"
+                                  ? "bg-emerald-600/20"
+                                  : "bg-red-600/20"
+                              )}
+                            >
+                              {alert.condition === "above" ? (
+                                <TrendingUp className="h-4 w-4 text-emerald-400" />
+                              ) : (
+                                <TrendingDown className="h-4 w-4 text-red-400" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-zinc-100">
+                                {alert.ticker}
+                                <span className="text-zinc-500 ml-1.5">
+                                  {alert.condition} {formatCurrency(alert.target_price, "USD")}
+                                </span>
+                              </p>
+                              <p className="text-xs text-zinc-500">
+                                {alert.is_active ? (
+                                  <>Current: {formatCurrency(alert.current_price || 0, "USD")}</>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5">
+                                    Triggered {new Date(alert.triggered_at!).toLocaleDateString()}
+                                    <button
+                                      onClick={() => handleWhyClick(alert)}
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 transition-colors"
+                                    >
+                                      <Sparkles className="h-3 w-3" />
+                                      Why?
+                                    </button>
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {alert.is_active && (
+                              <button
+                                onClick={() => startEdit(alert)}
+                                aria-label={`Edit alert for ${alert.ticker}`}
+                                className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-500 hover:text-blue-400 transition-colors"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDelete(alert.id)}
+                              disabled={deleteAlert.isPending}
+                              aria-label={`Delete alert for ${alert.ticker}`}
+                              className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-500 hover:text-red-400 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Narrative Panel */}
+                    {expandedNarrativeId === alert.id && !alert.is_active && (
+                      <NarrativePanel
+                        alert={alert}
+                        isPending={narrativeMutation.isPending && narrativeMutation.variables === alert.id}
+                        error={narrativeMutation.variables === alert.id ? narrativeMutation.error : null}
+                      />
                     )}
                   </div>
                 ))}
