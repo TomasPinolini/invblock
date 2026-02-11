@@ -17,6 +17,7 @@ interface Preferences {
   displayCurrency: Currency; // ARS or USD — controls all value displays
   defaultCategory: AssetCategory;
   compactTable: boolean; // Dense rows vs. comfortable
+  privacyMode: boolean; // Blur financial values for public use
 }
 
 interface AppState {
@@ -25,6 +26,7 @@ interface AppState {
   setDisplayCurrency: (currency: Currency) => void;
   setDefaultCategory: (category: AssetCategory) => void;
   toggleCompactTable: () => void;
+  togglePrivacyMode: () => void;
 
   // ── Sync Status ──
   sync: SyncStatus;
@@ -56,6 +58,7 @@ export const useAppStore = create<AppState>()(
           displayCurrency: "USD",
           defaultCategory: "stock",
           compactTable: true, // Default to compact mode
+          privacyMode: false,
         },
         setDisplayCurrency: (currency) =>
           set(
@@ -83,6 +86,17 @@ export const useAppStore = create<AppState>()(
             }),
             false,
             "toggleCompactTable"
+          ),
+        togglePrivacyMode: () =>
+          set(
+            (s) => ({
+              preferences: {
+                ...s.preferences,
+                privacyMode: !s.preferences.privacyMode,
+              },
+            }),
+            false,
+            "togglePrivacyMode"
           ),
 
         // ── Sync Status ──

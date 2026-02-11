@@ -62,7 +62,7 @@ export default function PortfolioSummary() {
           <Wallet className="h-4 w-4" />
           <span className="text-xs uppercase tracking-wider">Total Value</span>
         </div>
-        <p className="text-2xl font-bold font-mono text-zinc-50 animate-value-reveal">
+        <p data-sensitive className="text-2xl font-bold font-mono text-zinc-50 animate-value-reveal">
           {formatCurrency(summary.totalValue, displayCurrency)}
         </p>
       </div>
@@ -74,6 +74,7 @@ export default function PortfolioSummary() {
           <span className="text-xs uppercase tracking-wider">Total P&L</span>
         </div>
         <p
+          data-sensitive
           className={cn(
             "text-2xl font-bold font-mono animate-value-reveal",
             isPositive ? "text-emerald-400" : "text-red-400"
@@ -89,6 +90,7 @@ export default function PortfolioSummary() {
           </span>
         </p>
         <p
+          data-sensitive
           className={cn(
             "text-sm font-mono mt-1",
             isPositive ? "text-emerald-400/70" : "text-red-400/70"
@@ -104,7 +106,7 @@ export default function PortfolioSummary() {
           <PieChart className="h-4 w-4" />
           <span className="text-xs uppercase tracking-wider">Cost Basis</span>
         </div>
-        <p className="text-2xl font-bold font-mono text-zinc-50 animate-value-reveal">
+        <p data-sensitive className="text-2xl font-bold font-mono text-zinc-50 animate-value-reveal">
           {formatCurrency(summary.totalCost, displayCurrency)}
         </p>
       </div>

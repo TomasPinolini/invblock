@@ -84,3 +84,29 @@ export const analysisResponseSchema = z.object({
 
 export type AnalysisResponse = z.infer<typeof analysisResponseSchema>;
 export type RecommendationItem = z.infer<typeof recommendationSchema>;
+
+// ── Watchlist Validation ─────────────────────────────────────────────────
+
+export const watchlistCreateSchema = z.object({
+  ticker: z
+    .string()
+    .min(1, "Ticker is required")
+    .max(20)
+    .transform((v) => v.toUpperCase().trim()),
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(120)
+    .transform((v) => v.trim()),
+  category: z.enum(ASSET_CATEGORIES, {
+    message: "Select a valid category",
+  }),
+  notes: z.string().max(500).optional(),
+});
+
+export const watchlistUpdateSchema = z.object({
+  notes: z.string().max(500).optional(),
+});
+
+export type WatchlistCreateValues = z.infer<typeof watchlistCreateSchema>;
+export type WatchlistUpdateValues = z.infer<typeof watchlistUpdateSchema>;

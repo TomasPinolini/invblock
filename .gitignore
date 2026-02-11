@@ -31,9 +31,9 @@ nul
 # editor / AI tool configs
 .cursor/
 .windsurf/
-.claude/
 .agents/
 .mcp.json
+.claude/settings.local.json
 
 # debug
 npm-debug.log*

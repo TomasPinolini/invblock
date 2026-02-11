@@ -109,7 +109,7 @@ export function buildColumns(displayCurrency: "USD" | "ARS") {
     col.accessor("displayAvgPrice", {
       header: "Avg Cost",
       cell: (info) => (
-        <span className="font-mono text-zinc-400">
+        <span data-sensitive className="font-mono text-zinc-400">
           {formatCurrency(info.getValue(), displayCurrency)}
         </span>
       ),
@@ -123,7 +123,7 @@ export function buildColumns(displayCurrency: "USD" | "ARS") {
         const change = row.dailyChange;
         const hasQuote = row.hasLiveQuote;
         return (
-          <div className="flex items-center gap-1.5">
+          <div data-sensitive className="flex items-center gap-1.5">
             <span className="font-mono text-zinc-200">
               {formatCurrency(info.getValue(), displayCurrency)}
             </span>
@@ -169,7 +169,7 @@ export function buildColumns(displayCurrency: "USD" | "ARS") {
     col.accessor("displayValue", {
       header: "Value",
       cell: (info) => (
-        <span className="font-mono font-semibold text-zinc-100">
+        <span data-sensitive className="font-mono font-semibold text-zinc-100">
           {formatCurrency(info.getValue(), displayCurrency)}
         </span>
       ),
@@ -183,6 +183,7 @@ export function buildColumns(displayCurrency: "USD" | "ARS") {
         const isPositive = v >= 0;
         return (
           <span
+            data-sensitive
             className={cn(
               "inline-flex items-center gap-1 font-mono font-semibold",
               isPositive ? "text-emerald-400" : "text-red-400"

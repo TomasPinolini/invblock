@@ -161,6 +161,36 @@ export const tradeAuditLog = pgTable(
 export type TradeAuditEntry = typeof tradeAuditLog.$inferSelect;
 export type NewTradeAuditEntry = typeof tradeAuditLog.$inferInsert;
 
+// ── Watchlist ─────────────────────────────────────────────────────────────
+
+export const watchlist = pgTable(
+  "watchlist",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull(),
+    ticker: varchar("ticker", { length: 20 }).notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    category: assetCategoryEnum("category").notNull(),
+    notes: varchar("notes", { length: 500 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: index("watchlist_user_idx").on(table.userId),
+    userTickerIdx: index("watchlist_user_ticker_idx").on(
+      table.userId,
+      table.ticker
+    ),
+  })
+);
+
+export type WatchlistItem = typeof watchlist.$inferSelect;
+export type NewWatchlistItem = typeof watchlist.$inferInsert;
+
 // Inferred types for use across the app
 export type Asset = typeof assets.$inferSelect;
 export type NewAsset = typeof assets.$inferInsert;

@@ -11,6 +11,7 @@ import {
   BarChart3,
   Coins,
   Hash,
+  ChevronDown,
 } from "lucide-react";
 import { usePortfolioHealth } from "@/hooks/usePortfolioHealth";
 import type {
@@ -269,6 +270,7 @@ export default function PortfolioHealthCard() {
   if (!result) return null;
 
   const { score, rating, findings, suggestions, metrics } = result;
+  const [isExpanded, setIsExpanded] = useState(true);
 
   // Sort findings: critical first, then warnings, then strengths
   const sortedFindings = [...findings].sort((a, b) => {
@@ -276,98 +278,161 @@ export default function PortfolioHealthCard() {
     return order[a.type] - order[b.type];
   });
 
-  return (
-    <div className="card-elevated p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Activity className="h-5 w-5 text-blue-400" />
-          Portfolio Health
-        </h2>
-        <button
-          onClick={handleReanalyze}
-          className="btn-ghost"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Re-analyze
-        </button>
-      </div>
+  const criticalCount = findings.filter((f) => f.type === "critical").length;
+  const warningCount = findings.filter((f) => f.type === "warning").length;
+  const strengthCount = findings.filter((f) => f.type === "strength").length;
 
-      {/* Score + Rating */}
-      <div className="flex flex-col sm:flex-row items-center gap-6">
-        <ScoreCircle score={score} />
-        <div className="flex flex-col items-center sm:items-start gap-2">
+  return (
+    <div className="card-elevated p-6 space-y-4">
+      {/* Header — always visible, clickable to toggle */}
+      <div
+        className="flex items-center justify-between cursor-pointer select-none"
+        onClick={() => setIsExpanded(!isExpanded)}
+        role="button"
+        aria-expanded={isExpanded}
+        aria-controls="health-details"
+      >
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Activity className="h-5 w-5 text-blue-400" />
+            Portfolio Health
+          </h2>
+          {/* Compact score badge when collapsed */}
           <span
             className={cn(
-              "text-sm px-3 py-1 rounded-full border font-medium",
+              "text-sm px-2.5 py-0.5 rounded-full border font-bold font-mono",
               getRatingBadge(rating)
             )}
           >
-            {rating}
+            {score}
           </span>
-          <p className="text-xs text-zinc-500 text-center sm:text-left max-w-xs">
-            {score >= 80 && "Your portfolio is well-diversified and balanced."}
-            {score >= 60 && score < 80 && "Your portfolio is in good shape with some room for improvement."}
-            {score >= 40 && score < 60 && "Your portfolio has notable imbalances to address."}
-            {score < 40 && "Your portfolio needs significant rebalancing."}
-          </p>
+          {/* Finding counts as small badges */}
+          {!isExpanded && (
+            <div className="hidden sm:flex items-center gap-1.5 ml-1">
+              {criticalCount > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 font-medium">
+                  {criticalCount} critical
+                </span>
+              )}
+              {warningCount > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-medium">
+                  {warningCount} warning
+                </span>
+              )}
+              {strengthCount > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-medium">
+                  {strengthCount} ok
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleReanalyze();
+            }}
+            className="btn-ghost"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Re-analyze</span>
+          </button>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 text-zinc-500 transition-transform duration-200",
+              isExpanded && "rotate-180"
+            )}
+          />
         </div>
       </div>
 
-      {/* Findings */}
-      {sortedFindings.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-2">
-            Findings
-          </h3>
-          <div className="divide-y divide-zinc-800/60">
-            {sortedFindings.map((finding, i) => (
-              <FindingItem key={i} finding={finding} />
-            ))}
+      {/* Collapsible detail section */}
+      <div
+        id="health-details"
+        className={cn(
+          "overflow-hidden transition-all duration-300 ease-out",
+          isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
+        )}
+      >
+        <div className="space-y-6 pt-2">
+          {/* Score + Rating */}
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <ScoreCircle score={score} />
+            <div className="flex flex-col items-center sm:items-start gap-2">
+              <span
+                className={cn(
+                  "text-sm px-3 py-1 rounded-full border font-medium",
+                  getRatingBadge(rating)
+                )}
+              >
+                {rating}
+              </span>
+              <p className="text-xs text-zinc-500 text-center sm:text-left max-w-xs">
+                {score >= 80 && "Your portfolio is well-diversified and balanced."}
+                {score >= 60 && score < 80 && "Your portfolio is in good shape with some room for improvement."}
+                {score >= 40 && score < 60 && "Your portfolio has notable imbalances to address."}
+                {score < 40 && "Your portfolio needs significant rebalancing."}
+              </p>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Suggestions */}
-      {suggestions.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-2">
-            Suggestions
-          </h3>
-          <div className="divide-y divide-zinc-800/60">
-            {suggestions.map((suggestion, i) => (
-              <SuggestionItem key={i} suggestion={suggestion} index={i} />
-            ))}
+          {/* Findings */}
+          {sortedFindings.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-2">
+                Findings
+              </h3>
+              <div className="divide-y divide-zinc-800/60">
+                {sortedFindings.map((finding, i) => (
+                  <FindingItem key={i} finding={finding} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Suggestions */}
+          {suggestions.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-2">
+                Suggestions
+              </h3>
+              <div className="divide-y divide-zinc-800/60">
+                {suggestions.map((suggestion, i) => (
+                  <SuggestionItem key={i} suggestion={suggestion} index={i} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Metrics Footer */}
+          <div className="flex flex-wrap gap-4 pt-4 border-t border-zinc-800/60">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+              <BarChart3 className="h-3.5 w-3.5" />
+              <span>HHI:</span>
+              <span className="font-mono text-zinc-400">
+                {metrics.hhi.toFixed(0)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+              <Hash className="h-3.5 w-3.5" />
+              <span>Positions:</span>
+              <span className="font-mono text-zinc-400">
+                {metrics.positionCount}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+              <Coins className="h-3.5 w-3.5" />
+              <span>Currency:</span>
+              <span className="font-mono text-zinc-400">
+                {metrics.currencyExposure.usd.toFixed(0)}% USD
+              </span>
+              <span className="text-zinc-700">/</span>
+              <span className="font-mono text-zinc-400">
+                {metrics.currencyExposure.ars.toFixed(0)}% ARS
+              </span>
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Metrics Footer */}
-      <div className="flex flex-wrap gap-4 pt-4 border-t border-zinc-800/60">
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-          <BarChart3 className="h-3.5 w-3.5" />
-          <span>HHI:</span>
-          <span className="font-mono text-zinc-400">
-            {metrics.hhi.toFixed(0)}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-          <Hash className="h-3.5 w-3.5" />
-          <span>Positions:</span>
-          <span className="font-mono text-zinc-400">
-            {metrics.positionCount}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-          <Coins className="h-3.5 w-3.5" />
-          <span>Currency:</span>
-          <span className="font-mono text-zinc-400">
-            {metrics.currencyExposure.usd.toFixed(0)}% USD
-          </span>
-          <span className="text-zinc-700">/</span>
-          <span className="font-mono text-zinc-400">
-            {metrics.currencyExposure.ars.toFixed(0)}% ARS
-          </span>
         </div>
       </div>
     </div>

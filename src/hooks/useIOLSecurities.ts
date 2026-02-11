@@ -10,6 +10,7 @@ interface SecuritiesResponse {
   instrumentType: string;
   panel: string | null;
   error?: string;
+  marketClosed?: boolean;
 }
 
 interface UseIOLSecuritiesOptions {

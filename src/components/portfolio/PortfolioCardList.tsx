@@ -61,7 +61,7 @@ export function PortfolioCardList({
             {/* Bottom row: Price + daily change | Value | P&L */}
             <div className="flex items-center justify-between">
               {/* Price + daily change */}
-              <div className="flex items-center gap-1">
+              <div data-sensitive className="flex items-center gap-1">
                 <span className="font-mono text-xs text-zinc-300">
                   {formatCurrency(row.displayPrice, displayCurrency)}
                 </span>
@@ -78,12 +78,13 @@ export function PortfolioCardList({
               </div>
 
               {/* Value */}
-              <span className="font-mono font-semibold text-sm text-zinc-100">
+              <span data-sensitive className="font-mono font-semibold text-sm text-zinc-100">
                 {formatCurrency(row.displayValue, displayCurrency)}
               </span>
 
               {/* P&L % */}
               <span
+                data-sensitive
                 className={cn(
                   "inline-flex items-center gap-0.5 font-mono font-semibold text-xs",
                   pnlPositive ? "text-emerald-400" : "text-red-400"

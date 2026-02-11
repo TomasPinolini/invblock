@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, TrendingUp, TrendingDown, Loader2, AlertCircle, Activity, Database } from "lucide-react";
+import { X, TrendingUp, TrendingDown, Loader2, AlertCircle, Activity, Database, ShoppingCart, Banknote } from "lucide-react";
 import { useTickerHistory } from "@/hooks/useHistoricalPrices";
 import { useIOLQuote } from "@/hooks/useIOLQuotes";
 import { useIOLHistorical, getDateRangeForPeriod } from "@/hooks/useIOLHistorical";
@@ -27,6 +27,8 @@ interface AssetDetailModalProps {
   };
   displayCurrency: "USD" | "ARS";
   onClose: () => void;
+  onBuy?: () => void;
+  onSell?: () => void;
 }
 
 const TIME_PERIODS: TimePeriod[] = ["1D", "1W", "1M", "1Y", "5Y", "ALL"];
@@ -35,6 +37,8 @@ export default function AssetDetailModal({
   asset,
   displayCurrency,
   onClose,
+  onBuy,
+  onSell,
 }: AssetDetailModalProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("1M");
   const [dataSource, setDataSource] = useState<DataSource>("yahoo");
@@ -587,8 +591,41 @@ export default function AssetDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-zinc-800 text-xs text-zinc-600">
-          Data from {dataSource === "iol" ? "IOL (adjusted for AR market)" : "Yahoo Finance"} · Click outside to close
+        <div className="sticky bottom-0 bg-zinc-900/95 backdrop-blur-sm border-t border-zinc-800 px-4 py-3 space-y-2">
+          {/* Trade buttons — IOL assets only */}
+          {isIOL && onBuy && onSell && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  onClose();
+                  onBuy();
+                }}
+                className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg
+                           bg-emerald-600/20 border border-emerald-500/30 text-emerald-400
+                           hover:bg-emerald-600/30 active:bg-emerald-600/40
+                           text-sm font-semibold transition-colors"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                Comprar
+              </button>
+              <button
+                onClick={() => {
+                  onClose();
+                  onSell();
+                }}
+                className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg
+                           bg-red-600/20 border border-red-500/30 text-red-400
+                           hover:bg-red-600/30 active:bg-red-600/40
+                           text-sm font-semibold transition-colors"
+              >
+                <Banknote className="h-4 w-4" />
+                Vender
+              </button>
+            </div>
+          )}
+          <p className="text-xs text-zinc-600 text-center">
+            {dataSource === "iol" ? "IOL (adjusted for AR market)" : "Yahoo Finance"} · Tap outside to close
+          </p>
         </div>
       </div>
     </div>

@@ -137,10 +137,11 @@ export default function PortfolioTable() {
           <p className="text-xs uppercase tracking-widest text-zinc-500">
             Total Portfolio Value
           </p>
-          <p className="text-xl sm:text-2xl font-bold font-mono text-zinc-50">
+          <p data-sensitive className="text-xl sm:text-2xl font-bold font-mono text-zinc-50">
             {formatCurrency(totalValue, displayCurrency)}
           </p>
           <p
+            data-sensitive
             className={cn(
               "text-sm font-mono font-semibold",
               totalPnl >= 0 ? "text-emerald-400" : "text-red-400"
@@ -374,6 +375,8 @@ export default function PortfolioTable() {
           asset={selectedAsset}
           displayCurrency={displayCurrency}
           onClose={() => setSelectedAsset(null)}
+          onBuy={() => handleBuy(selectedAsset)}
+          onSell={() => handleSell(selectedAsset)}
         />
       )}
 

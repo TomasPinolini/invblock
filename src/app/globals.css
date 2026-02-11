@@ -409,3 +409,21 @@ body {
 [data-state="closed"] {
   animation: fadeOut 150ms ease-in;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRIVACY MODE — blur sensitive financial values
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-sensitive] {
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+[data-privacy="on"] [data-sensitive] {
+  filter: blur(12px);
+  user-select: none;
+  pointer-events: none;
+}
+
+[data-privacy="on"] [data-sensitive]:hover {
+  filter: blur(8px);
+}

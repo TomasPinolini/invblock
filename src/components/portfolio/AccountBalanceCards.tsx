@@ -43,11 +43,11 @@ export default function AccountBalanceCards() {
           <Banknote className="h-3.5 w-3.5" />
           <span className="text-[10px] uppercase tracking-wider">Efectivo ARS</span>
         </div>
-        <p className="text-lg font-bold font-mono text-zinc-50">
+        <p data-sensitive className="text-lg font-bold font-mono text-zinc-50">
           {formatCurrency(balances.ars.disponible, "ARS")}
         </p>
         {balances.ars.comprometido > 0 && (
-          <div className="flex items-center gap-1 mt-1 text-[10px] text-amber-500">
+          <div data-sensitive className="flex items-center gap-1 mt-1 text-[10px] text-amber-500">
             <Lock className="h-2.5 w-2.5" />
             <span>
               {formatCurrency(balances.ars.comprometido, "ARS")} en órdenes
@@ -62,11 +62,11 @@ export default function AccountBalanceCards() {
           <DollarSign className="h-3.5 w-3.5" />
           <span className="text-[10px] uppercase tracking-wider">Efectivo USD</span>
         </div>
-        <p className="text-lg font-bold font-mono text-zinc-50">
+        <p data-sensitive className="text-lg font-bold font-mono text-zinc-50">
           {formatCurrency(balances.usd.disponible, "USD")}
         </p>
         {balances.usd.comprometido > 0 && (
-          <div className="flex items-center gap-1 mt-1 text-[10px] text-amber-500">
+          <div data-sensitive className="flex items-center gap-1 mt-1 text-[10px] text-amber-500">
             <Lock className="h-2.5 w-2.5" />
             <span>
               {formatCurrency(balances.usd.comprometido, "USD")} in orders
