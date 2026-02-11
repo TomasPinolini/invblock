@@ -62,11 +62,18 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
     <div
       role="status"
       className={cn(
-        "flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg",
-        "animate-in slide-in-from-right-full duration-300",
+        "flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-sm",
+        "toast-enter",
         styles[toast.type]
       )}
     >
+      <div className={cn(
+        "w-0.5 self-stretch rounded-full -ml-1",
+        toast.type === "success" && "bg-emerald-400",
+        toast.type === "error" && "bg-red-400",
+        toast.type === "info" && "bg-blue-400",
+        toast.type === "warning" && "bg-amber-400"
+      )} />
       <Icon className={cn("h-5 w-5 shrink-0", iconStyles[toast.type])} />
       <p className="text-sm font-medium flex-1">{toast.message}</p>
       <button

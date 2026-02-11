@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-display",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-data",
+});
 
 export const metadata: Metadata = {
   title: "Financial Command Center",
@@ -18,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} font-sans antialiased
+        className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased
                     bg-zinc-950 text-zinc-100 min-h-screen`}
       >
         <Providers><main id="main-content">{children}</main></Providers>

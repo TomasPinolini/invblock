@@ -192,7 +192,7 @@ export default function PortfolioHealthCard() {
 
   if (!hasRun && !isPending) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+      <div className="card-elevated p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Activity className="h-5 w-5 text-blue-400" />
@@ -206,9 +206,7 @@ export default function PortfolioHealthCard() {
         <button
           onClick={handleAnalyze}
           disabled={portfolioLoading || portfolioRows.length === 0}
-          className="w-full h-11 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50
-                     text-white font-medium transition-colors inline-flex items-center
-                     justify-center gap-2 text-sm"
+          className="btn-primary w-full"
         >
           <Activity className="h-4 w-4" />
           Check Portfolio Health
@@ -226,7 +224,7 @@ export default function PortfolioHealthCard() {
 
   if (isPending) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+      <div className="card-elevated p-6">
         <div className="flex flex-col items-center justify-center py-12 gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
           <div className="text-center">
@@ -279,7 +277,7 @@ export default function PortfolioHealthCard() {
   });
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-6">
+    <div className="card-elevated p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -288,9 +286,7 @@ export default function PortfolioHealthCard() {
         </h2>
         <button
           onClick={handleReanalyze}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg
-                     bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs
-                     font-medium transition-colors"
+          className="btn-ghost"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Re-analyze

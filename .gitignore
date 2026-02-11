@@ -33,6 +33,7 @@ nul
 .windsurf/
 .claude/
 .agents/
+.mcp.json
 
 # debug
 npm-debug.log*

@@ -12,13 +12,13 @@ export default function Header() {
   const sync = useAppStore((s) => s.sync);
 
   return (
-    <header className="flex items-center justify-between gap-2" role="banner">
+    <header className="header-glow-line flex items-center justify-between gap-2" role="banner">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-        <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-blue-600/20 flex items-center justify-center shrink-0">
+        <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-blue-600/20 border border-blue-500/20 flex items-center justify-center shrink-0">
           <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
         </div>
         <div className="min-w-0">
-          <h1 className="text-base sm:text-xl font-bold text-zinc-100 truncate">
+          <h1 className="text-base sm:text-xl font-bold text-zinc-100 tracking-tight truncate">
             <span className="sm:hidden">Portfolio</span>
             <span className="hidden sm:inline">Financial Command Center</span>
           </h1>

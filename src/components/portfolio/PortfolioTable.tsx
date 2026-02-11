@@ -208,9 +208,7 @@ export default function PortfolioTable() {
                 onClick={() => refetch()}
                 disabled={isFetching}
                 aria-label="Refresh portfolio data"
-                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg
-                           bg-blue-600 hover:bg-blue-500 disabled:opacity-50
-                           text-white text-sm font-medium transition-colors whitespace-nowrap"
+                className="btn-secondary whitespace-nowrap disabled:opacity-50"
               >
                 {isFetching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -252,12 +250,11 @@ export default function PortfolioTable() {
       </div>
 
       {/* ── Desktop Table ─────────────────────────────────────────────── */}
-      <div className="hidden sm:block overflow-x-auto rounded-xl border border-zinc-800/80
-                      bg-zinc-950/50 backdrop-blur-sm">
+      <div className="hidden sm:block overflow-x-auto card-elevated backdrop-blur-sm">
         <table className="w-full text-sm">
           <thead>
             {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="border-b border-zinc-800/60">
+              <tr key={hg.id} className="table-header-row">
                 {hg.headers.map((header) => {
                   const hideOnMobile = (header.column.columnDef.meta as { hideOnMobile?: boolean })?.hideOnMobile;
                   return (
@@ -279,8 +276,8 @@ export default function PortfolioTable() {
                           header.getContext()
                         )}
                         {{
-                          asc: <ArrowUp className="h-3 w-3 text-blue-400" />,
-                          desc: <ArrowDown className="h-3 w-3 text-blue-400" />,
+                          asc: <span className="bg-blue-500/10 rounded px-1 py-0.5"><ArrowUp className="h-3 w-3 text-blue-400" /></span>,
+                          desc: <span className="bg-blue-500/10 rounded px-1 py-0.5"><ArrowDown className="h-3 w-3 text-blue-400" /></span>,
                         }[header.column.getIsSorted() as string] ?? (
                           header.column.getCanSort() && (
                             <ArrowUpDown className="h-3 w-3 opacity-30" />
@@ -321,12 +318,14 @@ export default function PortfolioTable() {
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map((row, rowIndex) => (
                 <tr
                   key={row.id}
                   onClick={() => setSelectedAsset(row.original)}
-                  className="border-b border-zinc-800/30 hover:bg-zinc-800/20
-                             transition-colors cursor-pointer"
+                  className={cn(
+                    "table-row-hover border-b border-zinc-800/30 cursor-pointer",
+                    rowIndex % 2 === 1 && "table-row-even"
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => {
                     const hideOnMobile = (cell.column.columnDef.meta as { hideOnMobile?: boolean })?.hideOnMobile;

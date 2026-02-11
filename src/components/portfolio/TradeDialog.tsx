@@ -120,7 +120,7 @@ export default function TradeDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 modal-backdrop"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -130,7 +130,7 @@ export default function TradeDialog({
         role="dialog"
         aria-modal="true"
         aria-label={`${actionLabel} ${asset.ticker}`}
-        className="relative z-10 w-full max-w-md mx-2 sm:mx-4 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl"
+        className="relative z-10 w-full max-w-md mx-2 sm:mx-4 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl modal-content"
       >
         {/* Header */}
         <div

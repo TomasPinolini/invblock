@@ -305,7 +305,7 @@ export default function AssetDetailModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 modal-backdrop"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -315,7 +315,7 @@ export default function AssetDetailModal({
         role="dialog"
         aria-modal="true"
         aria-label={`${asset.ticker} detail`}
-        className="relative z-10 w-full max-w-lg mx-2 sm:mx-4 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="relative z-10 w-full max-w-lg mx-2 sm:mx-4 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto modal-content"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">

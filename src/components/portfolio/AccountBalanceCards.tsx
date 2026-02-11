@@ -20,7 +20,7 @@ export default function AccountBalanceCards() {
         {[1, 2].map((i) => (
           <div
             key={i}
-            className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 flex items-center justify-center"
+            className="card-elevated hover-lift p-3 flex items-center justify-center"
           >
             <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
           </div>
@@ -38,7 +38,7 @@ export default function AccountBalanceCards() {
   return (
     <div className="grid gap-3 grid-cols-2">
       {/* ARS Balance */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
+      <div className="card-elevated hover-lift p-3">
         <div className="flex items-center gap-2 text-zinc-500 mb-1.5">
           <Banknote className="h-3.5 w-3.5" />
           <span className="text-[10px] uppercase tracking-wider">Efectivo ARS</span>
@@ -57,7 +57,7 @@ export default function AccountBalanceCards() {
       </div>
 
       {/* USD Balance */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
+      <div className="card-elevated hover-lift p-3">
         <div className="flex items-center gap-2 text-zinc-500 mb-1.5">
           <DollarSign className="h-3.5 w-3.5" />
           <span className="text-[10px] uppercase tracking-wider">Efectivo USD</span>

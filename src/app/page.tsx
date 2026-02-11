@@ -24,32 +24,44 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
       {/* Header */}
-      <Header />
+      <div className="animate-fade-in-up stagger-1">
+        <Header />
+      </div>
 
       {/* Cash Balances (IOL) */}
-      <ErrorBoundary>
-        <AccountBalanceCards />
-      </ErrorBoundary>
+      <div className="animate-fade-in-up stagger-2">
+        <ErrorBoundary>
+          <AccountBalanceCards />
+        </ErrorBoundary>
+      </div>
 
       {/* Summary Cards */}
-      <ErrorBoundary>
-        <PortfolioSummary />
-      </ErrorBoundary>
+      <div className="animate-fade-in-up stagger-3">
+        <ErrorBoundary>
+          <PortfolioSummary />
+        </ErrorBoundary>
+      </div>
 
       {/* Allocation Bar */}
-      <ErrorBoundary>
-        <AllocationBar />
-      </ErrorBoundary>
+      <div className="animate-fade-in-up stagger-4">
+        <ErrorBoundary>
+          <AllocationBar />
+        </ErrorBoundary>
+      </div>
 
       {/* Portfolio Health Score */}
-      <ErrorBoundary>
-        <PortfolioHealthCard />
-      </ErrorBoundary>
+      <div className="animate-fade-in-up stagger-5">
+        <ErrorBoundary>
+          <PortfolioHealthCard />
+        </ErrorBoundary>
+      </div>
 
       {/* Portfolio Table */}
-      <ErrorBoundary>
-        <PortfolioTable />
-      </ErrorBoundary>
+      <div className="animate-fade-in-up stagger-6">
+        <ErrorBoundary>
+          <PortfolioTable />
+        </ErrorBoundary>
+      </div>
 
       {/* Dialogs (rendered globally, controlled by Zustand) */}
       <AssetEntryDialog />

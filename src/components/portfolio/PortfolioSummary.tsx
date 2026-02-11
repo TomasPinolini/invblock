@@ -57,25 +57,25 @@ export default function PortfolioSummary() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {/* Total Value */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+      <div className="card-prominent glow-blue hover-lift p-4">
         <div className="flex items-center gap-2 text-zinc-500 mb-2">
           <Wallet className="h-4 w-4" />
           <span className="text-xs uppercase tracking-wider">Total Value</span>
         </div>
-        <p className="text-2xl font-bold font-mono text-zinc-50">
+        <p className="text-2xl font-bold font-mono text-zinc-50 animate-value-reveal">
           {formatCurrency(summary.totalValue, displayCurrency)}
         </p>
       </div>
 
       {/* P&L */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+      <div className={cn("card-prominent hover-lift p-4", isPositive ? "glow-emerald" : "glow-red")}>
         <div className="flex items-center gap-2 text-zinc-500 mb-2">
           <Activity className="h-4 w-4" />
           <span className="text-xs uppercase tracking-wider">Total P&L</span>
         </div>
         <p
           className={cn(
-            "text-2xl font-bold font-mono",
+            "text-2xl font-bold font-mono animate-value-reveal",
             isPositive ? "text-emerald-400" : "text-red-400"
           )}
         >
@@ -99,18 +99,18 @@ export default function PortfolioSummary() {
       </div>
 
       {/* Cost Basis */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+      <div className="card-prominent hover-lift p-4">
         <div className="flex items-center gap-2 text-zinc-500 mb-2">
           <PieChart className="h-4 w-4" />
           <span className="text-xs uppercase tracking-wider">Cost Basis</span>
         </div>
-        <p className="text-2xl font-bold font-mono text-zinc-50">
+        <p className="text-2xl font-bold font-mono text-zinc-50 animate-value-reveal">
           {formatCurrency(summary.totalCost, displayCurrency)}
         </p>
       </div>
 
       {/* Asset Count by Category */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+      <div className="card-prominent hover-lift p-4">
         <div className="flex items-center gap-2 text-zinc-500 mb-3">
           <span className="text-xs uppercase tracking-wider">Allocation</span>
         </div>

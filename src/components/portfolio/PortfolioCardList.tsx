@@ -34,9 +34,8 @@ export function PortfolioCardList({
           <div
             key={row.id}
             onClick={() => onSelectAsset(row)}
-            className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3
-                       hover:border-zinc-700 transition-colors cursor-pointer
-                       active:bg-zinc-800/60"
+            className="card-elevated hover-lift px-4 py-3
+                       cursor-pointer active:bg-zinc-800/60"
           >
             {/* Top row: Ticker + Name | Category badge */}
             <div className="flex items-center justify-between mb-1.5">
