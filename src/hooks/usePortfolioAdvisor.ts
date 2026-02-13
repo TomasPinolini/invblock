@@ -4,6 +4,9 @@ import { useMutation } from "@tanstack/react-query";
 
 // --- Exported types for UI consumption ---
 
+export type RiskTolerance = "conservative" | "moderate" | "aggressive";
+export type InvestmentHorizon = "short" | "medium" | "long";
+
 export interface PortfolioAsset {
   ticker: string;
   name: string;
@@ -26,6 +29,14 @@ export interface HealthSuggestion {
   action: string;
 }
 
+export interface AdvisorRecommendation {
+  action: "buy" | "sell" | "rebalance" | "hold";
+  ticker: string;
+  reason: string;
+  confidence: "high" | "medium" | "low";
+  priority: "high" | "medium" | "low";
+}
+
 export interface PortfolioMetrics {
   totalValue: number;
   hhi: number;
@@ -35,29 +46,38 @@ export interface PortfolioMetrics {
   topHoldings: Array<{ ticker: string; weight: number }>;
 }
 
-export interface HealthScoreResponse {
+export interface AdvisorResponse {
   score: number;
   rating: "Excellent" | "Good" | "Fair" | "Poor";
   findings: HealthFinding[];
   suggestions: HealthSuggestion[];
+  recommendations: AdvisorRecommendation[];
+  marketOutlook: string;
+  strategy: string;
   metrics: PortfolioMetrics;
+}
+
+export interface AdvisorRequest {
+  portfolio: PortfolioAsset[];
+  riskTolerance: RiskTolerance;
+  investmentHorizon: InvestmentHorizon;
 }
 
 // --- Fetch function ---
 
-async function analyzePortfolioHealth(
-  portfolio: PortfolioAsset[]
-): Promise<HealthScoreResponse> {
+async function analyzePortfolio(
+  request: AdvisorRequest
+): Promise<AdvisorResponse> {
   const res = await fetch("/api/insights/health", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ portfolio }),
+    body: JSON.stringify(request),
   });
 
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.error || "Health analysis failed");
+    throw new Error(data.error || "Advisor analysis failed");
   }
 
   return data;
@@ -65,8 +85,8 @@ async function analyzePortfolioHealth(
 
 // --- Hook ---
 
-export function usePortfolioHealth() {
+export function usePortfolioAdvisor() {
   return useMutation({
-    mutationFn: analyzePortfolioHealth,
+    mutationFn: analyzePortfolio,
   });
 }

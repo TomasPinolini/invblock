@@ -21,6 +21,8 @@ const portfolioAssetSchema = z.object({
 
 const requestSchema = z.object({
   portfolio: z.array(portfolioAssetSchema).min(1, "Portfolio must have at least one asset").max(200),
+  riskTolerance: z.enum(["conservative", "moderate", "aggressive"]).default("moderate"),
+  investmentHorizon: z.enum(["short", "medium", "long"]).default("long"),
 });
 
 // --- Claude response validation ---
@@ -36,11 +38,22 @@ const suggestionSchema = z.object({
   action: z.string(),
 });
 
-const healthResponseSchema = z.object({
+const recommendationSchema = z.object({
+  action: z.enum(["buy", "sell", "rebalance", "hold"]),
+  ticker: z.string(),
+  reason: z.string(),
+  confidence: z.enum(["high", "medium", "low"]),
+  priority: z.enum(["high", "medium", "low"]),
+});
+
+const advisorResponseSchema = z.object({
   score: z.number().min(0).max(100),
   rating: z.enum(["Excellent", "Good", "Fair", "Poor"]),
   findings: z.array(findingSchema).min(1).max(10),
   suggestions: z.array(suggestionSchema).min(1).max(10),
+  recommendations: z.array(recommendationSchema).min(1).max(10),
+  marketOutlook: z.string(),
+  strategy: z.string(),
 });
 
 // --- Types ---
@@ -137,7 +150,7 @@ async function callClaudeWithRetry(
       // Exponential backoff: 1s, 2s, 4s
       const delay = Math.pow(2, attempt - 1) * 1000;
       console.warn(
-        `[Health] Claude API attempt ${attempt} failed (status ${error instanceof Anthropic.APIError ? error.status : "unknown"}), retrying in ${delay}ms...`
+        `[Advisor] Claude API attempt ${attempt} failed (status ${error instanceof Anthropic.APIError ? error.status : "unknown"}), retrying in ${delay}ms...`
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -149,7 +162,15 @@ async function callClaudeWithRetry(
 
 // --- System prompt ---
 
-const SYSTEM_PROMPT = `You are a portfolio health analyst specializing in Argentine retail investors. Your job is to analyze a portfolio and return a structured health score.
+const SYSTEM_PROMPT = `You are a senior portfolio advisor and stock market analyst specializing in Argentine retail investors.
+You have extensive experience in financial markets, stock analysis, and portfolio optimization.
+
+Your job is to:
+1. Evaluate portfolio health (diversification, concentration, currency exposure)
+2. Analyze holdings performance and identify trends
+3. Identify specific opportunities and risks in the current portfolio
+4. Provide actionable, ticker-level recommendations (buy/sell/rebalance/hold)
+5. Tailor advice to the investor's risk tolerance and investment horizon
 
 Context about the Argentine market:
 - CEDEARs are Argentine depository receipts of US stocks, traded in ARS on the BCBA (Buenos Aires Stock Exchange). They provide USD exposure via ARS-denominated instruments.
@@ -157,6 +178,18 @@ Context about the Argentine market:
 - Typical retail investors in Argentina hold a mix of CEDEARs (for US stock exposure), local stocks, crypto, and cash (ARS and/or USD).
 - High concentration in a single CEDEAR is common but risky if the underlying US stock drops.
 - Having some ARS cash or short-term ARS instruments is needed for liquidity, but excessive ARS exposure is a devaluation risk.
+- ONs (Obligaciones Negociables) are corporate bonds that can provide stable USD-linked income.
+- Argentine government bonds (bonos) carry sovereign risk but can offer high yields.
+
+Risk profiles:
+- "conservative": Prioritize capital preservation, prefer USD-linked assets, low volatility. Suggest defensive positions.
+- "moderate": Balance growth and safety. Diversified across categories. Accept some volatility for returns.
+- "aggressive": Maximize growth potential. Accept higher concentration in high-conviction positions. Okay with volatility.
+
+Investment horizons:
+- "short" (< 6 months): Focus on liquidity, avoid illiquid positions, protect against near-term risks.
+- "medium" (6-24 months): Balance current positioning with medium-term catalysts.
+- "long" (> 2 years): Focus on structural positioning, compounding, and long-term macro trends.
 
 Scoring guidelines:
 - 80-100 "Excellent": Well-diversified across categories and currencies, reasonable position sizes, healthy mix of growth and defensive assets.
@@ -173,14 +206,22 @@ You MUST respond with ONLY valid JSON matching this exact structure (no markdown
   ],
   "suggestions": [
     { "priority": "high" | "medium" | "low", "action": "<specific actionable suggestion>" }
-  ]
+  ],
+  "recommendations": [
+    { "action": "buy" | "sell" | "rebalance" | "hold", "ticker": "<ticker>", "reason": "<specific reason with percentages/amounts>", "confidence": "high" | "medium" | "low", "priority": "high" | "medium" | "low" }
+  ],
+  "marketOutlook": "<2-3 sentence market context summary relevant to this portfolio>",
+  "strategy": "<1-2 sentence personalized strategy based on risk tolerance and investment horizon>"
 }
 
 Rules:
 - Provide 3-5 findings and exactly 3 suggestions.
-- Base the score on the pre-computed metrics AND your own qualitative analysis of the holdings.
-- Be specific: mention actual tickers and percentages in your findings and suggestions.
-- Write findings and suggestions in English.`;
+- Provide 3-5 recommendations, each with a confidence level.
+- Base analysis on factual portfolio data and computed metrics — avoid speculation without data support.
+- Be specific: mention actual tickers, percentages, and dollar amounts.
+- Recommendations must be actionable: "Buy X", "Sell Y", "Rebalance Z from A% to B%".
+- Tailor recommendations to the investor's risk tolerance and time horizon.
+- Write all text in English.`;
 
 // --- Route handler ---
 
@@ -209,7 +250,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { portfolio } = parsed.data;
+    const { portfolio, riskTolerance, investmentHorizon } = parsed.data;
 
     // Check for API key
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -241,7 +282,11 @@ export async function POST(request: NextRequest) {
       )
       .join("\n");
 
-    const userMessage = `Analyze this portfolio and provide a health score.
+    const userMessage = `Analyze this portfolio and provide advisor recommendations.
+
+## Investor Profile
+- Risk tolerance: ${riskTolerance}
+- Investment horizon: ${investmentHorizon}
 
 ## Pre-computed Metrics
 - Total portfolio value: $${metrics.totalValue.toFixed(2)}
@@ -261,7 +306,7 @@ ${holdingsList}`;
 
     const message = await callClaudeWithRetry(anthropic, {
       model: "claude-sonnet-4-20250514",
-      max_tokens: 1500,
+      max_tokens: 2500,
       temperature: 0.3,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userMessage }],
@@ -278,36 +323,39 @@ ${holdingsList}`;
       const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       rawParsed = JSON.parse(jsonMatch ? jsonMatch[1] : responseText);
     } catch {
-      console.error("[Health] Failed to parse Claude response as JSON:", responseText.slice(0, 500));
+      console.error("[Advisor] Failed to parse Claude response as JSON:", responseText.slice(0, 500));
       return NextResponse.json(
         { error: "AI returned an invalid response. Please try again." },
         { status: 502 }
       );
     }
 
-    const validated = healthResponseSchema.safeParse(rawParsed);
+    const validated = advisorResponseSchema.safeParse(rawParsed);
 
     if (!validated.success) {
-      console.error("[Health] Claude response failed validation:", validated.error.flatten());
+      console.error("[Advisor] Claude response failed validation:", validated.error.flatten());
       return NextResponse.json(
         { error: "AI returned an unexpected format. Please try again." },
         { status: 502 }
       );
     }
 
-    const { score, rating, findings, suggestions } = validated.data;
+    const { score, rating, findings, suggestions, recommendations, marketOutlook, strategy } = validated.data;
 
     return NextResponse.json({
       score,
       rating,
       findings,
       suggestions,
+      recommendations,
+      marketOutlook,
+      strategy,
       metrics,
     });
   } catch (error) {
-    console.error("[Health] Error:", error);
+    console.error("[Advisor] Error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Health analysis failed" },
+      { error: error instanceof Error ? error.message : "Advisor analysis failed" },
       { status: 500 }
     );
   }

@@ -16,8 +16,8 @@ const TransactionEntryDialog = dynamic(
 const PriceAlertsDialog = dynamic(
   () => import("@/components/forms/PriceAlertsDialog")
 );
-const PortfolioHealthCard = dynamic(
-  () => import("@/components/portfolio/PortfolioHealthCard")
+const PortfolioAdvisorCard = dynamic(
+  () => import("@/components/portfolio/PortfolioAdvisorCard")
 );
 
 export default function DashboardPage() {
@@ -49,10 +49,10 @@ export default function DashboardPage() {
         </ErrorBoundary>
       </div>
 
-      {/* Portfolio Health Score */}
+      {/* Portfolio Advisor */}
       <div className="animate-fade-in-up stagger-5">
         <ErrorBoundary>
-          <PortfolioHealthCard />
+          <PortfolioAdvisorCard />
         </ErrorBoundary>
       </div>
 

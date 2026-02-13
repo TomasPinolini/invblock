@@ -20,7 +20,7 @@ import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
 import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
-import PortfolioHealthCard from "@/components/portfolio/PortfolioHealthCard";
+import PortfolioAdvisorCard from "@/components/portfolio/PortfolioAdvisorCard";
 import TradeEvaluatorCard from "@/components/portfolio/TradeEvaluatorCard";
 
 type Recommendation = {
@@ -302,7 +302,7 @@ export default function InsightsPage() {
           </div>
           <div className="grid gap-6 md:grid-cols-2">
             <ErrorBoundary>
-              <PortfolioHealthCard />
+              <PortfolioAdvisorCard />
             </ErrorBoundary>
             <ErrorBoundary>
               <TradeEvaluatorCard />
