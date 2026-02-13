@@ -171,6 +171,7 @@ export interface IOLSecurityWithQuote {
   volumen?: number;
   montoOperado?: number;
   fechaHora?: string;
+  moneda?: string; // Currency of the price (e.g. "USD", "ARS") — present in fallback data
 }
 
 // Instrument types available in IOL

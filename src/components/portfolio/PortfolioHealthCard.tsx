@@ -167,6 +167,7 @@ export default function PortfolioHealthCard() {
   const { data: portfolioRows, isLoading: portfolioLoading } = usePortfolioData();
   const { mutate, data: result, isPending, error, reset } = usePortfolioHealth();
   const [hasRun, setHasRun] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const handleAnalyze = () => {
     if (!portfolioRows.length) return;
@@ -270,7 +271,6 @@ export default function PortfolioHealthCard() {
   if (!result) return null;
 
   const { score, rating, findings, suggestions, metrics } = result;
-  const [isExpanded, setIsExpanded] = useState(true);
 
   // Sort findings: critical first, then warnings, then strengths
   const sortedFindings = [...findings].sort((a, b) => {

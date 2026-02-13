@@ -64,6 +64,7 @@ interface TickerHistoryResponse {
   ticker: string;
   period: TimePeriod;
   history: HistoricalDataPoint[];
+  currency?: string;
   fetchedAt: string;
 }
 

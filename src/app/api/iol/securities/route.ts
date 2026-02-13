@@ -230,8 +230,14 @@ const FALLBACK_INSTRUMENTS: FallbackEntry[] = [
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
+interface PriceEntry {
+  price: number;
+  change: number;
+  currency: string;
+}
+
 interface PriceCache {
-  prices: Map<string, { price: number; change: number }>;
+  prices: Map<string, PriceEntry>;
   fetchedAt: number;
 }
 
@@ -245,13 +251,13 @@ function mapFallbackCategory(type: IOLInstrumentType): string {
   }
 }
 
-async function fetchLastClosePrices(): Promise<Map<string, { price: number; change: number }>> {
+async function fetchLastClosePrices(): Promise<Map<string, PriceEntry>> {
   // Return cached if still fresh
   if (priceCache && Date.now() - priceCache.fetchedAt < CACHE_TTL_MS) {
     return priceCache.prices;
   }
 
-  const prices = new Map<string, { price: number; change: number }>();
+  const prices = new Map<string, PriceEntry>();
 
   // Fetch from Yahoo Finance in parallel batches
   const BATCH_SIZE = 8;
@@ -265,6 +271,7 @@ async function fetchLastClosePrices(): Promise<Map<string, { price: number; chan
           prices.set(entry.simbolo, {
             price: quote.price,
             change: quote.changePercent,
+            currency: quote.currency,
           });
         }
       })
@@ -292,7 +299,7 @@ async function getFallbackSecurities(
   }
 
   // Try to fetch last close prices from Yahoo Finance
-  let prices = new Map<string, { price: number; change: number }>();
+  let prices = new Map<string, PriceEntry>();
   try {
     prices = await fetchLastClosePrices();
   } catch (err) {
@@ -306,6 +313,7 @@ async function getFallbackSecurities(
       descripcion: e.descripcion,
       ultimoPrecio: priceData?.price ?? 0,
       variacionPorcentual: priceData?.change ?? 0,
+      moneda: priceData?.currency,
     };
   });
 }

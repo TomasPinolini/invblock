@@ -96,12 +96,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const history = await getHistoricalPrices(ticker, category, period);
+    const result = await getHistoricalPrices(ticker, category, period);
 
     return NextResponse.json({
       ticker,
       period,
-      history,
+      history: result.history,
+      currency: result.currency,
       fetchedAt: new Date().toISOString(),
     });
   } catch (error) {

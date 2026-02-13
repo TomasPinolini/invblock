@@ -15,6 +15,18 @@ export interface HistoricalPrice {
   adjClose?: number;
 }
 
+export interface HistoricalResult {
+  history: HistoricalPrice[];
+  currency: string;
+}
+
+// Infer currency from the resolved Yahoo symbol
+function inferCurrencyFromSymbol(symbol: string): string {
+  if (symbol.endsWith(".BA")) return "ARS";
+  if (symbol.endsWith("-USD")) return "USD";
+  return "USD"; // US-listed stocks, ADRs
+}
+
 export interface QuoteResult {
   symbol: string;
   price: number;
@@ -25,21 +37,32 @@ export interface QuoteResult {
   marketState: string;
 }
 
-// Map our tickers to Yahoo Finance symbols
-// CEDEARs trade on BCBA (Buenos Aires) with .BA suffix
-// Argentine stocks also use .BA
-// Crypto uses -USD suffix
-export function toYahooSymbol(ticker: string, category: string): string {
+// Returns an ordered list of Yahoo Finance symbols to try for a given ticker.
+// The first symbol that returns data wins. This handles:
+// - CEDEARs (US stocks traded on BCBA): try raw US ticker first (AAPL), then .BA
+// - Argentine stocks: try .BA first, then raw ticker (catches NYSE ADRs like YPF, GGAL)
+// - Crypto: -USD suffix
+// - Bonds/ONs/letras: raw ticker (unlikely to have Yahoo data)
+export function getYahooSymbols(ticker: string, category: string): string[] {
+  if (ticker.includes(".") || ticker.includes("-")) return [ticker];
+
   if (category === "crypto") {
-    // BTC -> BTC-USD, ETH -> ETH-USD, etc.
-    return ticker.includes("-") ? ticker : `${ticker}-USD`;
+    return [`${ticker}-USD`];
   }
-  if (category === "cedear" || category === "stock") {
-    // For Argentine market, add .BA suffix if not present
-    // Some CEDEARs might need mapping (e.g., AAPL.BA for Apple CEDEAR)
-    return ticker.includes(".") ? ticker : `${ticker}.BA`;
+  if (category === "cedear") {
+    // CEDEARs represent US/intl stocks — raw ticker is more reliable
+    return [ticker, `${ticker}.BA`];
   }
-  return ticker;
+  if (category === "stock") {
+    // Argentine stocks — .BA first, raw ticker as fallback for NYSE ADRs
+    return [`${ticker}.BA`, ticker];
+  }
+  return [ticker];
+}
+
+// Convenience: returns the primary symbol (for logging, etc.)
+export function toYahooSymbol(ticker: string, category: string): string {
+  return getYahooSymbols(ticker, category)[0];
 }
 
 // Get period parameters for Yahoo Finance based on time period
@@ -132,41 +155,46 @@ type ChartResult = {
   quotes?: ChartQuote[];
 };
 
-// Fetch historical prices for a ticker
+// Fetch historical prices for a ticker — tries multiple Yahoo symbols until one works
 export async function getHistoricalPrices(
   ticker: string,
   category: string,
   period: TimePeriod
-): Promise<HistoricalPrice[]> {
-  const symbol = toYahooSymbol(ticker, category);
+): Promise<HistoricalResult> {
+  const symbols = getYahooSymbols(ticker, category);
   const { period1, interval } = getPeriodParams(period);
 
-  try {
-    const result = await yahooFinance.chart(symbol, {
-      period1,
-      interval,
-    });
+  for (const symbol of symbols) {
+    try {
+      const result = await yahooFinance.chart(symbol, {
+        period1,
+        interval,
+      });
 
-    // Type assertion for the chart result
-    const chartResult = result as ChartResult;
+      const chartResult = result as ChartResult;
 
-    if (!chartResult.quotes || chartResult.quotes.length === 0) {
-      return [];
+      if (!chartResult.quotes || chartResult.quotes.length === 0) {
+        continue; // Try next symbol
+      }
+
+      return {
+        history: chartResult.quotes.map((q) => ({
+          date: q.date,
+          open: q.open ?? 0,
+          high: q.high ?? 0,
+          low: q.low ?? 0,
+          close: q.close ?? 0,
+          volume: q.volume ?? 0,
+          adjClose: q.adjclose ?? undefined,
+        })),
+        currency: inferCurrencyFromSymbol(symbol),
+      };
+    } catch {
+      // Try next symbol
     }
-
-    return chartResult.quotes.map((q) => ({
-      date: q.date,
-      open: q.open ?? 0,
-      high: q.high ?? 0,
-      low: q.low ?? 0,
-      close: q.close ?? 0,
-      volume: q.volume ?? 0,
-      adjClose: q.adjclose ?? undefined,
-    }));
-  } catch (error) {
-    console.error(`Failed to fetch historical prices for ${symbol}:`, error);
-    return [];
   }
+
+  return { history: [], currency: "ARS" };
 }
 
 // Quote result type for type assertions
@@ -180,26 +208,30 @@ type YahooQuoteResult = {
   marketState?: string;
 };
 
-// Get current quote for a ticker
+// Get current quote for a ticker — tries multiple Yahoo symbols until one works
 export async function getQuote(ticker: string, category: string): Promise<QuoteResult | null> {
-  const symbol = toYahooSymbol(ticker, category);
+  const symbols = getYahooSymbols(ticker, category);
 
-  try {
-    const result = await yahooFinance.quote(symbol) as YahooQuoteResult;
+  for (const symbol of symbols) {
+    try {
+      const result = await yahooFinance.quote(symbol) as YahooQuoteResult;
+      if (!result) continue;
 
-    return {
-      symbol: result.symbol,
-      price: result.regularMarketPrice ?? 0,
-      change: result.regularMarketChange ?? 0,
-      changePercent: result.regularMarketChangePercent ?? 0,
-      previousClose: result.regularMarketPreviousClose ?? 0,
-      currency: result.currency ?? "USD",
-      marketState: result.marketState ?? "CLOSED",
-    };
-  } catch (error) {
-    console.error(`Failed to fetch quote for ${symbol}:`, error);
-    return null;
+      return {
+        symbol: result.symbol,
+        price: result.regularMarketPrice ?? 0,
+        change: result.regularMarketChange ?? 0,
+        changePercent: result.regularMarketChangePercent ?? 0,
+        previousClose: result.regularMarketPreviousClose ?? 0,
+        currency: result.currency ?? "USD",
+        marketState: result.marketState ?? "CLOSED",
+      };
+    } catch {
+      // Try next symbol
+    }
   }
+
+  return null;
 }
 
 // Get price at a specific time period ago for calculating returns
@@ -209,51 +241,47 @@ export async function getPriceAtPeriod(
   period: TimePeriod
 ): Promise<number | null> {
   if (period === "ALL") {
-    // For ALL, we use the average purchase price (handled elsewhere)
     return null;
   }
 
-  const symbol = toYahooSymbol(ticker, category);
+  const symbols = getYahooSymbols(ticker, category);
   const referenceDate = getReferenceDate(period);
   const { period1, interval } = getPeriodParams(period);
 
-  try {
-    const result = await yahooFinance.chart(symbol, {
-      period1,
-      interval,
-    });
+  for (const symbol of symbols) {
+    try {
+      const result = await yahooFinance.chart(symbol, {
+        period1,
+        interval,
+      });
 
-    // Type assertion for the chart result
-    const chartResult = result as ChartResult;
+      const chartResult = result as ChartResult;
 
-    if (!chartResult.quotes || chartResult.quotes.length === 0) {
-      return null;
-    }
-
-    // Find the closest price to our reference date
-    const quotes = chartResult.quotes.filter((q) => q.close != null);
-
-    if (quotes.length === 0) {
-      return null;
-    }
-
-    // Find quote closest to reference date
-    let closestQuote = quotes[0];
-    let closestDiff = Math.abs(quotes[0].date.getTime() - referenceDate.getTime());
-
-    for (const quote of quotes) {
-      const diff = Math.abs(quote.date.getTime() - referenceDate.getTime());
-      if (diff < closestDiff) {
-        closestDiff = diff;
-        closestQuote = quote;
+      if (!chartResult.quotes || chartResult.quotes.length === 0) {
+        continue;
       }
-    }
 
-    return closestQuote?.close ?? null;
-  } catch (error) {
-    console.error(`Failed to fetch price at period for ${symbol}:`, error);
-    return null;
+      const quotes = chartResult.quotes.filter((q) => q.close != null);
+      if (quotes.length === 0) continue;
+
+      let closestQuote = quotes[0];
+      let closestDiff = Math.abs(quotes[0].date.getTime() - referenceDate.getTime());
+
+      for (const quote of quotes) {
+        const diff = Math.abs(quote.date.getTime() - referenceDate.getTime());
+        if (diff < closestDiff) {
+          closestDiff = diff;
+          closestQuote = quote;
+        }
+      }
+
+      return closestQuote?.close ?? null;
+    } catch {
+      // Try next symbol
+    }
   }
+
+  return null;
 }
 
 // Batch fetch prices at a period for multiple tickers

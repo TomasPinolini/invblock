@@ -474,7 +474,7 @@ function SecurityCard({
       {hasPrice ? (
         <div className="mb-3">
           <p className="text-2xl font-bold font-mono text-zinc-100">
-            ${security.ultimoPrecio.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+            {security.moneda === "USD" ? "US$" : "$"}{security.ultimoPrecio.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
           </p>
         </div>
       ) : (
@@ -594,7 +594,16 @@ function SecurityDetailModal({
       ? ((currentPrice - startPrice) / startPrice) * 100
       : null;
 
-  const currency: "USD" | "ARS" = resolvedCategory === "stock" ? "ARS" : "USD";
+  // Use actual currency from Yahoo data → security.moneda → category-based guess
+  const yahooResolvedCurrency = (yahooData as { currency?: string } | undefined)?.currency;
+  const securityCurrency = security.moneda;
+  const currency: "USD" | "ARS" = isBond
+    ? "ARS"
+    : (yahooResolvedCurrency === "USD" || yahooResolvedCurrency === "ARS")
+      ? yahooResolvedCurrency
+      : (securityCurrency === "USD" || securityCurrency === "ARS")
+        ? securityCurrency
+        : resolvedCategory === "stock" ? "ARS" : "USD";
 
   const handleSaveNotes = () => {
     if (!resolvedId) return;
