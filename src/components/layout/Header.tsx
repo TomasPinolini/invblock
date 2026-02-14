@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, RefreshCw, Lightbulb, Bell, History, Compass, DollarSign, Landmark, Menu, X } from "lucide-react";
+import { Activity, RefreshCw, Lightbulb, Bell, History, Compass, DollarSign, Landmark, LayoutDashboard, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -13,6 +13,7 @@ import NotificationBell from "./NotificationBell";
 
 const NAV_ITEMS = [
   { href: "/explore", label: "Explorar", icon: Compass, accent: "emerald" },
+  { href: "/dashboards", label: "Dashboards", icon: LayoutDashboard, accent: "blue" },
   { href: "/mep", label: "MEP", icon: DollarSign, accent: "yellow" },
   { href: "/funds", label: "Fondos", icon: Landmark, accent: "green" },
   { href: "/history", label: "Historial", icon: History, accent: "cyan" },
@@ -20,6 +21,10 @@ const NAV_ITEMS = [
 ] as const;
 
 const ACCENT_CLASSES = {
+  blue: {
+    active: "bg-blue-500/15 text-blue-400 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.08)]",
+    inactive: "text-zinc-400 border-transparent hover:text-blue-400 hover:bg-blue-500/8 hover:border-blue-500/20",
+  },
   emerald: {
     active: "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.08)]",
     inactive: "text-zinc-400 border-transparent hover:text-emerald-400 hover:bg-emerald-500/8 hover:border-emerald-500/20",

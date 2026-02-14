@@ -110,3 +110,41 @@ export const watchlistUpdateSchema = z.object({
 
 export type WatchlistCreateValues = z.infer<typeof watchlistCreateSchema>;
 export type WatchlistUpdateValues = z.infer<typeof watchlistUpdateSchema>;
+
+// ── Watchlist Groups Validation ─────────────────────────────────────────────
+
+import { GROUP_COLORS } from "./constants";
+
+export const watchlistGroupCreateSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(60)
+    .transform((v) => v.trim()),
+  color: z.enum(GROUP_COLORS).default("blue"),
+});
+
+export const watchlistGroupUpdateSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(60)
+    .transform((v) => v.trim())
+    .optional(),
+  color: z.enum(GROUP_COLORS).optional(),
+});
+
+export const watchlistGroupReorderSchema = z.object({
+  groupIds: z.array(z.string().uuid()).min(1),
+});
+
+export const watchlistGroupItemAddSchema = z.object({
+  watchlistId: z.string().uuid("Invalid watchlist item"),
+});
+
+export const watchlistGroupItemsReorderSchema = z.object({
+  itemIds: z.array(z.string().uuid()).min(1),
+});
+
+export type WatchlistGroupCreateValues = z.infer<typeof watchlistGroupCreateSchema>;
+export type WatchlistGroupUpdateValues = z.infer<typeof watchlistGroupUpdateSchema>;

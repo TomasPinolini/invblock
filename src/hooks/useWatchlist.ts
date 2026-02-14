@@ -87,6 +87,9 @@ export function useRemoveFromWatchlist() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: removeFromWatchlist,
-    onSuccess: () => qc.invalidateQueries({ queryKey: WATCHLIST_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: WATCHLIST_KEY });
+      qc.invalidateQueries({ queryKey: ["watchlist-groups"] });
+    },
   });
 }

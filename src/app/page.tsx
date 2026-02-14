@@ -1,10 +1,13 @@
+"use client";
+
 import dynamic from "next/dynamic";
 import PortfolioTable from "@/components/portfolio/PortfolioTable";
 import PortfolioSummary from "@/components/portfolio/PortfolioSummary";
 import AccountBalanceCards from "@/components/portfolio/AccountBalanceCards";
-import AllocationBar from "@/components/portfolio/AllocationBar";
 import Header from "@/components/layout/Header";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
+import { BarChart3, Sparkles, Wallet } from "lucide-react";
 
 // Lazy-load dialogs — they're hidden by default (Zustand-controlled)
 const AssetEntryDialog = dynamic(
@@ -19,6 +22,9 @@ const PriceAlertsDialog = dynamic(
 const PortfolioAdvisorCard = dynamic(
   () => import("@/components/portfolio/PortfolioAdvisorCard")
 );
+const MarketMovers = dynamic(
+  () => import("@/components/market/MarketMovers")
+);
 
 export default function DashboardPage() {
   return (
@@ -28,36 +34,43 @@ export default function DashboardPage() {
         <Header />
       </div>
 
-      {/* Cash Balances (IOL) */}
+      {/* Collapsible: Wallet (Cash + Summary) */}
       <div className="animate-fade-in-up stagger-2">
         <ErrorBoundary>
-          <AccountBalanceCards />
+          <CollapsibleSection
+            title="Wallet"
+            icon={<Wallet className="h-4 w-4 text-emerald-400" />}
+          >
+            <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
+              <AccountBalanceCards />
+              <PortfolioSummary />
+            </div>
+          </CollapsibleSection>
         </ErrorBoundary>
       </div>
 
-      {/* Summary Cards */}
-      <div className="animate-fade-in-up stagger-3">
+      {/* Collapsible: Market Movers + Portfolio Advisor */}
+      <div className="animate-fade-in-up stagger-3 grid gap-4 md:grid-cols-2">
         <ErrorBoundary>
-          <PortfolioSummary />
+          <CollapsibleSection
+            title="US Market Movers"
+            icon={<BarChart3 className="h-4 w-4 text-blue-400" />}
+          >
+            <MarketMovers />
+          </CollapsibleSection>
         </ErrorBoundary>
-      </div>
-
-      {/* Allocation Bar */}
-      <div className="animate-fade-in-up stagger-4">
         <ErrorBoundary>
-          <AllocationBar />
-        </ErrorBoundary>
-      </div>
-
-      {/* Portfolio Advisor */}
-      <div className="animate-fade-in-up stagger-5">
-        <ErrorBoundary>
-          <PortfolioAdvisorCard />
+          <CollapsibleSection
+            title="Portfolio Advisor"
+            icon={<Sparkles className="h-4 w-4 text-amber-400" />}
+          >
+            <PortfolioAdvisorCard />
+          </CollapsibleSection>
         </ErrorBoundary>
       </div>
 
       {/* Portfolio Table */}
-      <div className="animate-fade-in-up stagger-6">
+      <div className="animate-fade-in-up stagger-4">
         <ErrorBoundary>
           <PortfolioTable />
         </ErrorBoundary>

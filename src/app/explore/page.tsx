@@ -38,7 +38,12 @@ import { useTickerHistory } from "@/hooks/useHistoricalPrices";
 import { useIOLHistorical, getDateRangeForPeriod } from "@/hooks/useIOLHistorical";
 import type { TimePeriod } from "@/services/yahoo/client";
 import { getBondMeta } from "@/lib/bond-metadata";
+import dynamic from "next/dynamic";
 import { CATEGORY_LABELS, CATEGORY_COLORS } from "@/lib/constants";
+
+const CompanyFundamentals = dynamic(
+  () => import("@/components/market/CompanyFundamentals")
+);
 import type { AssetCategory } from "@/lib/constants";
 import { cn, formatCurrency } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
@@ -919,6 +924,13 @@ function SecurityDetailModal({
               </div>
             )}
           </div>
+
+          {/* Company Fundamentals (stocks/CEDEARs only) */}
+          {(resolvedCategory === "cedear" || resolvedCategory === "stock") && (
+            <ErrorBoundary>
+              <CompanyFundamentals symbol={security.simbolo} />
+            </ErrorBoundary>
+          )}
 
           {/* Bond/ON detail panel */}
           <BondDetailPanel

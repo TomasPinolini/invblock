@@ -6,6 +6,8 @@ import { getAuthUser } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { decryptCredentials, encryptCredentials } from "@/lib/crypto";
 import { getQuote } from "@/services/yahoo/client";
+import { getTickersByType } from "@/lib/tickers";
+import type { TickerEntry } from "@/lib/tickers";
 import { db } from "@/db";
 import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -157,73 +159,7 @@ export async function GET(request: Request) {
   }
 }
 
-// Static fallback data for when the market is closed
-// Covers popular CEDEARs and Argentine stocks so users can still browse & add to watchlist
-type FallbackEntry = { simbolo: string; descripcion: string; type: IOLInstrumentType };
-
-const FALLBACK_INSTRUMENTS: FallbackEntry[] = [
-  // CEDEARs
-  { simbolo: "AAPL", descripcion: "Apple Inc.", type: "cedears" },
-  { simbolo: "MSFT", descripcion: "Microsoft Corp.", type: "cedears" },
-  { simbolo: "GOOGL", descripcion: "Alphabet Inc.", type: "cedears" },
-  { simbolo: "AMZN", descripcion: "Amazon.com Inc.", type: "cedears" },
-  { simbolo: "META", descripcion: "Meta Platforms Inc.", type: "cedears" },
-  { simbolo: "NVDA", descripcion: "NVIDIA Corp.", type: "cedears" },
-  { simbolo: "TSLA", descripcion: "Tesla Inc.", type: "cedears" },
-  { simbolo: "MELI", descripcion: "MercadoLibre Inc.", type: "cedears" },
-  { simbolo: "GLOB", descripcion: "Globant S.A.", type: "cedears" },
-  { simbolo: "BABA", descripcion: "Alibaba Group", type: "cedears" },
-  { simbolo: "KO", descripcion: "Coca-Cola Co.", type: "cedears" },
-  { simbolo: "DIS", descripcion: "Walt Disney Co.", type: "cedears" },
-  { simbolo: "NFLX", descripcion: "Netflix Inc.", type: "cedears" },
-  { simbolo: "JPM", descripcion: "JPMorgan Chase & Co.", type: "cedears" },
-  { simbolo: "V", descripcion: "Visa Inc.", type: "cedears" },
-  { simbolo: "WMT", descripcion: "Walmart Inc.", type: "cedears" },
-  { simbolo: "BA", descripcion: "Boeing Co.", type: "cedears" },
-  { simbolo: "AMD", descripcion: "Advanced Micro Devices", type: "cedears" },
-  { simbolo: "INTC", descripcion: "Intel Corp.", type: "cedears" },
-  { simbolo: "PBR", descripcion: "Petrobras S.A.", type: "cedears" },
-  { simbolo: "VALE", descripcion: "Vale S.A.", type: "cedears" },
-  { simbolo: "BBD", descripcion: "Banco Bradesco S.A.", type: "cedears" },
-  { simbolo: "GOLD", descripcion: "Barrick Gold Corp.", type: "cedears" },
-  { simbolo: "X", descripcion: "United States Steel Corp.", type: "cedears" },
-  // Acciones argentinas
-  { simbolo: "GGAL", descripcion: "Grupo Financiero Galicia", type: "acciones" },
-  { simbolo: "YPF", descripcion: "YPF S.A.", type: "acciones" },
-  { simbolo: "PAMP", descripcion: "Pampa Energía S.A.", type: "acciones" },
-  { simbolo: "BBAR", descripcion: "Banco BBVA Argentina", type: "acciones" },
-  { simbolo: "BMA", descripcion: "Banco Macro S.A.", type: "acciones" },
-  { simbolo: "SUPV", descripcion: "Grupo Supervielle S.A.", type: "acciones" },
-  { simbolo: "TECO2", descripcion: "Telecom Argentina S.A.", type: "acciones" },
-  { simbolo: "TXAR", descripcion: "Ternium Argentina S.A.", type: "acciones" },
-  { simbolo: "ALUA", descripcion: "Aluar Aluminio Argentino", type: "acciones" },
-  { simbolo: "CRES", descripcion: "Cresud S.A.", type: "acciones" },
-  { simbolo: "MIRG", descripcion: "Mirgor S.A.", type: "acciones" },
-  { simbolo: "LOMA", descripcion: "Loma Negra C.I.A.S.A.", type: "acciones" },
-  { simbolo: "CEPU", descripcion: "Central Puerto S.A.", type: "acciones" },
-  { simbolo: "EDN", descripcion: "Edenor S.A.", type: "acciones" },
-  { simbolo: "TGSU2", descripcion: "Transportadora de Gas del Sur", type: "acciones" },
-  { simbolo: "TGNO4", descripcion: "Transportadora de Gas del Norte", type: "acciones" },
-  { simbolo: "VALO", descripcion: "Grupo Valores S.A.", type: "acciones" },
-  { simbolo: "COME", descripcion: "Sociedad Comercial del Plata", type: "acciones" },
-  // Bonos
-  { simbolo: "AL30", descripcion: "Bono Argentina 2030 (Ley Arg.)", type: "titulosPublicos" },
-  { simbolo: "GD30", descripcion: "Bono Argentina 2030 (Ley NY)", type: "titulosPublicos" },
-  { simbolo: "AL35", descripcion: "Bono Argentina 2035 (Ley Arg.)", type: "titulosPublicos" },
-  { simbolo: "GD35", descripcion: "Bono Argentina 2035 (Ley NY)", type: "titulosPublicos" },
-  { simbolo: "AL41", descripcion: "Bono Argentina 2041 (Ley Arg.)", type: "titulosPublicos" },
-  { simbolo: "GD41", descripcion: "Bono Argentina 2041 (Ley NY)", type: "titulosPublicos" },
-  { simbolo: "AE38", descripcion: "Bono Argentina 2038", type: "titulosPublicos" },
-  { simbolo: "GD38", descripcion: "Bono Argentina 2038 (Ley NY)", type: "titulosPublicos" },
-  { simbolo: "S31O5", descripcion: "LECAP Oct 2025", type: "titulosPublicos" },
-  { simbolo: "TX26", descripcion: "Boncer 2026", type: "titulosPublicos" },
-  // ONs
-  { simbolo: "YCA6O", descripcion: "ON YPF 2026 USD", type: "obligacionesNegociables" },
-  { simbolo: "MRCAO", descripcion: "ON Mirgor 2026", type: "obligacionesNegociables" },
-  { simbolo: "TLCHO", descripcion: "ON Telecom 2026", type: "obligacionesNegociables" },
-  { simbolo: "PNDCO", descripcion: "ON Pampa Energía", type: "obligacionesNegociables" },
-  { simbolo: "YMCHO", descripcion: "ON YPF 2026 clase XLVII", type: "obligacionesNegociables" },
-];
+// Fallback ticker data is centralized in src/lib/tickers.ts
 
 // ── Yahoo Finance price cache ─────────────────────────────────────────────
 // Cache last-close prices for 6 hours (prices don't change while market is closed)
@@ -243,7 +179,7 @@ interface PriceCache {
 
 let priceCache: PriceCache | null = null;
 
-function mapFallbackCategory(type: IOLInstrumentType): string {
+function mapFallbackCategory(type: string): string {
   switch (type) {
     case "cedears": return "cedear";
     case "acciones": return "stock";
@@ -251,7 +187,7 @@ function mapFallbackCategory(type: IOLInstrumentType): string {
   }
 }
 
-async function fetchLastClosePrices(): Promise<Map<string, PriceEntry>> {
+async function fetchLastClosePrices(entries: TickerEntry[]): Promise<Map<string, PriceEntry>> {
   // Return cached if still fresh
   if (priceCache && Date.now() - priceCache.fetchedAt < CACHE_TTL_MS) {
     return priceCache.prices;
@@ -261,8 +197,8 @@ async function fetchLastClosePrices(): Promise<Map<string, PriceEntry>> {
 
   // Fetch from Yahoo Finance in parallel batches
   const BATCH_SIZE = 8;
-  for (let i = 0; i < FALLBACK_INSTRUMENTS.length; i += BATCH_SIZE) {
-    const batch = FALLBACK_INSTRUMENTS.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+    const batch = entries.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
       batch.map(async (entry) => {
         const category = mapFallbackCategory(entry.type);
@@ -292,16 +228,12 @@ async function fetchLastClosePrices(): Promise<Map<string, PriceEntry>> {
 async function getFallbackSecurities(
   instrumentType?: IOLInstrumentType
 ): Promise<IOLSecurityWithQuote[]> {
-  let entries = FALLBACK_INSTRUMENTS;
-
-  if (instrumentType) {
-    entries = entries.filter((e) => e.type === instrumentType);
-  }
+  const entries = getTickersByType(instrumentType || undefined);
 
   // Try to fetch last close prices from Yahoo Finance
   let prices = new Map<string, PriceEntry>();
   try {
-    prices = await fetchLastClosePrices();
+    prices = await fetchLastClosePrices(entries);
   } catch (err) {
     console.warn("[Fallback] Yahoo Finance price fetch failed, returning without prices:", err);
   }

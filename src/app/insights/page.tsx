@@ -22,6 +22,11 @@ import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import PortfolioAdvisorCard from "@/components/portfolio/PortfolioAdvisorCard";
 import TradeEvaluatorCard from "@/components/portfolio/TradeEvaluatorCard";
+import dynamic from "next/dynamic";
+
+const NewsSentiment = dynamic(
+  () => import("@/components/market/NewsSentiment")
+);
 
 type Recommendation = {
   ticker: string;
@@ -292,6 +297,18 @@ export default function InsightsPage() {
               Portfolio data will be included ({portfolioData.length} assets)
             </p>
           )}
+        </div>
+
+        {/* Market News & Sentiment */}
+        <div className="mb-6">
+          <ErrorBoundary>
+            <NewsSentiment
+              tickers={portfolioData
+                .filter((a) => a.category === "cedear" || a.category === "stock")
+                .map((a) => a.ticker)
+                .slice(0, 5)}
+            />
+          </ErrorBoundary>
         </div>
 
         {/* Portfolio Intelligence Section */}

@@ -1,4 +1,5 @@
 import YahooFinance from "yahoo-finance2";
+import { getGlobalQuote } from "@/services/alphavantage";
 
 // Create instance (required in v3+)
 const yahooFinance = new YahooFinance();
@@ -228,6 +229,26 @@ export async function getQuote(ticker: string, category: string): Promise<QuoteR
       };
     } catch {
       // Try next symbol
+    }
+  }
+
+  // Before returning null, try Alpha Vantage for stocks/CEDEARs
+  if (category === "cedear" || category === "stock") {
+    try {
+      const avQuote = await getGlobalQuote(ticker);
+      if (avQuote && avQuote.price > 0) {
+        return {
+          symbol: avQuote.symbol,
+          price: avQuote.price,
+          change: avQuote.change,
+          changePercent: avQuote.changePercent,
+          previousClose: avQuote.previousClose,
+          currency: "USD",
+          marketState: "CLOSED",
+        };
+      }
+    } catch {
+      // Alpha Vantage also failed
     }
   }
 

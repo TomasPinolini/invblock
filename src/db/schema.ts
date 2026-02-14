@@ -6,7 +6,9 @@ import {
   timestamp,
   pgEnum,
   index,
+  integer,
   text,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -190,6 +192,89 @@ export const watchlist = pgTable(
 
 export type WatchlistItem = typeof watchlist.$inferSelect;
 export type NewWatchlistItem = typeof watchlist.$inferInsert;
+
+// ── Watchlist Groups ────────────────────────────────────────────────────────
+
+export const groupColorEnum = pgEnum("group_color", [
+  "red", "orange", "amber", "yellow", "lime", "green",
+  "emerald", "teal", "cyan", "sky", "blue", "indigo",
+  "violet", "purple", "fuchsia", "pink", "rose", "zinc",
+]);
+
+export const watchlistGroups = pgTable(
+  "watchlist_groups",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull(),
+    name: varchar("name", { length: 60 }).notNull(),
+    color: groupColorEnum("color").notNull().default("blue"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: index("wg_user_idx").on(table.userId),
+    userNameIdx: uniqueIndex("wg_user_name_idx").on(table.userId, table.name),
+  })
+);
+
+export const watchlistGroupItems = pgTable(
+  "watchlist_group_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => watchlistGroups.id, { onDelete: "cascade" }),
+    watchlistId: uuid("watchlist_id")
+      .notNull()
+      .references(() => watchlist.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").notNull().default(0),
+    addedAt: timestamp("added_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    groupIdx: index("wgi_group_idx").on(table.groupId),
+    watchlistIdx: index("wgi_watchlist_idx").on(table.watchlistId),
+    groupWatchlistIdx: uniqueIndex("wgi_group_watchlist_idx").on(
+      table.groupId,
+      table.watchlistId
+    ),
+  })
+);
+
+// ── Watchlist Relations ─────────────────────────────────────────────────────
+
+export const watchlistRelations = relations(watchlist, ({ many }) => ({
+  groupMemberships: many(watchlistGroupItems),
+}));
+
+export const watchlistGroupsRelations = relations(watchlistGroups, ({ many }) => ({
+  items: many(watchlistGroupItems),
+}));
+
+export const watchlistGroupItemsRelations = relations(
+  watchlistGroupItems,
+  ({ one }) => ({
+    group: one(watchlistGroups, {
+      fields: [watchlistGroupItems.groupId],
+      references: [watchlistGroups.id],
+    }),
+    watchlistEntry: one(watchlist, {
+      fields: [watchlistGroupItems.watchlistId],
+      references: [watchlist.id],
+    }),
+  })
+);
+
+export type WatchlistGroup = typeof watchlistGroups.$inferSelect;
+export type NewWatchlistGroup = typeof watchlistGroups.$inferInsert;
+export type WatchlistGroupItem = typeof watchlistGroupItems.$inferSelect;
+export type NewWatchlistGroupItem = typeof watchlistGroupItems.$inferInsert;
 
 // Inferred types for use across the app
 export type Asset = typeof assets.$inferSelect;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getExchangeRate as getAVExchangeRate } from "@/services/alphavantage";
 
 interface DolarApiResponse {
   moneda: string;
@@ -43,6 +44,21 @@ export async function GET() {
     // If fetch fails but we have a stale cache, use it
     if (cachedRate) {
       return NextResponse.json(cachedRate);
+    }
+
+    // Try Alpha Vantage as fallback
+    try {
+      const avRate = await getAVExchangeRate("USD", "ARS");
+      if (avRate && avRate.rate > 0) {
+        cachedRate = {
+          rate: avRate.rate,
+          updatedAt: avRate.lastRefreshed || new Date().toISOString(),
+        };
+        cacheExpiry = now + CACHE_TTL;
+        return NextResponse.json(cachedRate);
+      }
+    } catch {
+      // Alpha Vantage also failed
     }
 
     console.error("Exchange rate fetch error:", error);
