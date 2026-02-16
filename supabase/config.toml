@@ -27,3 +27,15 @@ verify_jwt = true
 
 [functions.on-transaction]
 verify_jwt = true
+
+[functions.mep-rate-calculator]
+verify_jwt = true
+
+[functions.weekly-digest]
+verify_jwt = true
+
+[functions.watchlist-price-sync]
+verify_jwt = true
+
+[functions.auth-activity-log]
+verify_jwt = true
