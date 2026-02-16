@@ -1,5 +1,5 @@
 FINANCIAL COMMAND CENTER — Development Plan
-Last Updated: 2026-02-16
+Last Updated: 2026-02-16 (AI Enhancements complete)
 
 ================================================================================
 1. PROJECT OVERVIEW
@@ -306,57 +306,90 @@ Last Updated: 2026-02-16
     Page: /analytics with chart grid, period selector, responsive layout.
 
 ================================================================================
-8. FUTURE — AI Enhancements (Phase 5 continued)
+8. COMPLETED — AI Enhancements (Phase 5 continued)
 ================================================================================
 
-  The following AI features were identified but not yet implemented.
-  Prioritized by impact vs effort:
+  All 6 AI features implemented and deployed (commit aeb1072, 2026-02-16).
 
-  Priority 1 — Quick Wins
-  ························
-  [ ] Smart Alert Narratives
-      AI-generated explanations for triggered price alerts ("GGAL dropped 8% today
-      because..."). Attach context from market events.
-      Complexity: Low. Enhance existing /api/alerts with AI summary.
+  A) Edge Function Enhancements
+  ······························
+  [x] F1: Smart Alert Narratives
+      Claude generates 2-3 sentence context when a price alert triggers.
+      Saved to price_alerts.narrative column, included in alert email as
+      indigo-bordered AI Analysis block. Graceful degradation on failure.
+      Modified: supabase/functions/price-alerts/index.ts
 
-  [ ] AI-Powered Daily Digest
-      Morning summary: overnight changes, P&L, notable moves, upcoming events.
-      Could run via Edge Function (daily-report) with Claude.
-      Complexity: Medium. Enhance existing daily-report edge function.
-      Cross-ref: See Section 6 EF2 (weekly-digest) for edge function approach.
+  [x] F2: AI-Powered Daily Digest
+      Morning analysis added to daily-report email. Claude generates 2-3
+      sentence summary highlighting notable moves and one actionable
+      observation. Indigo left-border "Morning Analysis" block in email.
+      Modified: supabase/functions/daily-report/index.ts
 
-  Priority 2 — High Value
-  ························
-  [ ] Natural Language Portfolio Chat
-      Conversational interface for portfolio questions ("what's my biggest risk?",
-      "should I rebalance?"). Would use streaming responses.
-      Complexity: Medium. Files: /api/insights/chat, useChatInsights, ChatPanel.
+  B) New AI Features
+  ···················
+  [x] F4: Position Exit Advisor
+      "When should I sell X?" — computes holding period, unrealized P&L,
+      position weight, category exposure. Claude returns hold/trim/exit with
+      confidence, tax considerations, timing factors, and risks.
+      Files: /api/insights/exit-advisor, useExitAdvisor, ExitAdvisorCard
 
-  [ ] Position Exit Advisor
-      "When should I sell X?" — considers entry price, holding period, tax
-      implications, market conditions. Returns hold/trim/exit recommendation.
-      Complexity: Medium. Similar pattern to Trade Evaluator.
+  [x] F5: Sector/Correlation Analysis
+      Ticker metadata (sector/industry/country/correlationGroup) for ~180
+      tickers. Server groups positions and flags >30% concentration. Claude
+      analyzes hidden risks and suggests decorrelation strategies.
+      Files: ticker-metadata.ts, /api/insights/correlation,
+             useCorrelationAnalysis, CorrelationAnalysisCard
 
-  Priority 3 — Long-Term (need new data sources)
-  ················································
-  [ ] Sector/Correlation Analysis
-      Detect correlated positions (GGAL+BMA+SUPV = 3 Argentine banks = hidden
-      concentration). Suggest decorrelation strategies.
-      Complexity: High. Needs correlation matrix computation.
+  C) Complex Features
+  ····················
+  [x] F6: Macro Context Integration
+      Macro service fetching from DolarAPI + BCRA API (dollar rates, interest
+      rate, reserves, CPI, country risk). Cached API at /api/macro (5-min TTL).
+      Compact indicator grid card. Macro data injected into health and
+      evaluate-trade Claude prompts.
+      Files: services/macro/client.ts, /api/macro, useMacroData,
+             MacroContextCard. Modified: health/route.ts, evaluate-trade/route.ts
 
-  [ ] Macro Context Integration
-      Feed Argentine macro data (inflation, reserves, policy) into AI analysis.
-      Proxy to BCRA/INDEC APIs for CPI, interest rates, USD reserves.
-      Complexity: High. Needs new data sources.
+  [x] F3: Natural Language Portfolio Chat
+      SSE streaming conversational interface. Portfolio + macro context in
+      system prompt. Multi-turn (max 50 messages). Markdown rendering,
+      suggested prompts, streaming cursor, abort control.
+      Files: /api/insights/chat, useChatInsights, ChatPanel
+      Rate limit: 15 req/min (added to rate-limit.ts)
+
+  D) Integration
+      All features added to /insights page: MacroContextCard at top,
+      ExitAdvisorCard + CorrelationAnalysisCard in Portfolio Intelligence
+      grid, ChatPanel below.
 
 ================================================================================
-9. FUTURE — Advanced Features
+9. FUTURE — Possible Features (low priority)
 ================================================================================
 
-  [ ] Multi-Portfolio: CRUD, switching, aggregate view
-  [ ] Dividends: tracking table, splits handling, reinvestment (see Section 6 EF4)
-  [ ] Watchlist: track unowned assets, alerts, quick-add
-  [ ] Import/Export: CSV import, Excel export, backup/restore
+  Evaluated 2026-02-16. None are high priority for a single retail investor.
+
+  [~] CSV Export — Quick win. "Download CSV" button on portfolio table for
+      tax season / backup. Import less useful since we sync from IOL/Binance.
+      Effort: Low. Value: Medium (tax time).
+
+  [x] Watchlist — Already implemented (Phase 6: watchlist groups/dashboards
+      with DB, API, hooks, UI, nav). DONE.
+
+  [-] Multi-Portfolio — Overkill for single-user. Adds complexity (CRUD,
+      switching, aggregate views) without clear benefit. Would matter for
+      advisors or multiple accounts. Skip.
+
+  [-] Dividends — Hard data sourcing problem. No reliable structured API for
+      CEDEAR dividends. Manual tracking is tedious. The app already tracks
+      P&L which captures dividend-adjusted returns implicitly via price.
+      Skip unless a good data source appears.
+
+  [-] EF3: portfolio-rebalance-check — Needs allocation_targets table + UI
+      for target allocation percentages. Low value without a rebalancing
+      execution feature. Skip.
+
+  [-] EF4: dividend-tracker — Same data sourcing problem as Dividends above.
+      Skip.
 
 ================================================================================
 10. REMAINING ISSUES
