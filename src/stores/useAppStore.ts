@@ -18,6 +18,7 @@ interface Preferences {
   defaultCategory: AssetCategory;
   compactTable: boolean; // Dense rows vs. comfortable
   privacyMode: boolean; // Blur financial values for public use
+  sidebarPinned: boolean; // Keep sidebar expanded
 }
 
 interface AppState {
@@ -45,6 +46,14 @@ interface AppState {
   closeTransactionDialog: () => void;
   openPriceAlertsDialog: () => void;
   closePriceAlertsDialog: () => void;
+
+  // ── Sidebar ──
+  sidebarHovered: boolean;
+  setSidebarHovered: (v: boolean) => void;
+  toggleSidebarPinned: () => void;
+  isMobileMoreOpen: boolean;
+  openMobileMore: () => void;
+  closeMobileMore: () => void;
 }
 
 // ── Store ───────────────────────────────────────────────────────────────────
@@ -59,6 +68,7 @@ export const useAppStore = create<AppState>()(
           defaultCategory: "stock",
           compactTable: true, // Default to compact mode
           privacyMode: false,
+          sidebarPinned: false,
         },
         setDisplayCurrency: (currency) =>
           set(
@@ -162,6 +172,27 @@ export const useAppStore = create<AppState>()(
           set({ isPriceAlertsDialogOpen: true }, false, "openPriceAlertsDialog"),
         closePriceAlertsDialog: () =>
           set({ isPriceAlertsDialogOpen: false }, false, "closePriceAlertsDialog"),
+
+        // ── Sidebar ──
+        sidebarHovered: false,
+        setSidebarHovered: (v) =>
+          set({ sidebarHovered: v }, false, "setSidebarHovered"),
+        toggleSidebarPinned: () =>
+          set(
+            (s) => ({
+              preferences: {
+                ...s.preferences,
+                sidebarPinned: !s.preferences.sidebarPinned,
+              },
+            }),
+            false,
+            "toggleSidebarPinned"
+          ),
+        isMobileMoreOpen: false,
+        openMobileMore: () =>
+          set({ isMobileMoreOpen: true }, false, "openMobileMore"),
+        closeMobileMore: () =>
+          set({ isMobileMoreOpen: false }, false, "closeMobileMore"),
       }),
       {
         name: "fcc-preferences",

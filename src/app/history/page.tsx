@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, RefreshCw, Loader2, History, Clock, CheckCircle, XCircle } from "lucide-react";
-import Link from "next/link";
+import { RefreshCw, Loader2, History, Clock, CheckCircle, XCircle } from "lucide-react";
 import { useIOLOperations, type OperationStatus } from "@/hooks/useIOLOperations";
 import OperationsTable from "@/components/history/OperationsTable";
 import { cn } from "@/lib/utils";
@@ -30,20 +29,11 @@ export default function HistoryPage() {
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              aria-label="Back to portfolio"
-              className="p-2 rounded-lg hover:bg-zinc-800 transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5 text-zinc-400" />
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold">Historial de Operaciones</h1>
-              <p className="text-sm text-zinc-500">
-                Tus operaciones en IOL
-              </p>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold">Historial de Operaciones</h1>
+            <p className="text-sm text-zinc-500">
+              Tus operaciones en IOL
+            </p>
           </div>
 
           <button

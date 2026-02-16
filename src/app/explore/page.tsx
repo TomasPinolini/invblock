@@ -10,7 +10,6 @@ import {
   AlertCircle,
   Filter,
   RefreshCw,
-  ArrowLeft,
   Star,
   Clock,
   X,
@@ -19,7 +18,6 @@ import {
   Trash2,
   Compass,
 } from "lucide-react";
-import Link from "next/link";
 import {
   useIOLSecurities,
   INSTRUMENT_TYPE_LABELS,
@@ -193,13 +191,6 @@ function ExplorePageInner() {
         <div className="max-w-6xl mx-auto px-4 py-6">
           {/* Header */}
           <div className="mb-6">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 mb-3 transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Volver al portfolio
-            </Link>
             <h1 className="text-2xl font-bold text-zinc-100">Explorar Mercado</h1>
             <p className="text-sm text-zinc-500 mt-1">
               Buscar y explorar instrumentos disponibles en IOL

@@ -13,7 +13,6 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  ArrowLeft,
 } from "lucide-react";
 import { relativeDate } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
@@ -40,25 +39,15 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-zinc-950 px-6 py-8">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/")}
-            aria-label="Back to portfolio"
-            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-200
-                       hover:bg-zinc-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-zinc-800 flex items-center justify-center">
-              <Settings className="h-5 w-5 text-zinc-400" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-zinc-100">Settings</h1>
-              <p className="text-sm text-zinc-500">
-                Manage your broker connections
-              </p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-lg bg-zinc-800 flex items-center justify-center">
+            <Settings className="h-5 w-5 text-zinc-400" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-zinc-100">Settings</h1>
+            <p className="text-sm text-zinc-500">
+              Manage your broker connections
+            </p>
           </div>
         </div>
 

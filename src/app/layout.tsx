@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import AppShell from "@/components/layout/AppShell";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -29,7 +30,7 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased
                     bg-zinc-950 text-zinc-100 min-h-screen`}
       >
-        <Providers><main id="main-content">{children}</main></Providers>
+        <Providers><AppShell>{children}</AppShell></Providers>
       </body>
     </html>
   );

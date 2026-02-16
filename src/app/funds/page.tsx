@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import {
-  ArrowLeft,
   Landmark,
   Search,
   Loader2,
@@ -69,13 +68,6 @@ export default function FundsPage() {
         <div className="max-w-6xl mx-auto px-4 py-6">
           {/* Header */}
           <div className="mb-6">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 mb-3 transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Volver al portfolio
-            </Link>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-green-500/20 flex items-center justify-center">
                 <Landmark className="h-5 w-5 text-green-400" />

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Upload,
   FileText,
   Loader2,
@@ -68,7 +66,6 @@ function ConfidenceBadge({ confidence }: { confidence?: "high" | "medium" | "low
 }
 
 export default function InsightsPage() {
-  const router = useRouter();
   const { data: iolPortfolio } = useIOLPortfolio();
   const { data: binancePortfolio } = useBinancePortfolio();
 
@@ -186,19 +183,11 @@ export default function InsightsPage() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.push("/")}
-            className="p-2 rounded-lg hover:bg-zinc-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold">Market Insights</h1>
-            <p className="text-sm text-zinc-500">
-              Upload PPI reports for AI-powered analysis
-            </p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold">Market Insights</h1>
+          <p className="text-sm text-zinc-500">
+            Upload PPI reports for AI-powered analysis
+          </p>
         </div>
 
         {/* Upload Section */}
