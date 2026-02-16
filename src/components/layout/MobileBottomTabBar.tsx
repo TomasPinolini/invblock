@@ -23,7 +23,7 @@ export default function MobileBottomTabBar() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={closeMore}
           />
-          <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 rounded-t-2xl mobile-sheet-enter safe-area-bottom">
+          <div className="absolute bottom-16 left-0 right-0 bg-zinc-900 border-t border-zinc-800 rounded-t-2xl mobile-sheet-enter">
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
               <h3 className="text-sm font-semibold text-zinc-300">More</h3>
               <button

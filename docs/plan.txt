@@ -1,5 +1,5 @@
 FINANCIAL COMMAND CENTER — Development Plan
-Last Updated: 2026-02-16 (AI Enhancements complete)
+Last Updated: 2026-02-16
 
 ================================================================================
 1. PROJECT OVERVIEW
@@ -16,388 +16,102 @@ Last Updated: 2026-02-16 (AI Enhancements complete)
 2. COMPLETED — Foundation & Core (Phases 1-4)
 ================================================================================
 
-  Phase 1: Foundation
-    Next.js 16 App Router, Tailwind v4, Drizzle ORM, Zustand, TanStack Query.
-    Tables: assets, transactions, user_connections.
-    Components: PortfolioTable, PortfolioSummary, AllocationBar, AssetEntryDialog.
+  Phase 1: Next.js 16 App Router, Tailwind v4, Drizzle ORM, Zustand, TanStack
+  Query. Tables: assets, transactions, user_connections.
 
-  Phase 2: Broker Integration
-    IOL: src/services/iol/client.ts (auth, token refresh, portfolio, sync, trade).
-    Binance: src/services/binance/client.ts (HMAC signing, portfolio).
-    Yahoo Finance: src/services/yahoo/client.ts (historical prices, symbol mapping).
-    Auto-sync: src/hooks/useAutoSync.ts (IOL + Binance on mount).
+  Phase 2: IOL broker integration (auth, sync, trade), Binance crypto, Yahoo
+  Finance historical prices. Auto-sync on mount.
 
-  Phase 3: Auth & UI
-    Supabase Auth: getAuthUser() in src/lib/auth.ts, all routes protected.
-    Login: /auth/login, /auth/callback, UserMenu component.
-    UI Polish: Skeleton, ErrorBoundary, Toast, mobile responsive cards.
+  Phase 3: Supabase Auth (all routes protected), login/callback flow, UI polish
+  (skeleton, ErrorBoundary, toast, mobile responsive cards).
 
-  Phase 3B: IOL Features
-    [x] F1: Account Balance — AccountBalanceCards, useIOLBalance
-    [x] F2: Operations History — /history page, OperationsTable, useIOLOperations
-    [x] F3: Full Trading — TradeDialog, useIOLTrade (buy/sell/cancel on REAL MONEY)
-    [x] F4: Live Quotes — batch endpoint, useIOLQuotes, useIOLQuote (2min refresh)
-    [x] F5: IOL Historical — AssetDetailModal with Yahoo/IOL data source toggle
-    [x] F6: Security Search — /explore page, useIOLSecurities (filterable grid)
-    [x] F9: Notifications — NotificationBell, useIOLNotifications
+  Phase 3B: IOL features — account balance, operations history, full trading
+  (REAL MONEY), live quotes, historical charts, security search, notifications.
 
-  Phase 4: Automation
-    Edge Functions: daily-report, price-alerts, portfolio-snapshot, on-transaction.
-    Tables: price_alerts, portfolio_snapshots.
-    UI: PriceAlertsDialog, /api/alerts CRUD.
-    [ ] pg_cron schedules not yet enabled (run 002_automation_tables.sql).
+  Phase 4: Edge Functions (daily-report, price-alerts, portfolio-snapshot,
+  on-transaction). Tables: price_alerts, portfolio_snapshots. PriceAlertsDialog.
 
 ================================================================================
 3. COMPLETED — Security & Quality Hardening
 ================================================================================
 
-  A) Security (all done)
-    [x] AES-256-GCM credential encryption (src/lib/crypto.ts, 14 routes updated)
-    [x] Rate limiting on all 13 API routes (trade: 5/min, quote: 60/min, etc.)
-    [x] Trade endpoint: plazo/validez/tipoOrden now required (no defaults)
-    [x] Trade audit logging (trade_audit_log table, logs attempt/success/fail + IP)
-    [x] PDF upload hardened (10MB limit, MIME check, magic bytes validation)
-    [x] Zod validation on all route inputs (src/lib/api-schemas.ts)
+  Security: AES-256-GCM credential encryption, rate limiting (13 routes), trade
+  hardening (all fields required), audit logging, PDF upload validation, Zod on
+  all inputs.
 
-  B) Testing & Quality (all done)
-    [x] Vitest setup (vitest.config.ts, src/test/setup.ts)
-    [x] 69 unit tests across 4 files (utils, crypto, validators, rate-limit)
-    [x] Dynamic USD/ARS rate via dolarapi.com (useExchangeRate, useCurrencyConversion)
-    [x] ErrorBoundary wired into all pages and major dashboard sections
-    [x] Silent sync failures fixed (useAutoSync reports errors properly)
-    [x] usePriceAlerts staleTime added (2 minutes)
-    [ ] Playwright E2E tests — deferred
-    [ ] Service client tests (IOL, Binance, Yahoo) — need mocking
+  Testing: Vitest setup, 69 unit tests (utils, crypto, validators, rate-limit).
 
-  C) Performance & DX (all done)
-    [x] next.config.ts: 6 security headers, compression, strict mode
-    [x] Dynamic imports for all modals (code splitting)
-    [x] Shared currency conversion hook (no more duplication)
-    [x] Polling tuned: operations 30s→2min, quotes 3min→2min
-    [x] PortfolioTable refactored: 743→385 lines (extracted columns, hook, skeleton)
-    [x] Category inference for IOL transactions (NYSE→stock, BCBA→cedear)
-    [x] Dead code cleanup (MOCK_USD_ARS_RATE removed, comments cleaned)
+  Performance: Security headers, dynamic imports, polling tuned, PortfolioTable
+  refactored (743→385 lines).
 
-  D) Polish & UX (all done)
-    [x] Accessibility: 55 aria-labels, dialog a11y, landmarks, aria-live
-    [x] Mobile card layout: PortfolioCardList for <640px
-    [x] Trade Dialog: market inference, balance display, live cost preview
-    [x] Dark mode: z-index fixes, backdrop-blur, skeleton colors, focus rings
-    [x] Raw API response sanitized (/api/iol/balance no longer exposes IOL internals)
-
-  E) Luxury Terminal Design Upgrade (all done)
-    [x] Typography: Space Grotesk (display) + JetBrains Mono (data) via next/font
-    [x] Card depth system: 3-level hierarchy (card-surface/card-elevated/card-prominent)
-    [x] Glow effects on key metrics: glow-blue (total value), glow-emerald/red (P&L)
-    [x] Staggered fadeInUp entrance animations (6 stagger levels + reduced-motion)
-    [x] Value reveal animation on metric numbers (blur-to-sharp)
-    [x] Table refinements: gradient header, blue hover left-border, alternating rows
-    [x] Modal polish: animated backdrop blur + slide-up content (AssetDetail, Trade)
-    [x] Button hierarchy: btn-primary (glow), btn-secondary, btn-ghost
-    [x] Header glow line: blue-to-indigo gradient separator
-    [x] Hover-lift micro-interactions on summary cards, balance cards, mobile cards
-    [x] Toast upgrade: slide-in with blur + colored left accent bar
-    [x] prefers-reduced-motion support for all animations
-    Files changed: globals.css (+345 lines), layout.tsx, page.tsx, Header.tsx,
-      PortfolioSummary.tsx, PortfolioTable.tsx, AccountBalanceCards.tsx,
-      AllocationBar.tsx, AssetDetailModal.tsx, TradeDialog.tsx, Toast.tsx,
-      PortfolioHealthCard.tsx, PortfolioCardList.tsx
+  UX: 55 aria-labels, mobile card layout, trade dialog polish, luxury terminal
+  design (Space Grotesk + JetBrains Mono, card depth system, glow effects,
+  animations, prefers-reduced-motion).
 
 ================================================================================
 4. COMPLETED — AI Features (Phase 5)
 ================================================================================
 
-  Goal: Maximize AI usage across the app beyond the original PDF analysis.
+  Core: Hardened insights endpoint (retry, Zod validation, confidence badges).
+  Portfolio health score, trade evaluator, exit advisor, sector/correlation
+  analysis, macro context integration (DolarAPI + BCRA), natural language
+  portfolio chat (SSE streaming, multi-turn).
 
-  A) Hardened Existing Insights Endpoint
-    [x] Separated system prompt (Argentine market specialist context)
-    [x] Temperature 0.3 for deterministic financial analysis
-    [x] Retry logic with exponential backoff (429/5xx only, max 3 attempts)
-    [x] Zod validation of Claude response with backfillConfidence() fallback
-    [x] Confidence badges on recommendations (high/medium/low color-coded)
-
-  B) Portfolio Health Score — NEW FEATURE
-    API: POST /api/insights/health
-    Hook: usePortfolioHealth (mutation)
-    UI: PortfolioHealthCard (dashboard + insights page)
-
-    How it works:
-      1. Server computes quantitative metrics from portfolio data:
-         HHI concentration index, category weights, currency exposure (ARS/USD),
-         top 3 holdings by weight, position count, total value.
-      2. Sends metrics + portfolio summary to Claude Sonnet 4 with a system
-         prompt specialized for Argentine retail portfolio analysis.
-      3. Claude returns: score (0-100), rating, findings[], suggestions[].
-      4. UI displays SVG ring score, color-coded findings (critical → warning →
-         strength), prioritized suggestions, and a metrics footer.
-
-    Files:
-      src/app/api/insights/health/route.ts (315 lines)
-      src/hooks/usePortfolioHealth.ts (73 lines)
-      src/components/portfolio/PortfolioHealthCard.tsx (380 lines)
-
-  C) Trade Decision Evaluator — NEW FEATURE
-    API: POST /api/insights/evaluate-trade
-    Hook: useTradeEvaluator (mutation)
-    UI: TradeEvaluatorCard (insights page)
-
-    How it works:
-      1. User enters a ticker (auto-uppercase) and optional quantity.
-      2. Server computes metrics: existing allocation, estimated new allocation,
-         category overlap, currency exposure, top concentration.
-      3. Detects if the position is already held and warns about concentration.
-      4. Claude returns: verdict (buy/hold/avoid), confidence, score (1-10),
-         pros[], cons[], portfolio impact, alternative consideration, summary.
-      5. UI shows verdict badge, score bar, pros/cons columns, impact block.
-
-    Files:
-      src/app/api/insights/evaluate-trade/route.ts (355 lines)
-      src/hooks/useTradeEvaluator.ts (88 lines)
-      src/components/portfolio/TradeEvaluatorCard.tsx (404 lines)
-
-  D) Frontend Audit & Fixes
-    [x] Added "use client" to useHistoricalPrices.ts (missing directive)
-    [x] Fixed useIOLTrade.ts: removed incorrect ["binance-portfolio"] invalidation
-    [x] Fixed useIOLQuotes.ts: now throws on error instead of silent empty return
-    [x] Fixed useAutoSync.ts: transaction sync result now checked
+  All features on /insights page. 6 AI features total.
 
 ================================================================================
 5. COMPLETED — MEP Dollar & Mutual Funds
 ================================================================================
 
-  Prerequisites: All done (encryption, query keys, currency hook).
+  MEP: Calculator page at /mep (estimate, fee breakdown, rate comparison).
+  No execute button yet — needs security audit.
 
-  MEP Dollar Operations (calculator only)
-  ────────────────────────────────────────
-    IOL Endpoints:
-      GET  /api/v2/OperatoriaSimplificada/MontosEstimados/{monto}
-      GET  /api/v2/OperatoriaSimplificada/VentaMepSimple/MontosEstimados/{monto}
-      POST /api/v2/Cotizaciones/MEP
-
-    Implementation:
-      [x] IOLClient: getMepEstimate(amount, direction), getMepRate()
-      [x] Types: IOLMepEstimate, IOLMepRate
-      [x] Route: /api/iol/mep (GET ?amount=X&direction=buy)
-      [x] Hook: useIOLMep (debounced estimate, 5min staleTime for rate)
-      [x] Page: /mep with calculator, fee breakdown, rate comparison
-      [x] Header: "MEP" link (gold/yellow)
-      [ ] NO "Execute MEP" until security audit of that flow
-
-  Mutual Funds / FCIs (browse only)
-  ──────────────────────────────────
-    IOL Endpoints:
-      GET  /api/v2/Titulos/FCI — list all funds
-      GET  /api/v2/Titulos/FCI/{simbolo} — fund details
-      GET  /api/v2/Titulos/FCI/TipoFondos — fund types
-      GET  /api/v2/Titulos/FCI/Administradoras — fund managers
-
-    Implementation:
-      [x] IOLClient: listFCIs(), getFCIDetails(), getFCITypes(), getFCIManagers()
-      [x] Routes: /api/iol/fci, /api/iol/fci/types, /api/iol/fci/managers
-      [x] Hooks: useIOLFCIs (5min stale), fund types/managers (30min stale)
-      [x] Page: /funds with FCICard, FCIFilters
-      [x] Header: "Fondos" link (green)
-      [ ] Subscribe/Redeem deferred
+  Funds: Browse-only at /funds (FCICard, FCIFilters, fund types/managers).
+  No subscribe/redeem yet.
 
 ================================================================================
 6. COMPLETED — Edge Functions Expansion (Phase 4B)
 ================================================================================
 
-  Goal: Extend Supabase Edge Functions beyond the 4 existing ones.
+  EF1: mep-rate-calculator — fetches USD/ARS rates from dolarapi.com → DB.
+  EF2: weekly-digest — AI-powered weekly portfolio email via Brevo.
+  EF5: watchlist-price-sync — batch Yahoo Finance quotes → ticker_price_cache.
+  EF6: auth-activity-log — security alerts on new device/IP login.
 
-  Completed:
-    [x] EF1: mep-rate-calculator [cron] [external] [cache]
-        Fetches USD/ARS Blue + MEP rates from dolarapi.com, upserts into
-        exchange_rates table. daily-report & portfolio-snapshot now read real
-        rates (fallback 1250). Deployed.
-        Tables: exchange_rates (pair, buy_rate, sell_rate, fetched_at)
-        Files: supabase/functions/mep-rate-calculator/index.ts
-        PR: #1 (merged)
+  Also: Sidebar navigation (replaced header), useAuth SSR fix.
 
-    [x] EF2: weekly-digest [cron] [external] [ai]
-        Weekly AI-powered portfolio digest. Pulls last 7 days of snapshots,
-        computes weekly deltas (biggest movers, category shifts, trend), calls
-        Claude Sonnet for 3-4 sentence summary, sends styled HTML email via
-        Brevo. Checks user email preferences before sending. Deployed.
-        Files: supabase/functions/weekly-digest/index.ts (617 lines)
-        PR: #3 (merged)
-
-    [x] EF5: watchlist-price-sync [cron] [external] [cache]
-        Aggregates unique tickers from watchlist + assets, batch-fetches Yahoo
-        Finance v7 quotes (20 per batch, 2s delay), upserts into
-        ticker_price_cache table. Handles CEDEAR→.BA, crypto→-USD mapping.
-        Deployed.
-        Tables: ticker_price_cache (ticker, price, change_percent, volume)
-        Files: supabase/functions/watchlist-price-sync/index.ts (335 lines)
-        PR: #3 (merged)
-
-    [x] EF6: auth-activity-log [webhook]
-        Triggered by Supabase Auth webhook on sign-in. Logs to auth_events
-        table with SHA-256 device fingerprint. Sends security alert email via
-        Brevo when new device/IP detected. Checks user email preferences
-        before sending (event always logged). Deployed.
-        Tables: auth_events (user_id, event_type, ip_address, device_hash)
-        Files: supabase/functions/auth-activity-log/index.ts (315 lines)
-        PR: #3 (merged)
-
-  Remaining (not yet implemented):
-    [ ] EF3: portfolio-rebalance-check — needs allocation_targets table + UI
-    [ ] EF4: dividend-tracker — needs dividend_events table, hard data sourcing
-
-  Also completed during this phase:
-    [x] Sidebar navigation — replaced Header with collapsible sidebar + mobile
-        bottom tab bar (PR #2, merged)
-    [x] useAuth SSR fix — moved createClient() into useEffect to prevent
-        prerender crash on Vercel
+  Not implemented: EF3 (rebalance-check), EF4 (dividend-tracker) — skipped.
 
 ================================================================================
-7. NEXT — Email Reports Polish & Analytics
+7. COMPLETED — Email Reports & Analytics
 ================================================================================
 
-  Goal: Make the daily-report and weekly-digest emails production-ready, then
-  add frontend analytics charts.
+  Emails: Migrated to Brevo, email preferences system (DB + API + UI), opt-out
+  checks in all 4 edge functions, rate limiting on sends.
 
-  A) Email Reports Polish (DONE)
-  ────────────────────────────────────
-    All email-sending edge functions polished and production-ready.
-
-    Completed:
-      [x] Migrated from Resend to Brevo (300 emails/day free, shared across
-          projects). All 4 functions use Brevo transactional email API v3.
-      [x] SENDER_EMAIL/SENDER_NAME env vars with fallback defaults
-      [x] User email preferences system:
-          - Table: user_email_preferences (daily_report, weekly_digest,
-            price_alerts, security_alerts — all boolean, default true)
-          - API: GET/PUT /api/email-preferences (Zod-validated)
-          - Hook: useEmailPreferences + useUpdateEmailPreferences (TanStack Query)
-          - UI: EmailPreferences card on /settings with toggle switches
-      [x] Opt-out checks in all 4 edge functions (opt-out model: no row = send)
-      [x] Unsubscribe footer in all emails with link to /settings#notifications
-      [x] daily-report tested end-to-end: email delivered via Brevo
-      [x] Supabase secrets set: BREVO_API_KEY
-      [x] All 4 functions deployed
-
-    Files created:
-      src/db/schema.ts (added userEmailPreferences table + boolean import)
-      src/app/api/email-preferences/route.ts
-      src/hooks/useEmailPreferences.ts
-      src/components/settings/EmailPreferences.tsx
-      src/app/settings/page.tsx (integrated EmailPreferences card)
-
-    Remaining:
-      [ ] Test email rendering across clients (Gmail, Outlook)
-      [x] Rate limiting on email sends — last_daily_report_at (20h gap) and
-          last_weekly_digest_at (6-day gap) columns in user_email_preferences.
-          Timestamp updated after successful send via upsert. Tested end-to-end.
-      [ ] Error handling: what happens when Brevo/Claude API is down?
-
-  B) Analytics Charts (after emails are solid)
-  ──────────────────────────────────────────────
-    Prerequisites: portfolio_snapshots table (done), install recharts.
-
-    Charts (ordered by dependency):
-      [ ] 1. Allocation Donut — group by category, CATEGORY_COLORS
-      [ ] 2. Portfolio Value Over Time — query portfolio_snapshots, line + area
-      [ ] 3. Top Gainers/Losers — horizontal bar, green/red, top/bottom 5
-      [ ] 4. Category Breakdown — stacked bar: invested vs current per category
-
-    [ ] Benchmark Comparison — S&P Merval, S&P 500, BTC via Yahoo Finance
-
-    Page: /analytics with chart grid, period selector, responsive layout.
+  Analytics: /analytics page with portfolio snapshots and charts.
 
 ================================================================================
-8. COMPLETED — AI Enhancements (Phase 5 continued)
+8. COMPLETED — AI Enhancements
 ================================================================================
 
-  All 6 AI features implemented and deployed (commit aeb1072, 2026-02-16).
-
-  A) Edge Function Enhancements
-  ······························
-  [x] F1: Smart Alert Narratives
-      Claude generates 2-3 sentence context when a price alert triggers.
-      Saved to price_alerts.narrative column, included in alert email as
-      indigo-bordered AI Analysis block. Graceful degradation on failure.
-      Modified: supabase/functions/price-alerts/index.ts
-
-  [x] F2: AI-Powered Daily Digest
-      Morning analysis added to daily-report email. Claude generates 2-3
-      sentence summary highlighting notable moves and one actionable
-      observation. Indigo left-border "Morning Analysis" block in email.
-      Modified: supabase/functions/daily-report/index.ts
-
-  B) New AI Features
-  ···················
-  [x] F4: Position Exit Advisor
-      "When should I sell X?" — computes holding period, unrealized P&L,
-      position weight, category exposure. Claude returns hold/trim/exit with
-      confidence, tax considerations, timing factors, and risks.
-      Files: /api/insights/exit-advisor, useExitAdvisor, ExitAdvisorCard
-
-  [x] F5: Sector/Correlation Analysis
-      Ticker metadata (sector/industry/country/correlationGroup) for ~180
-      tickers. Server groups positions and flags >30% concentration. Claude
-      analyzes hidden risks and suggests decorrelation strategies.
-      Files: ticker-metadata.ts, /api/insights/correlation,
-             useCorrelationAnalysis, CorrelationAnalysisCard
-
-  C) Complex Features
-  ····················
-  [x] F6: Macro Context Integration
-      Macro service fetching from DolarAPI + BCRA API (dollar rates, interest
-      rate, reserves, CPI, country risk). Cached API at /api/macro (5-min TTL).
-      Compact indicator grid card. Macro data injected into health and
-      evaluate-trade Claude prompts.
-      Files: services/macro/client.ts, /api/macro, useMacroData,
-             MacroContextCard. Modified: health/route.ts, evaluate-trade/route.ts
-
-  [x] F3: Natural Language Portfolio Chat
-      SSE streaming conversational interface. Portfolio + macro context in
-      system prompt. Multi-turn (max 50 messages). Markdown rendering,
-      suggested prompts, streaming cursor, abort control.
-      Files: /api/insights/chat, useChatInsights, ChatPanel
-      Rate limit: 15 req/min (added to rate-limit.ts)
-
-  D) Integration
-      All features added to /insights page: MacroContextCard at top,
-      ExitAdvisorCard + CorrelationAnalysisCard in Portfolio Intelligence
-      grid, ChatPanel below.
+  Smart alert narratives, AI daily digest, exit advisor, correlation analysis,
+  macro context, portfolio chat. All deployed (commit aeb1072).
 
 ================================================================================
-9. FUTURE — Possible Features (low priority)
+9. COMPLETED — CSV Export
 ================================================================================
 
-  Evaluated 2026-02-16. None are high priority for a single retail investor.
-
-  [~] CSV Export — Quick win. "Download CSV" button on portfolio table for
-      tax season / backup. Import less useful since we sync from IOL/Binance.
-      Effort: Low. Value: Medium (tax time).
-
-  [x] Watchlist — Already implemented (Phase 6: watchlist groups/dashboards
-      with DB, API, hooks, UI, nav). DONE.
-
-  [-] Multi-Portfolio — Overkill for single-user. Adds complexity (CRUD,
-      switching, aggregate views) without clear benefit. Would matter for
-      advisors or multiple accounts. Skip.
-
-  [-] Dividends — Hard data sourcing problem. No reliable structured API for
-      CEDEAR dividends. Manual tracking is tedious. The app already tracks
-      P&L which captures dividend-adjusted returns implicitly via price.
-      Skip unless a good data source appears.
-
-  [-] EF3: portfolio-rebalance-check — Needs allocation_targets table + UI
-      for target allocation percentages. Low value without a rebalancing
-      execution feature. Skip.
-
-  [-] EF4: dividend-tracker — Same data sourcing problem as Dividends above.
-      Skip.
+  [x] CSV export on dashboard (portfolio positions) and /history (operations).
+      Shared utility: src/lib/csv.ts (BOM for Excel, proper escaping).
+      Buttons next to Refresh on both pages.
 
 ================================================================================
 10. REMAINING ISSUES
 ================================================================================
 
   Open Bugs:
-    - pg_cron schedules not yet enabled — ACTION: just run 002_automation_tables.sql
-      This has been carried since Phase 4. Should be resolved next session.
+    - pg_cron schedules not yet enabled — run 002_automation_tables.sql
     - IOL API only works 11:00-17:00 ART (market hours)
 
   Technical Debt:
@@ -409,55 +123,17 @@ Last Updated: 2026-02-16 (AI Enhancements complete)
     - drizzle-kit push broken (check constraint parse error) — use direct SQL
     - Vercel env vars can get deleted — verify before deploys
 
-  Resolved (Phase 4B):
-    [x] Edge functions MOCK_USD_ARS_RATE = 1250 — now reads from exchange_rates
-    [x] useAuth creates Supabase client during SSR prerender — moved to useEffect
-
-  Resolved (formerly open):
-    [x] useIOLTrade query key bug — fixed (removed ["binance-portfolio"])
-    [x] MOCK_USD_ARS_RATE hardcoded — replaced with live dolarapi.com
-    [x] TradeDialog market inference — fixed
-    [x] usePriceAlerts missing staleTime — added 2min
-    [x] useAutoSync silent failures — now reports errors
-    [x] ErrorBoundary unused — wired into all pages
-    [x] next.config.ts empty — 6 security headers + compression
-    [x] Credentials plaintext — AES-256-GCM encryption
-    [x] Zero rate limiting — per-endpoint limits on all routes
-    [x] Trade dangerous defaults — all fields required
-    [x] No trade audit logging — trade_audit_log table
-    [x] PDF upload no validation — size, MIME, magic bytes checks
-    [x] Raw API exposure — sanitized responses
-    [x] useHistoricalPrices missing "use client" — fixed
-    [x] useIOLQuotes silent error — now throws
-    [x] useAutoSync transaction sync unchecked — now checked
-
 ================================================================================
 11. NEXT UP — Operations & Reliability
 ================================================================================
 
-  A) Error Monitoring (should be done before next feature phase)
-  ──────────────────────────────────────────────────────────────
-    [ ] Install @sentry/nextjs
-    [ ] Configure DSN + environment (dev/prod)
+  A) Error Monitoring
+    [ ] Install @sentry/nextjs, configure DSN
     [ ] Wrap trade endpoints with Sentry.captureException
-    [ ] Add session replay for debugging user-reported issues
-    [ ] Set up alerts for: trade failures, auth errors, API 5xx spikes
+    [ ] Session replay for debugging
+    [ ] Alerts: trade failures, auth errors, API 5xx spikes
 
   B) Deployment & CI
-  ──────────────────
-    [ ] Define deployment target (Vercel, self-hosted, etc.)
-    [ ] Add CI pipeline (GitHub Actions): lint, typecheck, vitest
-    [ ] Pre-deploy checklist: env vars verified, migration run, smoke test
-    [ ] Branch protection on master (require CI pass + 1 review)
-    [ ] Rollback strategy documented
-
-================================================================================
-12. RECOMMENDED TOOLS
-================================================================================
-
-  Testing:     vitest (installed), @playwright/test (pending)
-  Monitoring:  @sentry/nextjs (error tracking + session replay)
-  Charts:      recharts (for Section 7 analytics)
-  Performance: @next/bundle-analyzer
-  DX:          prettier, lint-staged + husky
-  MCP:         @supabase/mcp-server-supabase
+    [ ] GitHub Actions: lint, typecheck, vitest
+    [ ] Branch protection on master
+    [ ] Pre-deploy checklist, rollback strategy

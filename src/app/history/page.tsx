@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw, Loader2, History, Clock, CheckCircle, XCircle } from "lucide-react";
+import { RefreshCw, Loader2, History, Clock, CheckCircle, XCircle, Download } from "lucide-react";
 import { useIOLOperations, type OperationStatus } from "@/hooks/useIOLOperations";
 import OperationsTable from "@/components/history/OperationsTable";
 import { cn } from "@/lib/utils";
+import { downloadCSV } from "@/lib/csv";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 const TABS: { value: OperationStatus; label: string; icon: React.ReactNode }[] = [
@@ -23,6 +24,26 @@ export default function HistoryPage() {
 
   const operations = data?.operations || [];
 
+  const handleExportCSV = () => {
+    const headers = [
+      "Date", "Ticker", "Market", "Type", "Quantity",
+      "Price", "Total", "Currency", "Status",
+    ];
+    const rows = operations.map((op) => [
+      op.fechaOrden ? new Date(op.fechaOrden).toLocaleDateString() : "",
+      op.simbolo,
+      op.mercado,
+      op.tipo,
+      String(op.cantidadOperada ?? op.cantidad),
+      String(op.precioOperado ?? op.precio),
+      String(op.montoOperado ?? op.montoTotal),
+      op.mercado === "nYSE" ? "USD" : "ARS",
+      op.estado,
+    ]);
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCSV(`operations-${date}.csv`, headers, rows);
+  };
+
   return (
     <ErrorBoundary>
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -36,21 +57,35 @@ export default function HistoryPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            aria-label="Refresh operations history"
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg
-                       bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50
-                       text-sm font-medium transition-colors"
-          >
-            {isFetching ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            {operations.length > 0 && (
+              <button
+                onClick={handleExportCSV}
+                aria-label="Export operations as CSV"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg
+                           bg-zinc-800 hover:bg-zinc-700
+                           text-sm font-medium transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Export</span>
+              </button>
             )}
-            <span className="hidden sm:inline">Actualizar</span>
-          </button>
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              aria-label="Refresh operations history"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg
+                         bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50
+                         text-sm font-medium transition-colors"
+            >
+              {isFetching ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">Actualizar</span>
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}

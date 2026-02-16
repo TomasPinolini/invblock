@@ -43,14 +43,14 @@ export const MOBILE_PRIMARY_ITEMS: NavItem[] = [
   NAV_ITEMS[0], // Portfolio
   NAV_ITEMS[1], // Explorar
   NAV_ITEMS[2], // Dashboards
-  NAV_ITEMS[3], // MEP
+  NAV_ITEMS[6], // Insights
 ];
 
 /** Items shown in "More" sheet on mobile */
 export const MOBILE_MORE_ITEMS: NavItem[] = [
   NAV_ITEMS[4], // Fondos
   NAV_ITEMS[5], // Historial
-  NAV_ITEMS[6], // Insights
+  NAV_ITEMS[3], // MEP
   NAV_ITEMS[7], // Analytics
 ];
 

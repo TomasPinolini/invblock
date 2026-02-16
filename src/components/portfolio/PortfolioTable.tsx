@@ -18,6 +18,7 @@ import {
   Loader2,
   Settings,
   Filter,
+  Download,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,7 @@ import { buildColumns, buildActionsColumn, type PortfolioRow } from "./columns";
 import { PortfolioTableSkeleton } from "./PortfolioTableSkeleton";
 import { PortfolioCardList, PortfolioCardListSkeleton } from "./PortfolioCardList";
 import { formatCurrency, formatPercent, cn } from "@/lib/utils";
+import { downloadCSV } from "@/lib/csv";
 
 // Lazy-load heavy modals — only rendered when user clicks a row / trade button
 const AssetDetailModal = dynamic(() => import("./AssetDetailModal"), {
@@ -92,6 +94,31 @@ export default function PortfolioTable() {
   const handleSell = (row: PortfolioRow) => {
     setTradeAsset(row);
     setTradeAction("sell");
+  };
+
+  const handleExportCSV = () => {
+    const rows = table.getFilteredRowModel().rows.map((r) => r.original);
+    const headers = [
+      "Ticker", "Name", "Category", "Currency", "Quantity",
+      "Avg Price", "Current Price", "Value", "P&L ($)", "P&L (%)",
+      "Allocation (%)", "Source",
+    ];
+    const csvRows = rows.map((r) => [
+      r.ticker,
+      r.name,
+      CATEGORY_LABELS[r.category] ?? r.category,
+      r.currency,
+      String(r.quantity),
+      r.displayAvgPrice.toFixed(2),
+      r.displayPrice.toFixed(2),
+      r.displayValue.toFixed(2),
+      r.displayPnl.toFixed(2),
+      r.pnlPercent.toFixed(2),
+      r.allocation.toFixed(2),
+      r.source,
+    ]);
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCSV(`portfolio-${date}.csv`, headers, csvRows);
   };
 
   const columns = useMemo(
@@ -204,6 +231,16 @@ export default function PortfolioTable() {
                          px-3 text-sm text-zinc-200 placeholder:text-zinc-600
                          focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             />
+            {data.length > 0 && (
+              <button
+                onClick={handleExportCSV}
+                aria-label="Export portfolio as CSV"
+                className="btn-secondary whitespace-nowrap"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+            )}
             {anyConnected ? (
               <button
                 onClick={() => refetch()}
