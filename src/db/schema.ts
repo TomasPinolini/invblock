@@ -276,6 +276,33 @@ export type NewWatchlistGroup = typeof watchlistGroups.$inferInsert;
 export type WatchlistGroupItem = typeof watchlistGroupItems.$inferSelect;
 export type NewWatchlistGroupItem = typeof watchlistGroupItems.$inferInsert;
 
+// ── Exchange Rates ──────────────────────────────────────────────────────────
+
+export const exchangeRates = pgTable(
+  "exchange_rates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    pair: varchar("pair", { length: 20 }).notNull(), // "USD_ARS_BLUE", "USD_ARS_MEP"
+    source: varchar("source", { length: 50 }).notNull(), // "dolarapi"
+    buyRate: numeric("buy_rate", { precision: 18, scale: 4 }).notNull(),
+    sellRate: numeric("sell_rate", { precision: 18, scale: 4 }).notNull(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
+    sourceUpdatedAt: timestamp("source_updated_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    pairIdx: uniqueIndex("exchange_rates_pair_idx").on(table.pair),
+  })
+);
+
+export type ExchangeRate = typeof exchangeRates.$inferSelect;
+export type NewExchangeRate = typeof exchangeRates.$inferInsert;
+
 // Inferred types for use across the app
 export type Asset = typeof assets.$inferSelect;
 export type NewAsset = typeof assets.$inferInsert;
