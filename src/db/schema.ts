@@ -365,6 +365,8 @@ export const userEmailPreferences = pgTable(
     weeklyDigest: boolean("weekly_digest").notNull().default(true),
     priceAlerts: boolean("price_alerts").notNull().default(true),
     securityAlerts: boolean("security_alerts").notNull().default(true),
+    lastDailyReportAt: timestamp("last_daily_report_at", { withTimezone: true }),
+    lastWeeklyDigestAt: timestamp("last_weekly_digest_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

@@ -286,7 +286,9 @@ Last Updated: 2026-02-16
 
     Remaining:
       [ ] Test email rendering across clients (Gmail, Outlook)
-      [ ] Rate limiting on email sends (avoid spamming on repeated invocations)
+      [x] Rate limiting on email sends — last_daily_report_at (20h gap) and
+          last_weekly_digest_at (6-day gap) columns in user_email_preferences.
+          Timestamp updated after successful send via upsert. Tested end-to-end.
       [ ] Error handling: what happens when Brevo/Claude API is down?
 
   B) Analytics Charts (after emails are solid)

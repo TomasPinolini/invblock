@@ -526,7 +526,7 @@ serve(async (req) => {
         // Check email preferences (opt-out model: default to true if no row)
         const { data: prefs } = await supabase
           .from("user_email_preferences")
-          .select("weekly_digest")
+          .select("weekly_digest, last_weekly_digest_at")
           .eq("user_id", userId)
           .single();
 
@@ -534,6 +534,16 @@ serve(async (req) => {
           console.log(`[weekly-digest] User ${userId} opted out, skipping`);
           skipped++;
           continue;
+        }
+
+        // Rate limit: skip if last digest was sent less than 6 days ago
+        if (prefs?.last_weekly_digest_at) {
+          const daysSince = (Date.now() - new Date(prefs.last_weekly_digest_at).getTime()) / 86400000;
+          if (daysSince < 6) {
+            console.log(`[weekly-digest] User ${userId} already received digest ${daysSince.toFixed(1)} days ago, skipping`);
+            skipped++;
+            continue;
+          }
         }
 
         // Query last 7 days of snapshots
@@ -591,6 +601,13 @@ serve(async (req) => {
         if (success) {
           sent++;
           console.log(`[weekly-digest] Email sent to ${email}`);
+          // Update last sent timestamp for rate limiting
+          await supabase
+            .from("user_email_preferences")
+            .upsert(
+              { user_id: userId, last_weekly_digest_at: new Date().toISOString() },
+              { onConflict: "user_id" }
+            );
         } else {
           failed++;
           console.log(`[weekly-digest] Failed to send email to ${email}`);

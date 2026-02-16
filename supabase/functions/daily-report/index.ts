@@ -383,13 +383,22 @@ serve(async (req) => {
       // Check email preferences (opt-out model: default to true if no row)
       const { data: prefs } = await supabase
         .from("user_email_preferences")
-        .select("daily_report")
+        .select("daily_report, last_daily_report_at")
         .eq("user_id", userId)
         .single();
 
       if (prefs && prefs.daily_report === false) {
         console.log(`User ${userId} opted out of daily reports, skipping`);
         continue;
+      }
+
+      // Rate limit: skip if last report was sent less than 20 hours ago
+      if (prefs?.last_daily_report_at) {
+        const hoursSince = (Date.now() - new Date(prefs.last_daily_report_at).getTime()) / 3600000;
+        if (hoursSince < 20) {
+          console.log(`User ${userId} already received daily report ${hoursSince.toFixed(1)}h ago, skipping`);
+          continue;
+        }
       }
 
       // Get user's assets
@@ -423,6 +432,13 @@ serve(async (req) => {
       if (success) {
         sent++;
         console.log(`Email sent to ${email}`);
+        // Update last sent timestamp for rate limiting
+        await supabase
+          .from("user_email_preferences")
+          .upsert(
+            { user_id: userId, last_daily_report_at: new Date().toISOString() },
+            { onConflict: "user_id" }
+          );
       } else {
         failed++;
         console.log(`Failed to send email to ${email}`);
