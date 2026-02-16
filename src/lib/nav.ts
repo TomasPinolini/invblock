@@ -6,6 +6,7 @@ import {
   Landmark,
   History,
   Lightbulb,
+  BarChart3,
   Bell,
   type LucideIcon,
 } from "lucide-react";
@@ -34,6 +35,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/funds", label: "Fondos", icon: Landmark, accent: "green" },
   { href: "/history", label: "Historial", icon: History, accent: "cyan" },
   { href: "/insights", label: "Insights", icon: Lightbulb, accent: "amber" },
+  { href: "/analytics", label: "Analytics", icon: BarChart3, accent: "purple" },
 ];
 
 /** Items shown in mobile bottom tab bar (max 4 + "More") */
@@ -49,6 +51,7 @@ export const MOBILE_MORE_ITEMS: NavItem[] = [
   NAV_ITEMS[4], // Fondos
   NAV_ITEMS[5], // Historial
   NAV_ITEMS[6], // Insights
+  NAV_ITEMS[7], // Analytics
 ];
 
 export const ALERTS_NAV: NavItem = {

@@ -10,6 +10,8 @@ import {
   text,
   uniqueIndex,
   boolean,
+  date,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -381,6 +383,34 @@ export const userEmailPreferences = pgTable(
 
 export type UserEmailPreferences = typeof userEmailPreferences.$inferSelect;
 export type NewUserEmailPreferences = typeof userEmailPreferences.$inferInsert;
+
+// ── Portfolio Snapshots (populated by portfolio-snapshot edge function) ────────
+
+export const portfolioSnapshots = pgTable(
+  "portfolio_snapshots",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull(),
+    snapshotDate: date("snapshot_date").notNull(),
+    totalValueUsd: numeric("total_value_usd", { precision: 18, scale: 2 }).notNull(),
+    totalCostUsd: numeric("total_cost_usd", { precision: 18, scale: 2 }).notNull(),
+    totalPnlUsd: numeric("total_pnl_usd", { precision: 18, scale: 2 }).notNull(),
+    totalPnlPercent: numeric("total_pnl_percent", { precision: 8, scale: 4 }),
+    assetCount: integer("asset_count").notNull().default(0),
+    byCategory: jsonb("by_category").default({}),
+    positions: jsonb("positions").default([]),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: index("snapshots_user_idx").on(table.userId),
+    dateIdx: index("snapshots_date_idx").on(table.snapshotDate),
+    userDateIdx: uniqueIndex("snapshots_user_date_idx").on(table.userId, table.snapshotDate),
+  })
+);
+
+export type PortfolioSnapshot = typeof portfolioSnapshots.$inferSelect;
 
 // Inferred types for use across the app
 export type Asset = typeof assets.$inferSelect;
