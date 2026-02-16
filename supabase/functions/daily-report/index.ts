@@ -11,7 +11,51 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 // Email configuration
 const FROM_EMAIL = "Slock <reports@yourdomain.com>"; // Update with your verified domain
-const MOCK_USD_ARS_RATE = 1250;
+const FALLBACK_USD_ARS_RATE = 1250;
+
+// Fetch USD/ARS sell rate from exchange_rates table, fallback to hardcoded rate
+async function getUsdArsRate(
+  supabase: ReturnType<typeof createClient>
+): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from("exchange_rates")
+      .select("sell_rate, fetched_at")
+      .eq("pair", "USD_ARS_BLUE")
+      .single();
+
+    if (error || !data) {
+      console.warn(
+        `No exchange rate found, using fallback: ${FALLBACK_USD_ARS_RATE}`
+      );
+      return FALLBACK_USD_ARS_RATE;
+    }
+
+    const rate = parseFloat(data.sell_rate);
+    if (!rate || rate <= 0) {
+      console.warn(
+        `Invalid exchange rate value, using fallback: ${FALLBACK_USD_ARS_RATE}`
+      );
+      return FALLBACK_USD_ARS_RATE;
+    }
+
+    // Warn if rate is stale (> 24h old)
+    const fetchedAt = new Date(data.fetched_at);
+    const ageMs = Date.now() - fetchedAt.getTime();
+    if (ageMs > 24 * 60 * 60 * 1000) {
+      console.warn(
+        `Exchange rate is stale (${Math.round(ageMs / 3600000)}h old), using anyway: ${rate}`
+      );
+    } else {
+      console.log(`Using USD/ARS rate: ${rate} (fetched ${Math.round(ageMs / 60000)}m ago)`);
+    }
+
+    return rate;
+  } catch (err) {
+    console.error("Error fetching exchange rate:", err);
+    return FALLBACK_USD_ARS_RATE;
+  }
+}
 
 interface Asset {
   id: string;
@@ -51,13 +95,13 @@ function formatCurrency(value: number, currency: string): string {
 }
 
 // Convert to USD for consistent calculations
-function toUSD(value: number, currency: string): number {
-  if (currency === "ARS") return value / MOCK_USD_ARS_RATE;
+function toUSD(value: number, currency: string, rate: number): number {
+  if (currency === "ARS") return value / rate;
   return value;
 }
 
 // Calculate portfolio summary for a user
-function calculateSummary(assets: Asset[]): PortfolioSummary {
+function calculateSummary(assets: Asset[], usdArsRate: number): PortfolioSummary {
   let totalValue = 0;
   let totalCost = 0;
 
@@ -70,8 +114,8 @@ function calculateSummary(assets: Asset[]): PortfolioSummary {
 
     if (qty <= 0) continue;
 
-    const cost = toUSD(qty * avgPrice, asset.currency);
-    const value = toUSD(qty * currentPrice, asset.currency);
+    const cost = toUSD(qty * avgPrice, asset.currency, usdArsRate);
+    const value = toUSD(qty * currentPrice, asset.currency, usdArsRate);
     const pnl = value - cost;
     const pnlPercent = cost > 0 ? (pnl / cost) * 100 : 0;
 
@@ -281,6 +325,9 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Fetch exchange rate once before processing users
+    const usdArsRate = await getUsdArsRate(supabase);
+
     // Get all users with connected brokers
     const { data: connections, error: connError } = await supabase
       .from("user_connections")
@@ -342,7 +389,7 @@ serve(async (req) => {
       }
 
       // Calculate summary
-      const summary = calculateSummary(assets as Asset[]);
+      const summary = calculateSummary(assets as Asset[], usdArsRate);
 
       // Generate and send email
       const html = generateEmailHTML(summary, today);

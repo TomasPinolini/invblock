@@ -4,21 +4,10 @@ import dynamic from "next/dynamic";
 import PortfolioTable from "@/components/portfolio/PortfolioTable";
 import PortfolioSummary from "@/components/portfolio/PortfolioSummary";
 import AccountBalanceCards from "@/components/portfolio/AccountBalanceCards";
-import Header from "@/components/layout/Header";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { BarChart3, Sparkles, Wallet } from "lucide-react";
 
-// Lazy-load dialogs — they're hidden by default (Zustand-controlled)
-const AssetEntryDialog = dynamic(
-  () => import("@/components/forms/AssetEntryDialog")
-);
-const TransactionEntryDialog = dynamic(
-  () => import("@/components/forms/TransactionEntryDialog")
-);
-const PriceAlertsDialog = dynamic(
-  () => import("@/components/forms/PriceAlertsDialog")
-);
 const PortfolioAdvisorCard = dynamic(
   () => import("@/components/portfolio/PortfolioAdvisorCard")
 );
@@ -29,13 +18,8 @@ const MarketMovers = dynamic(
 export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="animate-fade-in-up stagger-1">
-        <Header />
-      </div>
-
       {/* Collapsible: Wallet (Cash + Summary) */}
-      <div className="animate-fade-in-up stagger-2">
+      <div className="animate-fade-in-up stagger-1">
         <ErrorBoundary>
           <CollapsibleSection
             title="Wallet"
@@ -50,7 +34,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Collapsible: Market Movers + Portfolio Advisor */}
-      <div className="animate-fade-in-up stagger-3 grid gap-4 md:grid-cols-2">
+      <div className="animate-fade-in-up stagger-2 grid gap-4 md:grid-cols-2">
         <ErrorBoundary>
           <CollapsibleSection
             title="US Market Movers"
@@ -70,16 +54,12 @@ export default function DashboardPage() {
       </div>
 
       {/* Portfolio Table */}
-      <div className="animate-fade-in-up stagger-4">
+      <div className="animate-fade-in-up stagger-3">
         <ErrorBoundary>
           <PortfolioTable />
         </ErrorBoundary>
       </div>
 
-      {/* Dialogs (rendered globally, controlled by Zustand) */}
-      <AssetEntryDialog />
-      <TransactionEntryDialog />
-      <PriceAlertsDialog />
     </div>
   );
 }

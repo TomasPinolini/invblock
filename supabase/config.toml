@@ -22,6 +22,9 @@ verify_jwt = true
 [functions.portfolio-snapshot]
 verify_jwt = true
 
+[functions.mep-rate-calculator]
+verify_jwt = true
+
 [functions.on-transaction]
 verify_jwt = true
 

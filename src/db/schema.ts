@@ -282,8 +282,8 @@ export const exchangeRates = pgTable(
   "exchange_rates",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    pair: varchar("pair", { length: 20 }).notNull(),
-    source: varchar("source", { length: 50 }).notNull(),
+    pair: varchar("pair", { length: 20 }).notNull(), // "USD_ARS_BLUE", "USD_ARS_MEP"
+    source: varchar("source", { length: 50 }).notNull(), // "dolarapi"
     buyRate: numeric("buy_rate", { precision: 18, scale: 4 }).notNull(),
     sellRate: numeric("sell_rate", { precision: 18, scale: 4 }).notNull(),
     fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
