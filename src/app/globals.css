@@ -427,3 +427,80 @@ body {
 [data-privacy="on"] [data-sensitive]:hover {
   filter: blur(8px);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIDEBAR LAYOUT — desktop grid + mobile overrides
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar right-edge glow line */
+.sidebar-glow-line {
+  position: relative;
+}
+
+.sidebar-glow-line::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(59, 130, 246, 0.4),
+    rgba(99, 102, 241, 0.3),
+    transparent
+  );
+}
+
+/* Active nav indicator bar (left edge) */
+.sidebar-nav-active-indicator {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+}
+
+/* Mobile: add bottom padding for tab bar */
+@media (max-width: 767px) {
+  .app-content-mobile {
+    padding-bottom: 4.5rem;
+  }
+}
+
+/* Mobile more sheet slide-up */
+@keyframes mobileSheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes mobileSheetSlideDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.mobile-sheet-enter {
+  animation: mobileSheetSlideUp 0.25s ease-out both;
+}
+
+/* Safe area insets for iPhone */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

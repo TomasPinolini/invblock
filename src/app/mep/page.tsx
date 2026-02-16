@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useRef } from "react";
 import {
-  ArrowLeft,
   DollarSign,
   ArrowRightLeft,
   Loader2,
@@ -60,13 +59,6 @@ export default function MepPage() {
         <div className="max-w-4xl mx-auto px-4 py-6">
           {/* Header */}
           <div className="mb-6">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 mb-3 transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Volver al portfolio
-            </Link>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
                 <DollarSign className="h-5 w-5 text-yellow-400" />
