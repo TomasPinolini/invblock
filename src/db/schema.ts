@@ -276,6 +276,83 @@ export type NewWatchlistGroup = typeof watchlistGroups.$inferInsert;
 export type WatchlistGroupItem = typeof watchlistGroupItems.$inferSelect;
 export type NewWatchlistGroupItem = typeof watchlistGroupItems.$inferInsert;
 
+// ── Exchange Rates (populated by mep-rate-calculator edge function) ──────────
+
+export const exchangeRates = pgTable(
+  "exchange_rates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    pair: varchar("pair", { length: 20 }).notNull(),
+    source: varchar("source", { length: 50 }).notNull(),
+    buyRate: numeric("buy_rate", { precision: 18, scale: 4 }).notNull(),
+    sellRate: numeric("sell_rate", { precision: 18, scale: 4 }).notNull(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
+    sourceUpdatedAt: timestamp("source_updated_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    pairIdx: uniqueIndex("exchange_rates_pair_idx").on(table.pair),
+  })
+);
+
+export type ExchangeRate = typeof exchangeRates.$inferSelect;
+export type NewExchangeRate = typeof exchangeRates.$inferInsert;
+
+// ── Ticker Price Cache (populated by watchlist-price-sync edge function) ─────
+
+export const tickerPriceCache = pgTable(
+  "ticker_price_cache",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ticker: varchar("ticker", { length: 20 }).notNull(),
+    price: numeric("price", { precision: 18, scale: 8 }).notNull(),
+    changePercent: numeric("change_percent", { precision: 10, scale: 4 }),
+    volume: numeric("volume", { precision: 18, scale: 0 }),
+    currency: varchar("currency", { length: 10 }).notNull().default("USD"),
+    source: varchar("source", { length: 50 }).notNull().default("yahoo"),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    tickerIdx: uniqueIndex("ticker_price_cache_ticker_idx").on(table.ticker),
+  })
+);
+
+export type TickerPrice = typeof tickerPriceCache.$inferSelect;
+export type NewTickerPrice = typeof tickerPriceCache.$inferInsert;
+
+// ── Auth Events (populated by auth-activity-log edge function) ───────────────
+
+export const authEvents = pgTable(
+  "auth_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull(),
+    eventType: varchar("event_type", { length: 30 }).notNull(),
+    ipAddress: varchar("ip_address", { length: 45 }),
+    userAgent: text("user_agent"),
+    deviceHash: varchar("device_hash", { length: 64 }),
+    country: varchar("country", { length: 10 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: index("auth_events_user_idx").on(table.userId),
+    dateIdx: index("auth_events_date_idx").on(table.createdAt),
+    deviceIdx: index("auth_events_device_idx").on(table.userId, table.deviceHash),
+  })
+);
+
+export type AuthEvent = typeof authEvents.$inferSelect;
+export type NewAuthEvent = typeof authEvents.$inferInsert;
+
 // Inferred types for use across the app
 export type Asset = typeof assets.$inferSelect;
 export type NewAsset = typeof assets.$inferInsert;
