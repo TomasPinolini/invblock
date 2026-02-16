@@ -9,6 +9,7 @@ const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const SENDER_EMAIL = Deno.env.get("SENDER_EMAIL") || "tomaspinolini2003@gmail.com";
 const SENDER_NAME = Deno.env.get("SENDER_NAME") || "Slock";
 const APP_URL = Deno.env.get("APP_URL") || "https://invblock.vercel.app";
@@ -28,13 +29,63 @@ interface Asset {
   current_price: string;
 }
 
+// Generate AI narrative for a triggered alert
+async function generateNarrative(
+  ticker: string,
+  condition: string,
+  targetPrice: number,
+  currentPrice: number
+): Promise<string> {
+  if (!ANTHROPIC_API_KEY) {
+    console.log("ANTHROPIC_API_KEY not configured, skipping narrative");
+    return "";
+  }
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 300,
+        temperature: 0.4,
+        system:
+          "You are a concise Argentine retail investment analyst. Write 2-3 sentences explaining why this price alert matters and what the investor should consider next. Be specific with the numbers provided. No greetings or sign-offs. Write in English.",
+        messages: [
+          {
+            role: "user",
+            content: `Price alert triggered: ${ticker} is now ${condition} the target of $${targetPrice.toFixed(2)}. Current price: $${currentPrice.toFixed(2)}. The difference is ${((currentPrice - targetPrice) / targetPrice * 100).toFixed(1)}% from the target.`,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Claude API error for narrative:", response.status, errText);
+      return "";
+    }
+
+    const data = await response.json();
+    return (data?.content?.[0]?.text || "").trim();
+  } catch (error) {
+    console.error("Failed to generate narrative:", error);
+    return "";
+  }
+}
+
 // Send alert email
 async function sendAlertEmail(
   to: string,
   ticker: string,
   condition: string,
   targetPrice: number,
-  currentPrice: number
+  currentPrice: number,
+  narrative: string = ""
 ): Promise<boolean> {
   if (!BREVO_API_KEY) {
     console.error("BREVO_API_KEY not configured");
@@ -72,6 +123,13 @@ async function sendAlertEmail(
     <p style="color: #71717a; margin: 0; font-size: 12px; text-align: center;">
       ${ticker} is now <strong>${condition}</strong> your target of $${targetPrice.toFixed(2)}
     </p>
+
+    ${narrative ? `
+    <div style="margin-top: 16px; background-color: #3f3f46; border-radius: 8px; padding: 14px; border-left: 3px solid #6366f1;">
+      <p style="color: #a1a1aa; margin: 0 0 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">AI Analysis</p>
+      <p style="color: #e4e4e7; margin: 0; font-size: 13px; line-height: 1.5;">${narrative}</p>
+    </div>
+    ` : ""}
   </div>
 
   <p style="color: #52525b; margin: 16px 0 0; font-size: 11px; text-align: center;">
@@ -196,12 +254,21 @@ serve(async (req) => {
       if (shouldTrigger) {
         console.log(`Alert triggered: ${alert.ticker} ${alert.condition} ${alert.target_price} (current: ${currentPrice})`);
 
-        // Mark as triggered
+        // Generate AI narrative (graceful degradation — empty string on failure)
+        const narrative = await generateNarrative(
+          alert.ticker,
+          alert.condition,
+          alert.target_price,
+          currentPrice
+        );
+
+        // Mark as triggered and save narrative
         await supabase
           .from("price_alerts")
           .update({
             is_active: false,
             triggered_at: new Date().toISOString(),
+            ...(narrative ? { narrative } : {}),
           })
           .eq("id", alert.id);
 
@@ -215,7 +282,7 @@ serve(async (req) => {
         if (prefs && prefs.price_alerts === false) {
           console.log(`User ${alert.user_id} opted out of price alerts, skipping email`);
         } else {
-          // Send notification
+          // Send notification with narrative
           const email = userEmails.get(alert.user_id);
           if (email) {
             await sendAlertEmail(
@@ -223,7 +290,8 @@ serve(async (req) => {
               alert.ticker,
               alert.condition,
               alert.target_price,
-              currentPrice
+              currentPrice,
+              narrative
             );
           }
         }

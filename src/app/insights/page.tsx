@@ -20,6 +20,10 @@ import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import PortfolioAdvisorCard from "@/components/portfolio/PortfolioAdvisorCard";
 import TradeEvaluatorCard from "@/components/portfolio/TradeEvaluatorCard";
+import ExitAdvisorCard from "@/components/portfolio/ExitAdvisorCard";
+import CorrelationAnalysisCard from "@/components/portfolio/CorrelationAnalysisCard";
+import MacroContextCard from "@/components/portfolio/MacroContextCard";
+import ChatPanel from "@/components/portfolio/ChatPanel";
 import dynamic from "next/dynamic";
 
 const NewsSentiment = dynamic(
@@ -288,6 +292,13 @@ export default function InsightsPage() {
           )}
         </div>
 
+        {/* Macro Context */}
+        <div className="mb-6">
+          <ErrorBoundary>
+            <MacroContextCard />
+          </ErrorBoundary>
+        </div>
+
         {/* Market News & Sentiment */}
         <div className="mb-6">
           <ErrorBoundary>
@@ -313,7 +324,20 @@ export default function InsightsPage() {
             <ErrorBoundary>
               <TradeEvaluatorCard />
             </ErrorBoundary>
+            <ErrorBoundary>
+              <ExitAdvisorCard />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <CorrelationAnalysisCard />
+            </ErrorBoundary>
           </div>
+        </div>
+
+        {/* Portfolio Chat */}
+        <div className="mb-6">
+          <ErrorBoundary>
+            <ChatPanel />
+          </ErrorBoundary>
         </div>
 
         {/* Analysis Results */}

@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 
 // Email configuration
 const SENDER_EMAIL = Deno.env.get("SENDER_EMAIL") || "tomaspinolini2003@gmail.com";
@@ -155,10 +156,55 @@ function calculateSummary(assets: Asset[], usdArsRate: number): PortfolioSummary
   };
 }
 
+// Get AI morning analysis summary
+async function getDailyAISummary(summary: PortfolioSummary): Promise<string> {
+  if (!ANTHROPIC_API_KEY) {
+    console.log("ANTHROPIC_API_KEY not configured, skipping daily AI summary");
+    return "";
+  }
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 400,
+        temperature: 0.4,
+        system:
+          "You are a concise Argentine retail investment analyst writing a morning briefing. Write 2-3 sentences: comment on the portfolio state, highlight notable moves from the top gainers/losers, and give one actionable observation for the day. Be specific with numbers. No greetings or sign-offs. Write in English.",
+        messages: [
+          {
+            role: "user",
+            content: `Daily portfolio snapshot:\n- Total value: $${summary.totalValue.toFixed(2)}\n- Total P&L: ${summary.totalPnl >= 0 ? "+" : ""}$${summary.totalPnl.toFixed(2)} (${summary.totalPnlPercent >= 0 ? "+" : ""}${summary.totalPnlPercent.toFixed(2)}%)\n- Positions: ${summary.assetCount}\n- Top gainers: ${summary.topGainers.map((g) => `${g.ticker} (+${g.pnlPercent.toFixed(1)}%)`).join(", ") || "none"}\n- Top losers: ${summary.topLosers.map((l) => `${l.ticker} (${l.pnlPercent.toFixed(1)}%)`).join(", ") || "none"}`,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Claude API error for daily summary:", response.status, errText);
+      return "";
+    }
+
+    const data = await response.json();
+    return (data?.content?.[0]?.text || "").trim();
+  } catch (error) {
+    console.error("Failed to get daily AI summary:", error);
+    return "";
+  }
+}
+
 // Generate HTML email content
 function generateEmailHTML(
   summary: PortfolioSummary,
-  date: string
+  date: string,
+  aiSummary: string = ""
 ): string {
   const pnlColor = summary.totalPnl >= 0 ? "#10b981" : "#ef4444";
   const pnlSign = summary.totalPnl >= 0 ? "+" : "";
@@ -211,6 +257,14 @@ function generateEmailHTML(
         </p>
       </div>
     </div>
+
+    ${aiSummary ? `
+    <!-- Morning Analysis -->
+    <div style="background-color: #27272a; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 3px solid #6366f1;">
+      <p style="color: #a1a1aa; margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Morning Analysis</p>
+      <p style="color: #e4e4e7; margin: 0; font-size: 14px; line-height: 1.6;">${aiSummary}</p>
+    </div>
+    ` : ""}
 
     ${
       summary.topGainers.length > 0
@@ -421,8 +475,14 @@ serve(async (req) => {
       // Calculate summary
       const summary = calculateSummary(assets as Asset[], usdArsRate);
 
+      // Get AI morning analysis (graceful degradation)
+      const aiSummary = await getDailyAISummary(summary);
+      if (aiSummary) {
+        console.log(`AI morning analysis generated for user ${userId}`);
+      }
+
       // Generate and send email
-      const html = generateEmailHTML(summary, today);
+      const html = generateEmailHTML(summary, today, aiSummary);
       const subject = `📊 Portfolio: ${formatCurrency(summary.totalValue, "USD")} | ${
         summary.totalPnl >= 0 ? "+" : ""
       }${summary.totalPnlPercent.toFixed(2)}%`;

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { fetchMacroData } from "@/services/macro/client";
 
 export const maxDuration = 60;
 
@@ -264,6 +265,23 @@ export async function POST(request: NextRequest) {
     // Compute server-side metrics
     const metrics = computeMetrics(portfolio);
 
+    // Fetch macro context (best-effort, don't fail if unavailable)
+    let macroContext = "";
+    try {
+      const macro = await fetchMacroData();
+      const blue = macro.dollars.find((d) => d.name === "Blue");
+      const mep = macro.dollars.find((d) => d.name === "MEP");
+      const ccl = macro.dollars.find((d) => d.name === "CCL");
+      macroContext = `\n## Argentine Macro Context (live data)
+- Dollar Blue: ${blue?.sell ? `$${blue.sell.toFixed(0)}` : "N/A"} | MEP: ${mep?.sell ? `$${mep.sell.toFixed(0)}` : "N/A"} | CCL: ${ccl?.sell ? `$${ccl.sell.toFixed(0)}` : "N/A"}
+- Country Risk (EMBI+): ${macro.countryRisk ? `${macro.countryRisk} bp` : "N/A"}
+- Interest Rate: ${macro.interestRate ? `${macro.interestRate.toFixed(1)}%` : "N/A"}
+- Reserves: ${macro.reserves ? `$${(macro.reserves / 1000).toFixed(1)}B USD` : "N/A"}
+- Monthly CPI: ${macro.monthlyCpi ? `${macro.monthlyCpi.toFixed(1)}%` : "N/A"}`;
+    } catch (e) {
+      console.warn("[Advisor] Failed to fetch macro context:", e);
+    }
+
     // Determine HHI classification
     let hhiLabel: string;
     if (metrics.hhi > 2500) {
@@ -299,7 +317,8 @@ export async function POST(request: NextRequest) {
 - Top 3 holdings: ${metrics.topHoldings.map((h) => `${h.ticker} (${h.weight.toFixed(1)}%)`).join(", ")}
 
 ## Portfolio Holdings
-${holdingsList}`;
+${holdingsList}
+${macroContext}`;
 
     // Call Claude with retry logic
     const anthropic = new Anthropic({ apiKey });

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { fetchMacroData } from "@/services/macro/client";
 
 export const maxDuration = 60;
 
@@ -258,6 +259,22 @@ export async function POST(request: NextRequest) {
     // 5. Compute server-side metrics
     const metrics = computeMetrics(ticker, quantity, portfolio);
 
+    // 5b. Fetch macro context (best-effort)
+    let macroContext = "";
+    try {
+      const macro = await fetchMacroData();
+      const blue = macro.dollars.find((d) => d.name === "Blue");
+      const mep = macro.dollars.find((d) => d.name === "MEP");
+      const ccl = macro.dollars.find((d) => d.name === "CCL");
+      macroContext = `\n## Argentine Macro Context (live data)
+- Dollar Blue: ${blue?.sell ? `$${blue.sell.toFixed(0)}` : "N/A"} | MEP: ${mep?.sell ? `$${mep.sell.toFixed(0)}` : "N/A"} | CCL: ${ccl?.sell ? `$${ccl.sell.toFixed(0)}` : "N/A"}
+- Country Risk (EMBI+): ${macro.countryRisk ? `${macro.countryRisk} bp` : "N/A"}
+- Interest Rate: ${macro.interestRate ? `${macro.interestRate.toFixed(1)}%` : "N/A"}
+- Monthly CPI: ${macro.monthlyCpi ? `${macro.monthlyCpi.toFixed(1)}%` : "N/A"}`;
+    } catch (e) {
+      console.warn("[evaluate-trade] Failed to fetch macro context:", e);
+    }
+
     // 6. Build user message with portfolio context
     const portfolioSummary =
       portfolio.length > 0
@@ -301,6 +318,7 @@ ${portfolioSummary}
 - Currency exposure: ARS ${metrics.currencyExposure.ARS.toFixed(1)}% / USD ${metrics.currencyExposure.USD.toFixed(1)}%
 - Total positions: ${metrics.totalPositions}
 - Highest single-position concentration: ${metrics.topConcentration.toFixed(1)}%
+${macroContext}
 
 Provide your evaluation as JSON.`;
 
