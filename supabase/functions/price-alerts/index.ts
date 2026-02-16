@@ -5,11 +5,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-const FROM_EMAIL = "Slock <onboarding@resend.dev>";
+const SENDER_EMAIL = Deno.env.get("SENDER_EMAIL") || "tomaspinolini2003@gmail.com";
+const SENDER_NAME = Deno.env.get("SENDER_NAME") || "Slock";
+const APP_URL = Deno.env.get("APP_URL") || "https://invblock.vercel.app";
 
 interface PriceAlert {
   id: string;
@@ -34,8 +36,8 @@ async function sendAlertEmail(
   targetPrice: number,
   currentPrice: number
 ): Promise<boolean> {
-  if (!RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not configured");
+  if (!BREVO_API_KEY) {
+    console.error("BREVO_API_KEY not configured");
     return false;
   }
 
@@ -75,18 +77,30 @@ async function sendAlertEmail(
   <p style="color: #52525b; margin: 16px 0 0; font-size: 11px; text-align: center;">
     Sent by Slock Financial Command Center
   </p>
+  <div style="margin-top:32px; padding-top:16px; border-top:1px solid #27272a; text-align:center;">
+    <p style="color:#71717a; font-size:12px; margin:0;">
+      You're receiving this because you have an account on Slock.
+      <a href="${APP_URL}/settings#notifications" style="color:#60a5fa; text-decoration:underline;">Manage email preferences</a>
+    </p>
+  </div>
 </body>
 </html>
   `.trim();
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "api-key": BREVO_API_KEY,
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
-      body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html }),
+      body: JSON.stringify({
+        sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
     });
 
     return response.ok;
@@ -191,16 +205,27 @@ serve(async (req) => {
           })
           .eq("id", alert.id);
 
-        // Send notification
-        const email = userEmails.get(alert.user_id);
-        if (email) {
-          await sendAlertEmail(
-            email,
-            alert.ticker,
-            alert.condition,
-            alert.target_price,
-            currentPrice
-          );
+        // Check email preferences before sending (opt-out model)
+        const { data: prefs } = await supabase
+          .from("user_email_preferences")
+          .select("price_alerts")
+          .eq("user_id", alert.user_id)
+          .single();
+
+        if (prefs && prefs.price_alerts === false) {
+          console.log(`User ${alert.user_id} opted out of price alerts, skipping email`);
+        } else {
+          // Send notification
+          const email = userEmails.get(alert.user_id);
+          if (email) {
+            await sendAlertEmail(
+              email,
+              alert.ticker,
+              alert.condition,
+              alert.target_price,
+              currentPrice
+            );
+          }
         }
 
         triggered++;

@@ -8,9 +8,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
 
-const FROM_EMAIL = "Slock <security@yourdomain.com>";
+const SENDER_EMAIL = Deno.env.get("SENDER_EMAIL") || "tomaspinolini2003@gmail.com";
+const SENDER_NAME = Deno.env.get("SENDER_NAME") || "Slock";
+const APP_URL = Deno.env.get("APP_URL") || "https://invblock.vercel.app";
 
 interface AuthWebhookPayload {
   type: string;
@@ -122,41 +124,48 @@ function generateSecurityEmailHTML(
         This is an automated security notification.
       </p>
     </div>
+    <div style="margin-top:32px; padding-top:16px; border-top:1px solid #27272a; text-align:center;">
+      <p style="color:#71717a; font-size:12px; margin:0;">
+        You're receiving this because you have an account on Slock.
+        <a href="${APP_URL}/settings#notifications" style="color:#60a5fa; text-decoration:underline;">Manage email preferences</a>
+      </p>
+    </div>
   </div>
 </body>
 </html>
   `.trim();
 }
 
-// Send email via Resend
+// Send email via Brevo
 async function sendEmail(
   to: string,
   subject: string,
   html: string
 ): Promise<boolean> {
-  if (!RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not configured");
+  if (!BREVO_API_KEY) {
+    console.error("BREVO_API_KEY not configured");
     return false;
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "api-key": BREVO_API_KEY,
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: [to],
+        sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email: to }],
         subject,
-        html,
+        htmlContent: html,
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("Resend API error:", error);
+      console.error("Brevo API error:", error);
       return false;
     }
 
@@ -263,23 +272,36 @@ serve(async (req) => {
     let emailSent = false;
 
     if (isNewDevice && email) {
-      console.log(
-        `[auth-activity-log] New device detected for ${userId}, sending security alert to ${email}`
-      );
+      // Check email preferences (opt-out model: default to true if no row)
+      const { data: prefs } = await supabase
+        .from("user_email_preferences")
+        .select("security_alerts")
+        .eq("user_id", userId)
+        .single();
 
-      const html = generateSecurityEmailHTML(userAgent, ip, new Date());
-      emailSent = await sendEmail(
-        email,
-        "\u{1F510} New login to your Slock account",
-        html
-      );
-
-      if (emailSent) {
-        console.log(`[auth-activity-log] Security alert sent to ${email}`);
-      } else {
-        console.error(
-          `[auth-activity-log] Failed to send security alert to ${email}`
+      if (prefs && prefs.security_alerts === false) {
+        console.log(
+          `[auth-activity-log] User ${userId} opted out of security alerts, skipping email`
         );
+      } else {
+        console.log(
+          `[auth-activity-log] New device detected for ${userId}, sending security alert to ${email}`
+        );
+
+        const html = generateSecurityEmailHTML(userAgent, ip, new Date());
+        emailSent = await sendEmail(
+          email,
+          "\u{1F510} New login to your Slock account",
+          html
+        );
+
+        if (emailSent) {
+          console.log(`[auth-activity-log] Security alert sent to ${email}`);
+        } else {
+          console.error(
+            `[auth-activity-log] Failed to send security alert to ${email}`
+          );
+        }
       }
     } else if (!isNewDevice) {
       console.log(

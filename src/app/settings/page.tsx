@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { relativeDate } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { EmailPreferences } from "@/components/settings/EmailPreferences";
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -46,7 +47,7 @@ export default function SettingsPage() {
           <div>
             <h1 className="text-xl font-bold text-zinc-100">Settings</h1>
             <p className="text-sm text-zinc-500">
-              Manage your broker connections
+              Manage connections and notifications
             </p>
           </div>
         </div>
@@ -56,6 +57,9 @@ export default function SettingsPage() {
 
         {/* Binance Connection */}
         <BinanceConnectionCard />
+
+        {/* Email Notifications */}
+        <EmailPreferences />
       </div>
     </div>
     </ErrorBoundary>

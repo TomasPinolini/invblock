@@ -9,6 +9,7 @@ import {
   integer,
   text,
   uniqueIndex,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -352,6 +353,32 @@ export const authEvents = pgTable(
 
 export type AuthEvent = typeof authEvents.$inferSelect;
 export type NewAuthEvent = typeof authEvents.$inferInsert;
+
+// ── User Email Preferences ────────────────────────────────────────────────────
+
+export const userEmailPreferences = pgTable(
+  "user_email_preferences",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull(),
+    dailyReport: boolean("daily_report").notNull().default(true),
+    weeklyDigest: boolean("weekly_digest").notNull().default(true),
+    priceAlerts: boolean("price_alerts").notNull().default(true),
+    securityAlerts: boolean("security_alerts").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: uniqueIndex("email_prefs_user_idx").on(table.userId),
+  })
+);
+
+export type UserEmailPreferences = typeof userEmailPreferences.$inferSelect;
+export type NewUserEmailPreferences = typeof userEmailPreferences.$inferInsert;
 
 // Inferred types for use across the app
 export type Asset = typeof assets.$inferSelect;
