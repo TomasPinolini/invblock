@@ -31,7 +31,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const expanded = pinned || hovered;
 
   return (
-    <div className="app-layout">
+    <div className="app-layout md:h-screen md:overflow-hidden">
       {/* Desktop sidebar */}
       <Sidebar />
 
@@ -44,12 +44,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       />
 
       {/* Main content area */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col md:h-screen">
         {/* Mobile top bar */}
         <MobileTopBar />
 
         {/* Page content */}
-        <main id="main-content" className="flex-1 app-content-mobile">
+        <main id="main-content" className="flex-1 app-content-mobile md:overflow-y-auto">
           {children}
         </main>
       </div>
