@@ -82,7 +82,7 @@ export function usePortfolioData() {
         const quote = quotes[asset.ticker.toUpperCase()];
         const livePrice = quote?.ultimoPrecio ?? asset.currentPrice;
         const liveValue = livePrice * asset.quantity;
-        const dailyChange = quote?.variacionPorcentual ?? null;
+        const dailyChange = quote?.variacion ?? null;
         const { pnl, pnlPercent } = calculatePnl(livePrice, asset.averagePrice, asset.quantity);
 
         rows.push({

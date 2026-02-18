@@ -193,19 +193,19 @@ export default function TradeDialog({
                     {formatCurrency(liveQuote?.ultimoPrecio || asset.currentPrice, asset.currency)}
                   </span>
                 </div>
-                {liveQuote?.variacionPorcentual !== undefined && (
+                {liveQuote?.variacion !== undefined && (
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-xs text-zinc-600">Variación hoy</span>
                     <span
                       className={cn(
                         "text-xs font-mono",
-                        liveQuote.variacionPorcentual >= 0
+                        liveQuote.variacion >= 0
                           ? "text-emerald-400"
                           : "text-red-400"
                       )}
                     >
-                      {liveQuote.variacionPorcentual >= 0 ? "+" : ""}
-                      {liveQuote.variacionPorcentual.toFixed(2)}%
+                      {liveQuote.variacion >= 0 ? "+" : ""}
+                      {liveQuote.variacion.toFixed(2)}%
                     </span>
                   </div>
                 )}

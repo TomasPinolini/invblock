@@ -417,11 +417,11 @@ export default function AssetDetailModal({
                     <span
                       className={cn(
                         "font-mono font-semibold",
-                        (liveQuote.variacionPorcentual ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                        (liveQuote.variacion ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"
                       )}
                     >
-                      {(liveQuote.variacionPorcentual ?? 0) >= 0 ? "+" : ""}
-                      {(liveQuote.variacionPorcentual ?? 0).toFixed(2)}%
+                      {(liveQuote.variacion ?? 0) >= 0 ? "+" : ""}
+                      {(liveQuote.variacion ?? 0).toFixed(2)}%
                     </span>
                   </div>
                   {/* OHLC Grid */}
@@ -452,11 +452,11 @@ export default function AssetDetailModal({
                     </div>
                   </div>
                   {/* Volume */}
-                  {(liveQuote.volumen || liveQuote.montoOperado) && (
+                  {(liveQuote.volumenNominal || liveQuote.montoOperado) && (
                     <div className="flex items-center justify-between pt-2 border-t border-zinc-700">
                       <span className="text-[10px] text-zinc-600 uppercase">Volume</span>
                       <span className="text-xs font-mono text-zinc-400">
-                        {liveQuote.volumen?.toLocaleString() ?? "--"} shares
+                        {liveQuote.volumenNominal?.toLocaleString() ?? "--"} shares
                         {liveQuote.montoOperado && (
                           <span className="text-zinc-600 ml-2">
                             ({formatCurrency(liveQuote.montoOperado, asset.currency)})

@@ -137,3 +137,16 @@ Last Updated: 2026-02-16
     [ ] GitHub Actions: lint, typecheck, vitest
     [ ] Branch protection on master
     [ ] Pre-deploy checklist, rollback strategy
+
+  C) CCL Spread Calculator
+    [ ] GET /api/iol/ccl-spread?ticker=GGAL — implied CCL per CEDEAR
+    [ ] Fetch CEDEAR price (ARS) from IOL + underlying price (USD) from Yahoo
+    [ ] Static CEDEAR ratio map (or fetch from IOL metadata)
+    [ ] Compare implied CCL vs blue/MEP rates from exchange_rates table
+    [ ] Return: implied CCL, spread vs blue, spread vs MEP, signal
+    [ ] Small UI card on dashboard showing arbitrage opportunities
+
+  D) Live Data in Portfolio Chat
+    [ ] Enhance /api/insights/chat to fetch fresh portfolio + rates on demand
+    [ ] Inject live holdings, balances, and FX rates into system prompt
+    [ ] Replace stale context with real-time data before each response

@@ -101,17 +101,20 @@ export interface IOLPunta {
 
 export interface IOLQuote {
   ultimoPrecio: number; // Last traded price
-  variacionPorcentual: number; // Daily change % (e.g., +2.5 or -1.3)
+  variacion: number; // Daily change % (e.g., -2.81 means -2.81%)
   apertura: number; // Open
   maximo: number; // High
   minimo: number; // Low
   cierreAnterior: number; // Previous close
-  volumen?: number; // Volume in shares
+  volumenNominal?: number; // Volume in shares
   montoOperado?: number; // Volume in money
   tendencia?: "sube" | "baja" | "mantiene"; // Trend direction
   puntas?: IOLPunta[]; // Bid/ask spread
   fechaHora?: string; // Quote timestamp
   cantidadOperaciones?: number; // Number of trades
+  moneda?: string; // Currency (e.g., "peso_Argentino")
+  descripcionTitulo?: string; // Security description
+  plazo?: string; // Settlement period (e.g., "T1")
 }
 
 // Order types for trading
