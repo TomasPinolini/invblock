@@ -38,10 +38,20 @@ export function useAutoSync() {
     staleTime: Infinity,
   });
 
+  // Check PPI connection status
+  const { data: ppiStatus } = useQuery<ConnectionStatus>({
+    queryKey: ["ppi-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/ppi/status");
+      return res.json();
+    },
+    staleTime: Infinity,
+  });
+
   // Run sync once when we have status info
   useEffect(() => {
     if (hasSynced.current) return;
-    if (iolStatus === undefined || binanceStatus === undefined) return;
+    if (iolStatus === undefined || binanceStatus === undefined || ppiStatus === undefined) return;
 
     const runSync = async () => {
       hasSynced.current = true;
@@ -49,10 +59,12 @@ export function useAutoSync() {
 
       const hasIOL = iolStatus?.connected;
       const hasBinance = binanceStatus?.connected;
+      const hasPPI = ppiStatus?.connected;
 
-      if (!hasIOL && !hasBinance) return;
+      if (!hasIOL && !hasBinance && !hasPPI) return;
 
-      startSync(hasIOL && hasBinance ? "all" : hasIOL ? "iol" : "binance");
+      const sources = [hasIOL && "IOL", hasBinance && "Binance", hasPPI && "PPI"].filter(Boolean);
+      startSync(sources.length > 1 ? "all" : sources[0]!.toString().toLowerCase());
 
       // Sync IOL if connected (assets + transactions)
       if (hasIOL) {
@@ -88,6 +100,20 @@ export function useAutoSync() {
         }
       }
 
+      // Sync PPI if connected
+      if (hasPPI) {
+        try {
+          const res = await fetch("/api/ppi/sync", { method: "POST" });
+          if (!res.ok) {
+            const data = await res.json();
+            errors.push(`PPI sync: ${data.error || "failed"}`);
+          }
+        } catch (err) {
+          console.error("PPI auto-sync failed:", err);
+          errors.push("PPI sync: network error");
+        }
+      }
+
       // Invalidate queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -100,10 +126,11 @@ export function useAutoSync() {
     };
 
     runSync();
-  }, [iolStatus, binanceStatus, queryClient, startSync, completeSync, failSync]);
+  }, [iolStatus, binanceStatus, ppiStatus, queryClient, startSync, completeSync, failSync]);
 
   return {
     iolConnected: iolStatus?.connected ?? false,
     binanceConnected: binanceStatus?.connected ?? false,
+    ppiConnected: ppiStatus?.connected ?? false,
   };
 }

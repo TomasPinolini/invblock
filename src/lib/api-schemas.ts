@@ -56,6 +56,13 @@ export const binanceAuthSchema = z.object({
   apiSecret: z.string().min(1, "API secret is required"),
 });
 
+export const ppiAuthSchema = z.object({
+  authorizedClient: z.string().min(1, "AuthorizedClient is required"),
+  clientKey: z.string().min(1, "ClientKey is required"),
+  apiKey: z.string().min(1, "ApiKey is required"),
+  apiSecret: z.string().optional().default(""),
+});
+
 // ── Batch Quotes ─────────────────────────────────────────────────────────────
 
 export const batchQuoteSchema = z.object({

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
 import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
+import { usePPIPortfolio } from "@/hooks/usePPIPortfolio";
 import { useIOLQuotes } from "@/hooks/useIOLQuotes";
 import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 import type { PortfolioRow } from "@/components/portfolio/columns";
@@ -31,6 +32,12 @@ export function usePortfolioData() {
     refetch: refetchBinance,
     isFetching: binanceFetching,
   } = useBinancePortfolio();
+  const {
+    data: ppiPortfolio,
+    isLoading: ppiLoading,
+    refetch: refetchPPI,
+    isFetching: ppiFetching,
+  } = usePPIPortfolio();
   const { convertToDisplay, displayCurrency } = useCurrencyConversion();
 
   // Prepare ticker list for live quotes (IOL assets only)
@@ -46,19 +53,22 @@ export function usePortfolioData() {
   const { data: quotesData } = useIOLQuotes(iolTickers, iolPortfolio?.connected ?? false);
 
   // Combined loading/fetching state
-  const isLoading = iolLoading || binanceLoading;
-  const isFetching = iolFetching || binanceFetching;
+  const isLoading = iolLoading || binanceLoading || ppiLoading;
+  const isFetching = iolFetching || binanceFetching || ppiFetching;
   const error = iolError;
 
   // Connection states
   const iolConnected = iolPortfolio?.connected;
   const binanceConnected = binancePortfolio?.connected;
-  const anyConnected = iolConnected || binanceConnected;
+  const ppiConnected = ppiPortfolio?.connected;
+  const anyConnected = iolConnected || binanceConnected || ppiConnected;
   const iolExpired = iolPortfolio?.expired;
+  const ppiExpired = ppiPortfolio?.expired;
 
   const refetch = () => {
     refetchIOL();
     refetchBinance();
+    refetchPPI();
   };
 
   // Merge and convert data
@@ -113,6 +123,26 @@ export function usePortfolioData() {
       }
     }
 
+    // Add PPI assets
+    if (ppiPortfolio?.assets?.length) {
+      for (const asset of ppiPortfolio.assets) {
+        const { pnl, pnlPercent } = calculatePnl(asset.currentPrice, asset.averagePrice, asset.quantity);
+        rows.push({
+          ...asset,
+          pnl,
+          pnlPercent,
+          source: "ppi",
+          displayPrice: convertToDisplay(asset.currentPrice, asset.currency),
+          displayAvgPrice: convertToDisplay(asset.averagePrice, asset.currency),
+          displayValue: convertToDisplay(asset.currentValue, asset.currency),
+          displayPnl: convertToDisplay(pnl, asset.currency),
+          allocation: 0,
+          dailyChange: null,
+          hasLiveQuote: false,
+        });
+      }
+    }
+
     // Calculate allocations
     const total = rows.reduce((sum, r) => sum + r.displayValue, 0);
     rows.forEach((r) => {
@@ -120,7 +150,7 @@ export function usePortfolioData() {
     });
 
     return rows;
-  }, [iolPortfolio, binancePortfolio, convertToDisplay, quotesData]);
+  }, [iolPortfolio, binancePortfolio, ppiPortfolio, convertToDisplay, quotesData]);
 
   return {
     data,
@@ -131,7 +161,9 @@ export function usePortfolioData() {
     displayCurrency,
     iolConnected,
     binanceConnected,
+    ppiConnected,
     anyConnected,
     iolExpired,
+    ppiExpired,
   };
 }

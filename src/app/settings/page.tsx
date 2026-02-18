@@ -58,6 +58,9 @@ export default function SettingsPage() {
         {/* Binance Connection */}
         <BinanceConnectionCard />
 
+        {/* PPI Connection */}
+        <PPIConnectionCard />
+
         {/* Email Notifications */}
         <EmailPreferences />
       </div>
@@ -475,6 +478,264 @@ function BinanceConnectionCard() {
               <Link2 className="h-4 w-4" />
             )}
             {connecting ? "Connecting..." : "Connect to Binance"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function PPIConnectionCard() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const { addToast } = useToast();
+  const [status, setStatus] = useState<{
+    connected: boolean;
+    updatedAt: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  // Form state — 4 API keys
+  const [authorizedClient, setAuthorizedClient] = useState("");
+  const [clientKey, setClientKey] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+
+  // Fetch connection status
+  useEffect(() => {
+    fetch("/api/ppi/status")
+      .then((res) => res.json())
+      .then((data) => {
+        setStatus(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const handleConnect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setConnecting(true);
+
+    try {
+      const res = await fetch("/api/ppi/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ authorizedClient, clientKey, apiKey, apiSecret }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Connection failed");
+      }
+
+      setStatus({ connected: true, updatedAt: new Date().toISOString() });
+      addToast("PPI connected successfully!", "success");
+
+      queryClient.invalidateQueries({ queryKey: ["ppi-portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["ppi-status"] });
+      router.push("/");
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Connection failed", "error");
+      setConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setLoading(true);
+
+    try {
+      await fetch("/api/ppi/auth", { method: "DELETE" });
+      setStatus({ connected: false, updatedAt: null });
+      queryClient.invalidateQueries({ queryKey: ["ppi-portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["ppi-status"] });
+      addToast("PPI disconnected", "info");
+    } catch {
+      addToast("Failed to disconnect", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+
+    try {
+      const res = await fetch("/api/ppi/sync", { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Sync failed");
+      }
+
+      addToast("PPI portfolio synced successfully!", "success");
+      queryClient.invalidateQueries({ queryKey: ["ppi-portfolio"] });
+      router.push("/");
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Sync failed", "error");
+      setSyncing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-violet-600/20 flex items-center justify-center">
+            <span className="text-violet-400 font-bold text-sm">PPI</span>
+          </div>
+          <div>
+            <h3 className="font-semibold text-zinc-100">Portfolio Personal</h3>
+            <p className="text-xs text-zinc-500">
+              Sync your stocks, CEDEARs, and bonds
+            </p>
+          </div>
+        </div>
+        {status?.connected && (
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs">
+            <CheckCircle2 className="h-3 w-3" />
+            Connected
+          </span>
+        )}
+      </div>
+
+      {status?.connected ? (
+        <div className="space-y-4">
+          {status.updatedAt && (
+            <p className="text-xs text-zinc-500">
+              Last synced: {relativeDate(status.updatedAt)}
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="flex-1 h-10 rounded-lg bg-violet-600 hover:bg-violet-500
+                         disabled:opacity-50 text-white text-sm font-medium
+                         transition-colors inline-flex items-center justify-center gap-2"
+            >
+              {syncing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {syncing ? "Syncing..." : "Sync Portfolio"}
+            </button>
+            <button
+              onClick={handleDisconnect}
+              className="h-10 px-4 rounded-lg border border-zinc-700 bg-zinc-800
+                         text-zinc-300 hover:text-white hover:bg-zinc-700
+                         text-sm font-medium transition-colors
+                         inline-flex items-center justify-center gap-2"
+            >
+              <Unlink className="h-4 w-4" />
+              Disconnect
+            </button>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleConnect} className="space-y-4">
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                Authorized Client
+              </label>
+              <input
+                type="password"
+                value={authorizedClient}
+                onChange={(e) => setAuthorizedClient(e.target.value)}
+                placeholder="Enter AuthorizedClient key"
+                aria-label="PPI AuthorizedClient"
+                required
+                className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           focus:outline-none focus:ring-1 focus:ring-violet-500/50
+                           font-mono text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                Client Key
+              </label>
+              <input
+                type="password"
+                value={clientKey}
+                onChange={(e) => setClientKey(e.target.value)}
+                placeholder="Enter ClientKey"
+                aria-label="PPI ClientKey"
+                required
+                className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           focus:outline-none focus:ring-1 focus:ring-violet-500/50
+                           font-mono text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                API Key
+              </label>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter ApiKey"
+                aria-label="PPI ApiKey"
+                required
+                className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           focus:outline-none focus:ring-1 focus:ring-violet-500/50
+                           font-mono text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                API Secret <span className="text-zinc-600 normal-case tracking-normal">(optional)</span>
+              </label>
+              <input
+                type="password"
+                value={apiSecret}
+                onChange={(e) => setApiSecret(e.target.value)}
+                placeholder="Enter ApiSecret (if available)"
+                aria-label="PPI ApiSecret"
+                className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           focus:outline-none focus:ring-1 focus:ring-violet-500/50
+                           font-mono text-xs"
+              />
+            </div>
+          </div>
+
+          <p className="text-xs text-zinc-600">
+            Get API credentials from PPI &rarr; Gestiones &rarr; Gestion de servicio API.
+            Only read permissions are required.
+          </p>
+
+          <button
+            type="submit"
+            disabled={connecting}
+            className="w-full h-10 rounded-lg bg-violet-600 hover:bg-violet-500
+                       disabled:opacity-50 text-white text-sm font-medium
+                       transition-colors inline-flex items-center justify-center gap-2"
+          >
+            {connecting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Link2 className="h-4 w-4" />
+            )}
+            {connecting ? "Connecting..." : "Connect to PPI"}
           </button>
         </form>
       )}

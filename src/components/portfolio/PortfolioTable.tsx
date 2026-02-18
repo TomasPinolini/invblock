@@ -51,6 +51,7 @@ export default function PortfolioTable() {
     displayCurrency,
     iolConnected,
     binanceConnected,
+    ppiConnected,
     anyConnected,
     iolExpired,
   } = usePortfolioData();
@@ -401,6 +402,7 @@ export default function PortfolioTable() {
           {[
             iolConnected && "IOL",
             binanceConnected && "Binance",
+            ppiConnected && "PPI",
           ].filter(Boolean).join(" + ") || "No connections"}{" "}
           · {isFetching ? "Updating..." : "Click Refresh for latest"}
         </span>

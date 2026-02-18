@@ -21,7 +21,7 @@ interface AssetDetailModalProps {
     averagePrice: number;
     currentPrice: number;
     currentValue: number;
-    source?: "iol" | "binance";
+    source?: "iol" | "binance" | "ppi";
     dailyChange?: number | null;
     hasLiveQuote?: boolean;
   };

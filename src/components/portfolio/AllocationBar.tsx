@@ -2,6 +2,7 @@
 
 import { useIOLPortfolio } from "@/hooks/useIOLPortfolio";
 import { useBinancePortfolio } from "@/hooks/useBinancePortfolio";
+import { usePPIPortfolio } from "@/hooks/usePPIPortfolio";
 import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 import {
   CATEGORY_COLORS,
@@ -12,12 +13,14 @@ import {
 export default function AllocationBar() {
   const { data: iolPortfolio } = useIOLPortfolio();
   const { data: binancePortfolio } = useBinancePortfolio();
+  const { data: ppiPortfolio } = usePPIPortfolio();
   const { convertToDisplay } = useCurrencyConversion();
 
-  // Merge assets from both sources
+  // Merge assets from all sources
   const allAssets = [
     ...(iolPortfolio?.assets ?? []),
     ...(binancePortfolio?.assets ?? []),
+    ...(ppiPortfolio?.assets ?? []),
   ];
 
   // Calculate allocation by category from all connected sources

@@ -32,7 +32,7 @@ export interface PortfolioRow {
   currentValue: number;
   pnl: number;
   pnlPercent: number;
-  source: "iol" | "binance";
+  source: "iol" | "binance" | "ppi";
   allocation: number; // 0–100
   // Display values (converted to display currency)
   displayPrice: number;
