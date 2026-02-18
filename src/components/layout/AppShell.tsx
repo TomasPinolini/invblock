@@ -21,25 +21,22 @@ const PriceAlertsDialog = dynamic(
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const pinned = useAppStore((s) => s.preferences.sidebarPinned);
-  const hovered = useAppStore((s) => s.sidebarHovered);
 
   // Auth pages render without shell
   if (pathname.startsWith("/auth")) {
     return <main id="main-content">{children}</main>;
   }
 
-  const expanded = pinned || hovered;
-
   return (
     <div className="app-layout md:h-screen md:overflow-hidden">
       {/* Desktop sidebar */}
       <Sidebar />
 
-      {/* Sidebar spacer — takes up grid column space on desktop */}
+      {/* Sidebar spacer — fixed width; only widens when pinned (hover overlays) */}
       <div
         className={cn(
           "hidden md:block shrink-0 transition-all duration-200",
-          expanded ? "w-60" : "w-16"
+          pinned ? "w-60" : "w-16"
         )}
       />
 

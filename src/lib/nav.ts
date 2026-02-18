@@ -5,7 +5,6 @@ import {
   DollarSign,
   Landmark,
   History,
-  Lightbulb,
   BarChart3,
   Bell,
   type LucideIcon,
@@ -34,7 +33,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/mep", label: "MEP", icon: DollarSign, accent: "yellow" },
   { href: "/funds", label: "Fondos", icon: Landmark, accent: "green" },
   { href: "/history", label: "Historial", icon: History, accent: "cyan" },
-  { href: "/insights", label: "Insights", icon: Lightbulb, accent: "amber" },
   { href: "/analytics", label: "Analytics", icon: BarChart3, accent: "purple" },
 ];
 
@@ -43,7 +41,6 @@ export const MOBILE_PRIMARY_ITEMS: NavItem[] = [
   NAV_ITEMS[0], // Portfolio
   NAV_ITEMS[1], // Explorar
   NAV_ITEMS[2], // Dashboards
-  NAV_ITEMS[6], // Insights
 ];
 
 /** Items shown in "More" sheet on mobile */
@@ -51,7 +48,7 @@ export const MOBILE_MORE_ITEMS: NavItem[] = [
   NAV_ITEMS[4], // Fondos
   NAV_ITEMS[5], // Historial
   NAV_ITEMS[3], // MEP
-  NAV_ITEMS[7], // Analytics
+  NAV_ITEMS[6], // Analytics
 ];
 
 export const ALERTS_NAV: NavItem = {
