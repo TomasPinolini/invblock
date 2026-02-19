@@ -47,10 +47,6 @@ export class PPIClient {
   }
 
   /**
-   * Authenticate with PPI using API keys.
-   * Returns credentials object with tokens for future API calls.
-   */
-  /**
    * Authenticate with PPI using public key + private key.
    * AuthorizedClient and ClientKey are fixed SDK identifiers (not user input).
    */
@@ -124,7 +120,7 @@ export class PPIClient {
       throw new PPITokenExpiredError();
     }
 
-    const data: PPILoginResponse = await response.json();
+    const data = await response.json() as Record<string, string>;
     this.credentials.accessToken = data.accessToken || data.AccessToken;
     this.credentials.refreshToken = data.refreshToken || data.RefreshToken;
   }
