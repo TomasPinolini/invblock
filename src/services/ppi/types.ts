@@ -3,10 +3,8 @@
 // Will need adjustment once sandbox credentials are available.
 
 export interface PPICredentials {
-  authorizedClient: string;
-  clientKey: string;
   apiKey: string;
-  apiSecret?: string;
+  apiSecret: string;
   accessToken: string;
   refreshToken: string;
 }

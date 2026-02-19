@@ -11,6 +11,12 @@ import type {
 const PPI_API_BASE =
   process.env.PPI_API_URL || "https://clientapi_sandbox.portfoliopersonal.com";
 
+// Fixed client identifiers for PPI REST API — NOT user credentials.
+const PPI_AUTHORIZED_CLIENT =
+  process.env.PPI_AUTHORIZED_CLIENT || "API_CLI_REST";
+const PPI_CLIENT_KEY =
+  process.env.PPI_CLIENT_KEY || "ppApiCliSB";
+
 export class PPITokenExpiredError extends Error {
   constructor() {
     super("PPI session expired. Please reconnect your account.");
@@ -18,22 +24,19 @@ export class PPITokenExpiredError extends Error {
   }
 }
 
-/** Build the static PPI headers — only includes ApiSecret if present */
+/** Build PPI headers matching the official Python SDK */
 function buildPPIHeaders(creds: {
-  authorizedClient: string;
-  clientKey: string;
   apiKey: string;
-  apiSecret?: string;
+  apiSecret: string;
 }): Record<string, string> {
-  const headers: Record<string, string> = {
-    AuthorizedClient: creds.authorizedClient,
-    ClientKey: creds.clientKey,
+  return {
+    AuthorizedClient: PPI_AUTHORIZED_CLIENT,
+    ClientKey: PPI_CLIENT_KEY,
     ApiKey: creds.apiKey,
+    ApiSecret: creds.apiSecret,
+    "Content-Type": "application/json",
+    Accept: "application/json",
   };
-  if (creds.apiSecret) {
-    headers.ApiSecret = creds.apiSecret;
-  }
-  return headers;
 }
 
 export class PPIClient {
@@ -47,36 +50,51 @@ export class PPIClient {
    * Authenticate with PPI using API keys.
    * Returns credentials object with tokens for future API calls.
    */
+  /**
+   * Authenticate with PPI using public key + private key.
+   * AuthorizedClient and ClientKey are fixed SDK identifiers (not user input).
+   */
   static async authenticate(
-    authorizedClient: string,
-    clientKey: string,
     apiKey: string,
-    apiSecret?: string
+    apiSecret: string
   ): Promise<PPICredentials> {
-    const response = await fetch(`${PPI_API_BASE}/api/1.0/Account/LoginApi`, {
+    const url = `${PPI_API_BASE}/api/1.0/Account/LoginApi`;
+    const headers = buildPPIHeaders({ apiKey, apiSecret });
+
+    console.log("[PPI Auth] POST", url);
+    console.log("[PPI Auth] Headers:", Object.keys(headers).join(", "));
+
+    const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...buildPPIHeaders({ authorizedClient, clientKey, apiKey, apiSecret }),
-      },
+      headers,
     });
 
+    const text = await response.text().catch(() => "");
+    console.log("[PPI Auth] Response status:", response.status);
+    console.log("[PPI Auth] Response body:", text.slice(0, 500));
+
     if (!response.ok) {
-      const text = await response.text().catch(() => "");
       throw new Error(
-        `PPI authentication failed: ${response.status} ${text}`
+        `PPI authentication failed (${response.status}): ${text.slice(0, 200)}`
       );
     }
 
-    const data: PPILoginResponse = await response.json();
+    const data = JSON.parse(text);
+    const accessToken = data.accessToken || data.AccessToken;
+    const refreshToken = data.refreshToken || data.RefreshToken;
+
+    if (!accessToken) {
+      console.error("[PPI Auth] Unexpected response shape:", Object.keys(data));
+      throw new Error(
+        `PPI login succeeded but response missing accessToken. Keys: ${Object.keys(data).join(", ")}`
+      );
+    }
 
     return {
-      authorizedClient,
-      clientKey,
       apiKey,
       apiSecret,
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -93,8 +111,8 @@ export class PPIClient {
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           ...buildPPIHeaders(this.credentials),
+          Authorization: `Bearer ${this.credentials.accessToken}`,
         },
         body: JSON.stringify({
           refreshToken: this.credentials.refreshToken,
@@ -107,8 +125,8 @@ export class PPIClient {
     }
 
     const data: PPILoginResponse = await response.json();
-    this.credentials.accessToken = data.accessToken;
-    this.credentials.refreshToken = data.refreshToken;
+    this.credentials.accessToken = data.accessToken || data.AccessToken;
+    this.credentials.refreshToken = data.refreshToken || data.RefreshToken;
   }
 
   /**
@@ -138,27 +156,50 @@ export class PPIClient {
         await this.refreshToken();
         return this.request(endpoint, options);
       }
-      throw new Error(`PPI API error: ${response.status}`);
+      const errorText = await response.text().catch(() => "");
+      console.error(`[PPI API] ${endpoint} failed (${response.status}):`, errorText.slice(0, 300));
+      throw new Error(`PPI API error: ${response.status} - ${errorText.slice(0, 200)}`);
     }
 
     return response.json();
   }
 
   /**
+   * Get account number (needed for most PPI endpoints)
+   */
+  async getAccountNumber(): Promise<string> {
+    const accounts = await this.request<Record<string, unknown>[]>("/api/1.0/Account/Accounts");
+    console.log("[PPI Accounts] Response:", JSON.stringify(accounts).slice(0, 500));
+    if (!accounts || accounts.length === 0) {
+      throw new Error("No PPI accounts found");
+    }
+    // Handle both camelCase and PascalCase
+    const acct = accounts[0];
+    const accountNumber = acct.AccountNumber || acct.accountNumber || acct.account_number;
+    if (!accountNumber) {
+      console.error("[PPI Accounts] Unknown shape, keys:", Object.keys(acct));
+      throw new Error(`PPI account missing accountNumber. Keys: ${Object.keys(acct).join(", ")}`);
+    }
+    return String(accountNumber);
+  }
+
+  /**
    * Get portfolio positions and cash balances
    */
-  async getBalancesAndPositions(): Promise<PPIBalancesAndPositions> {
+  async getBalancesAndPositions(accountNumber?: string): Promise<PPIBalancesAndPositions> {
+    const acct = accountNumber || await this.getAccountNumber();
     return this.request<PPIBalancesAndPositions>(
-      "/api/1.0/Account/BalancesAndPositions"
+      `/api/1.0/Account/BalancesAndPositions?accountNumber=${acct}`
     );
   }
 
   /**
    * Get available balance per currency and settlement
    */
-  async getAvailableBalance(): Promise<PPIAvailableBalance> {
+  async getAvailableBalance(accountNumber?: string): Promise<PPIAvailableBalance> {
+    const acct = accountNumber || await this.getAccountNumber();
     return this.request<PPIAvailableBalance>(
-      "/api/1.0/Account/AvailableBalance"
+      `/api/1.0/Account/AvailableBalance?accountNumber=${acct}`
     );
   }
 

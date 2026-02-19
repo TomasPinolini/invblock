@@ -43,7 +43,10 @@ export class IOLClient {
     username: string,
     password: string
   ): Promise<IOLToken> {
-    const response = await fetch(`${IOL_API_BASE}/token`, {
+    const url = `${IOL_API_BASE}/token`;
+    console.log("[IOL Auth] POST", url);
+
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -55,12 +58,18 @@ export class IOLClient {
       }),
     });
 
+    const text = await response.text();
+    console.log("[IOL Auth] Response status:", response.status);
+    console.log("[IOL Auth] Response headers:", JSON.stringify(Object.fromEntries(response.headers.entries())));
+    console.log("[IOL Auth] Response body:", text.slice(0, 500));
+
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`IOL authentication failed: ${error}`);
+      throw new Error(
+        `IOL authentication failed (${response.status}): ${text.slice(0, 200)}`
+      );
     }
 
-    const token: IOLToken = await response.json();
+    const token: IOLToken = JSON.parse(text);
     token.issued_at = Date.now();
     return token;
   }

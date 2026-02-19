@@ -497,9 +497,7 @@ function PPIConnectionCard() {
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
-  // Form state — 4 API keys
-  const [authorizedClient, setAuthorizedClient] = useState("");
-  const [clientKey, setClientKey] = useState("");
+  // Form state — public + private key
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
 
@@ -522,7 +520,7 @@ function PPIConnectionCard() {
       const res = await fetch("/api/ppi/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ authorizedClient, clientKey, apiKey, apiSecret }),
+        body: JSON.stringify({ apiKey, apiSecret }),
       });
 
       const data = await res.json();
@@ -651,48 +649,14 @@ function PPIConnectionCard() {
           <div className="space-y-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                Authorized Client
-              </label>
-              <input
-                type="password"
-                value={authorizedClient}
-                onChange={(e) => setAuthorizedClient(e.target.value)}
-                placeholder="Enter AuthorizedClient key"
-                aria-label="PPI AuthorizedClient"
-                required
-                className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
-                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
-                           focus:outline-none focus:ring-1 focus:ring-violet-500/50
-                           font-mono text-xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                Client Key
-              </label>
-              <input
-                type="password"
-                value={clientKey}
-                onChange={(e) => setClientKey(e.target.value)}
-                placeholder="Enter ClientKey"
-                aria-label="PPI ClientKey"
-                required
-                className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
-                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
-                           focus:outline-none focus:ring-1 focus:ring-violet-500/50
-                           font-mono text-xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                API Key
+                Public Key
               </label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Enter ApiKey"
-                aria-label="PPI ApiKey"
+                placeholder="Enter your public key"
+                aria-label="PPI Public Key"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
                            px-3 text-sm text-zinc-200 placeholder:text-zinc-600
@@ -702,14 +666,15 @@ function PPIConnectionCard() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                API Secret <span className="text-zinc-600 normal-case tracking-normal">(optional)</span>
+                Private Key
               </label>
               <input
                 type="password"
                 value={apiSecret}
                 onChange={(e) => setApiSecret(e.target.value)}
-                placeholder="Enter ApiSecret (if available)"
-                aria-label="PPI ApiSecret"
+                placeholder="Enter your private key"
+                aria-label="PPI Private Key"
+                required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
                            px-3 text-sm text-zinc-200 placeholder:text-zinc-600
                            focus:outline-none focus:ring-1 focus:ring-violet-500/50

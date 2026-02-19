@@ -19,14 +19,12 @@ export async function POST(request: Request) {
     const [body, validationError] = parseBody(ppiAuthSchema, raw);
     if (validationError) return validationError;
 
-    const { authorizedClient, clientKey, apiKey, apiSecret } = body;
+    const { apiKey, apiSecret } = body;
 
-    // Authenticate with PPI (apiSecret is optional)
+    // Authenticate with PPI (public key + private key)
     const credentials = await PPIClient.authenticate(
-      authorizedClient,
-      clientKey,
-      apiKey,
-      apiSecret || undefined
+      apiKey.trim(),
+      apiSecret.trim()
     );
 
     const encrypted = encryptCredentials(credentials);
@@ -58,9 +56,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("PPI auth error:", error);
+    const message = error instanceof Error ? error.message : "Connection failed";
+    console.error("[PPI Auth Route] Error:", message);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Connection failed" },
+      { error: message },
       { status: 500 }
     );
   }

@@ -57,10 +57,8 @@ export const binanceAuthSchema = z.object({
 });
 
 export const ppiAuthSchema = z.object({
-  authorizedClient: z.string().min(1, "AuthorizedClient is required"),
-  clientKey: z.string().min(1, "ClientKey is required"),
-  apiKey: z.string().min(1, "ApiKey is required"),
-  apiSecret: z.string().optional().default(""),
+  apiKey: z.string().min(1, "Public Key is required"),
+  apiSecret: z.string().min(1, "Private Key is required"),
 });
 
 // ── Batch Quotes ─────────────────────────────────────────────────────────────
