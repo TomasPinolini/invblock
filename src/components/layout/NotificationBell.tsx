@@ -45,8 +45,8 @@ export default function NotificationBell() {
             ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20"
             : "border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:bg-zinc-800"
         )}
-        title="IOL Notifications"
-        aria-label="IOL Notifications"
+        title="Notificaciones IOL"
+        aria-label="Notificaciones IOL"
       >
         <Bell className="h-3.5 w-3.5" />
         {hasNotifications && (
@@ -62,7 +62,7 @@ export default function NotificationBell() {
             <h3 className="text-sm font-semibold text-zinc-100">Notificaciones IOL</h3>
             <button
               onClick={() => setIsOpen(false)}
-              aria-label="Close notifications"
+              aria-label="Cerrar notificaciones"
               className="p-1 rounded hover:bg-zinc-800 text-zinc-500"
             >
               <X className="h-4 w-4" />

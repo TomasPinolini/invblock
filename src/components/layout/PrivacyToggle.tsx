@@ -17,8 +17,8 @@ export default function PrivacyToggle() {
           ? "border-violet-500/40 bg-violet-500/15 text-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.1)]"
           : "border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
       )}
-      title={privacyMode ? "Show values" : "Hide values (privacy mode)"}
-      aria-label={privacyMode ? "Disable privacy mode" : "Enable privacy mode"}
+      title={privacyMode ? "Mostrar valores" : "Ocultar valores (modo privado)"}
+      aria-label={privacyMode ? "Desactivar modo privado" : "Activar modo privado"}
       aria-pressed={privacyMode}
     >
       {privacyMode ? (

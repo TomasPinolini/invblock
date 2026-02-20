@@ -25,7 +25,7 @@ export default function MobileBottomTabBar() {
           />
           <div className="absolute bottom-16 left-0 right-0 bg-zinc-900 border-t border-zinc-800 rounded-t-2xl mobile-sheet-enter">
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
-              <h3 className="text-sm font-semibold text-zinc-300">More</h3>
+              <h3 className="text-sm font-semibold text-zinc-300">Mas</h3>
               <button
                 onClick={closeMore}
                 className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-500"
@@ -67,7 +67,7 @@ export default function MobileBottomTabBar() {
                 className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl text-zinc-400 hover:text-purple-400 hover:bg-purple-500/8 transition-colors"
               >
                 <Bell className="h-5 w-5" />
-                <span className="text-[11px] font-medium">Alerts</span>
+                <span className="text-[11px] font-medium">Alertas</span>
               </button>
 
               {/* Settings */}
@@ -77,7 +77,7 @@ export default function MobileBottomTabBar() {
                 className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 transition-colors"
               >
                 <Settings className="h-5 w-5" />
-                <span className="text-[11px] font-medium">Settings</span>
+                <span className="text-[11px] font-medium">Configuracion</span>
               </Link>
             </nav>
           </div>
@@ -127,7 +127,7 @@ export default function MobileBottomTabBar() {
             )}
           >
             <MoreHorizontal className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-none">More</span>
+            <span className="text-[10px] font-medium leading-none">Mas</span>
           </button>
         </div>
       </nav>

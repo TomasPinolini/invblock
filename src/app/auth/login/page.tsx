@@ -31,7 +31,7 @@ export default function LoginPage() {
           },
         });
         if (error) throw error;
-        setMessage("Check your email for the confirmation link!");
+        setMessage("Revisa tu email para el enlace de confirmacion!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -64,18 +64,18 @@ export default function LoginPage() {
         {/* Card */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
           <h1 className="text-lg font-semibold text-zinc-100 mb-1">
-            {isSignUp ? "Create account" : "Welcome back"}
+            {isSignUp ? "Crear cuenta" : "Bienvenido"}
           </h1>
           <p className="text-sm text-zinc-500 mb-6">
             {isSignUp
-              ? "Sign up to start tracking your portfolio"
-              : "Sign in to your account"}
+              ? "Registrate para empezar a seguir tu portfolio"
+              : "Inicia sesion en tu cuenta"}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                Email
+                Correo electronico
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
@@ -94,7 +94,7 @@ export default function LoginPage() {
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                Password
+                Contrasena
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
@@ -133,10 +133,10 @@ export default function LoginPage() {
             >
               {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               {isLoading
-                ? "Loading..."
+                ? "Cargando..."
                 : isSignUp
-                ? "Create account"
-                : "Sign in"}
+                ? "Crear cuenta"
+                : "Iniciar sesion"}
             </button>
           </form>
 
@@ -150,8 +150,8 @@ export default function LoginPage() {
               className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
             >
               {isSignUp
-                ? "Already have an account? Sign in"
-                : "Don't have an account? Sign up"}
+                ? "Ya tenes cuenta? Inicia sesion"
+                : "No tenes cuenta? Registrate"}
             </button>
           </div>
         </div>

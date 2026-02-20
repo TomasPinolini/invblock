@@ -52,7 +52,7 @@ export function AddToGroupDialog({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-800/60">
           <h3 className="text-sm font-semibold text-zinc-100">
-            Add to {group.name}
+            Agregar a {group.name}
           </h3>
           <button
             onClick={onClose}
@@ -70,7 +70,7 @@ export function AddToGroupDialog({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search watchlist..."
+              placeholder="Buscar en watchlist..."
               className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-700 bg-zinc-800/60 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
             />
           </div>
@@ -81,8 +81,8 @@ export function AddToGroupDialog({
           {filtered.length === 0 ? (
             <p className="text-xs text-zinc-500 text-center py-8">
               {watchlistItems.length === 0
-                ? "No items in your watchlist yet"
-                : "No matches found"}
+                ? "No hay items en tu watchlist todavia"
+                : "No se encontraron resultados"}
             </p>
           ) : (
             <div className="space-y-0.5">

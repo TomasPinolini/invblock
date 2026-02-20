@@ -6,8 +6,9 @@ import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { decryptCredentials, encryptCredentials } from "@/lib/crypto";
 import { db } from "@/db";
 import { userConnections, assets } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import type { AssetCategory } from "@/lib/constants";
+import type { NewAsset } from "@/db/schema";
 
 function mapIOLCategory(item: IOLPortfolioItem): AssetCategory {
   const tipo = item.titulo?.tipo?.toLowerCase() || "";
@@ -65,55 +66,41 @@ export async function POST() {
       ...(us.activos || []),
     ];
 
-    // Get existing assets for this user
-    const existingAssets = await db.query.assets.findMany({
-      where: eq(assets.userId, user.id),
-    });
-
-    const existingByTicker = new Map(
-      existingAssets.map((a) => [a.ticker.toUpperCase(), a])
-    );
-
-    let created = 0;
-    let updated = 0;
+    // Build array of assets to upsert
+    const toUpsert: NewAsset[] = [];
 
     for (const item of iolAssets) {
       const simbolo = item.titulo?.simbolo;
+      if (!simbolo || item.cantidad <= 0) continue;
 
-      if (!simbolo || item.cantidad <= 0) {
-        continue;
-      }
+      toUpsert.push({
+        userId: user.id,
+        ticker: simbolo.toUpperCase(),
+        name: item.titulo?.descripcion || simbolo.toUpperCase(),
+        category: mapIOLCategory(item),
+        currency: mapIOLCurrency(item),
+        quantity: item.cantidad.toString(),
+        averagePrice: item.ppc.toString(),
+        currentPrice: item.ultimoPrecio.toString(),
+      });
+    }
 
-      const ticker = simbolo.toUpperCase();
-      const existing = existingByTicker.get(ticker);
+    let synced = 0;
 
-      if (existing) {
-        // Update existing asset
-        await db
-          .update(assets)
-          .set({
-            quantity: item.cantidad.toString(),
-            averagePrice: item.ppc.toString(),
-            currentPrice: item.ultimoPrecio.toString(),
+    if (toUpsert.length > 0) {
+      await db
+        .insert(assets)
+        .values(toUpsert)
+        .onConflictDoUpdate({
+          target: [assets.userId, assets.ticker, assets.category],
+          set: {
+            quantity: sql`excluded.quantity`,
+            averagePrice: sql`excluded.average_price`,
+            currentPrice: sql`excluded.current_price`,
             updatedAt: new Date(),
-          })
-          .where(eq(assets.id, existing.id));
-        updated++;
-      } else {
-        // Create new asset
-        const newAsset = {
-          userId: user.id,
-          ticker,
-          name: item.titulo?.descripcion || ticker,
-          category: mapIOLCategory(item),
-          currency: mapIOLCurrency(item),
-          quantity: item.cantidad.toString(),
-          averagePrice: item.ppc.toString(),
-          currentPrice: item.ultimoPrecio.toString(),
-        };
-        await db.insert(assets).values(newAsset);
-        created++;
-      }
+          },
+        });
+      synced = toUpsert.length;
     }
 
     // Update token if it was refreshed
@@ -130,8 +117,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      created,
-      updated,
+      synced,
       total: iolAssets.length,
     });
   } catch (error) {

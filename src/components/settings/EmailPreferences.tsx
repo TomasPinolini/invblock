@@ -74,40 +74,40 @@ export function EmailPreferences() {
           <Mail className="h-5 w-5 text-violet-400" />
         </div>
         <div>
-          <h3 className="font-semibold text-zinc-100">Email Notifications</h3>
-          <p className="text-xs text-zinc-500">Choose which emails you receive</p>
+          <h3 className="font-semibold text-zinc-100">Notificaciones por Email</h3>
+          <p className="text-xs text-zinc-500">Elegir que emails recibis</p>
         </div>
       </div>
 
       <div className="divide-y divide-zinc-800">
         <ToggleRow
           icon={<BarChart3 className="h-4 w-4" />}
-          label="Daily Market Report"
-          description="Portfolio summary sent after market close"
+          label="Reporte Diario de Mercado"
+          description="Resumen del portfolio enviado al cierre del mercado"
           checked={prefs.dailyReport}
           onChange={(v) => handleToggle("dailyReport", v)}
           disabled={updatePrefs.isPending}
         />
         <ToggleRow
           icon={<TrendingUp className="h-4 w-4" />}
-          label="Weekly Portfolio Digest"
-          description="Weekly performance review with AI analysis"
+          label="Resumen Semanal del Portfolio"
+          description="Revision semanal de rendimiento con analisis de IA"
           checked={prefs.weeklyDigest}
           onChange={(v) => handleToggle("weeklyDigest", v)}
           disabled={updatePrefs.isPending}
         />
         <ToggleRow
           icon={<Bell className="h-4 w-4" />}
-          label="Price Alerts"
-          description="Notifications when price targets are hit"
+          label="Alertas de Precio"
+          description="Notificaciones cuando se alcanzan los precios objetivo"
           checked={prefs.priceAlerts}
           onChange={(v) => handleToggle("priceAlerts", v)}
           disabled={updatePrefs.isPending}
         />
         <ToggleRow
           icon={<Shield className="h-4 w-4" />}
-          label="Security Alerts"
-          description="Alerts for new device logins — recommended"
+          label="Alertas de Seguridad"
+          description="Alertas por inicios de sesion en nuevos dispositivos — recomendado"
           checked={prefs.securityAlerts}
           onChange={(v) => handleToggle("securityAlerts", v)}
           disabled={updatePrefs.isPending}

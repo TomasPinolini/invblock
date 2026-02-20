@@ -120,7 +120,7 @@ export default function ReportAnalyzerSection() {
       setError(null);
       setAnalysis(null);
     } else {
-      setError("Please upload a PDF file");
+      setError("Por favor subi un archivo PDF");
     }
   }, []);
 
@@ -131,7 +131,7 @@ export default function ReportAnalyzerSection() {
       setError(null);
       setAnalysis(null);
     } else if (selectedFile) {
-      setError("Please upload a PDF file");
+      setError("Por favor subi un archivo PDF");
     }
   };
 
@@ -189,7 +189,7 @@ export default function ReportAnalyzerSection() {
         >
           <Upload className="h-12 w-12 mx-auto mb-4 text-zinc-500" />
           <p className="text-zinc-400 mb-2">
-            Drag and drop your PDF here, or
+            Arrastra y solta tu PDF aca, o
           </p>
           <label className="inline-block">
             <input
@@ -199,11 +199,11 @@ export default function ReportAnalyzerSection() {
               className="hidden"
             />
             <span className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium cursor-pointer transition-colors">
-              Browse Files
+              Elegir Archivo
             </span>
           </label>
           <p className="text-xs text-zinc-600 mt-4">
-            Supported: PPI Daily Mercados, Cierre Mercados, Perspectivas, Noticias del Domingo
+            Soportado: PPI Daily Mercados, Cierre Mercados, Perspectivas, Noticias del Domingo
           </p>
         </div>
       ) : (
@@ -244,12 +244,12 @@ export default function ReportAnalyzerSection() {
           {analyzing ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              Analyzing report...
+              Analizando reporte...
             </>
           ) : (
             <>
               <Lightbulb className="h-5 w-5" />
-              Analyze with AI
+              Analizar con IA
             </>
           )}
         </button>
@@ -258,7 +258,7 @@ export default function ReportAnalyzerSection() {
       {portfolioData.length > 0 && !analysis && (
         <p className="text-xs text-zinc-500">
           <CheckCircle2 className="h-3 w-3 inline mr-1 text-emerald-500" />
-          Portfolio data will be included ({portfolioData.length} assets)
+          Se incluiran datos del portfolio ({portfolioData.length} activos)
         </p>
       )}
 
@@ -268,7 +268,7 @@ export default function ReportAnalyzerSection() {
           {/* Sentiment */}
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Market Sentiment</h3>
+              <h3 className="text-lg font-semibold">Sentimiento de Mercado</h3>
               <SentimentBadge sentiment={analysis.sentiment} />
             </div>
             <p className="text-zinc-400">{analysis.sentimentReason}</p>
@@ -276,7 +276,7 @@ export default function ReportAnalyzerSection() {
 
           {/* Summary */}
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <h3 className="text-lg font-semibold mb-4">Key Takeaways</h3>
+            <h3 className="text-lg font-semibold mb-4">Puntos Clave</h3>
             <ul className="space-y-2">
               {analysis.summary.map((point, i) => (
                 <li key={i} className="flex items-start gap-2 text-zinc-300">
@@ -293,7 +293,7 @@ export default function ReportAnalyzerSection() {
             <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/20 p-5">
               <h3 className="font-semibold text-emerald-400 mb-3 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
-                Buy Opportunities
+                Oportunidades de Compra
               </h3>
               {analysis.recommendations.buy.length > 0 ? (
                 <ul className="space-y-3">
@@ -308,7 +308,7 @@ export default function ReportAnalyzerSection() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs text-zinc-500">No buy recommendations</p>
+                <p className="text-xs text-zinc-500">Sin recomendaciones de compra</p>
               )}
             </div>
 
@@ -316,7 +316,7 @@ export default function ReportAnalyzerSection() {
             <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-5">
               <h3 className="font-semibold text-red-400 mb-3 flex items-center gap-2">
                 <TrendingDown className="h-4 w-4" />
-                Consider Selling
+                Considerar Venta
               </h3>
               {analysis.recommendations.sell.length > 0 ? (
                 <ul className="space-y-3">
@@ -331,7 +331,7 @@ export default function ReportAnalyzerSection() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs text-zinc-500">No sell recommendations</p>
+                <p className="text-xs text-zinc-500">Sin recomendaciones de venta</p>
               )}
             </div>
 
@@ -339,7 +339,7 @@ export default function ReportAnalyzerSection() {
             <div className="rounded-xl border border-zinc-700 bg-zinc-800/30 p-5">
               <h3 className="font-semibold text-zinc-300 mb-3 flex items-center gap-2">
                 <Minus className="h-4 w-4" />
-                Hold Positions
+                Mantener Posiciones
               </h3>
               {analysis.recommendations.hold.length > 0 ? (
                 <ul className="space-y-3">
@@ -354,7 +354,7 @@ export default function ReportAnalyzerSection() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs text-zinc-500">No hold recommendations</p>
+                <p className="text-xs text-zinc-500">Sin recomendaciones de mantener</p>
               )}
             </div>
           </div>
@@ -364,7 +364,7 @@ export default function ReportAnalyzerSection() {
             <div className="rounded-xl border border-amber-900/50 bg-amber-950/20 p-6">
               <h3 className="text-lg font-semibold text-amber-400 mb-4 flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />
-                Risks & Warnings
+                Riesgos y Advertencias
               </h3>
               <ul className="space-y-2">
                 {analysis.risks.map((risk, i) => (
@@ -380,7 +380,7 @@ export default function ReportAnalyzerSection() {
           {/* Mentioned Assets */}
           {analysis.mentionedAssets.length > 0 && (
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-              <h3 className="text-lg font-semibold mb-4">Assets Mentioned</h3>
+              <h3 className="text-lg font-semibold mb-4">Activos Mencionados</h3>
               <div className="flex flex-wrap gap-2">
                 {analysis.mentionedAssets.map((asset, i) => (
                   <span
@@ -399,7 +399,7 @@ export default function ReportAnalyzerSection() {
             onClick={clearFile}
             className="w-full h-12 rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors"
           >
-            Analyze Another Report
+            Analizar Otro Reporte
           </button>
         </div>
       )}

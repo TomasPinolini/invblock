@@ -147,7 +147,7 @@ export default function PortfolioTable() {
     return (
       <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-6
                       text-red-400 text-sm">
-        Failed to load portfolio: {error.message}
+        Error al cargar el portfolio: {error.message}
       </div>
     );
   }
@@ -163,7 +163,7 @@ export default function PortfolioTable() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="hidden sm:block space-y-1">
           <p className="text-xs uppercase tracking-widest text-zinc-500">
-            Total Portfolio Value
+            Valor Total del Portfolio
           </p>
           <p data-sensitive className="text-xl sm:text-2xl font-bold font-mono text-zinc-50">
             {formatCurrency(totalValue, displayCurrency)}
@@ -224,8 +224,8 @@ export default function PortfolioTable() {
             {/* Global search */}
             <input
               type="text"
-              placeholder="Search..."
-              aria-label="Search portfolio assets"
+              placeholder="Buscar..."
+              aria-label="Buscar activos del portfolio"
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="h-9 w-full sm:w-40 rounded-lg border border-zinc-800 bg-zinc-900/50
@@ -235,18 +235,18 @@ export default function PortfolioTable() {
             {data.length > 0 && (
               <button
                 onClick={handleExportCSV}
-                aria-label="Export portfolio as CSV"
+                aria-label="Exportar portfolio como CSV"
                 className="btn-secondary whitespace-nowrap"
               >
                 <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Export</span>
+                <span className="hidden sm:inline">Exportar</span>
               </button>
             )}
             {anyConnected ? (
               <button
                 onClick={() => refetch()}
                 disabled={isFetching}
-                aria-label="Refresh portfolio data"
+                aria-label="Actualizar datos del portfolio"
                 className="btn-secondary whitespace-nowrap disabled:opacity-50"
               >
                 {isFetching ? (
@@ -254,12 +254,12 @@ export default function PortfolioTable() {
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                <span className="hidden sm:inline">{isFetching ? "Loading..." : "Refresh"}</span>
+                <span className="hidden sm:inline">{isFetching ? "Cargando..." : "Actualizar"}</span>
               </button>
             ) : (
               <button
                 onClick={() => router.push("/settings")}
-                aria-label={iolExpired ? "Reconnect broker account" : "Connect broker account"}
+                aria-label={iolExpired ? "Reconectar cuenta de broker" : "Conectar cuenta de broker"}
                 className={cn(
                   "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-white text-sm font-medium transition-colors whitespace-nowrap",
                   iolExpired
@@ -268,7 +268,7 @@ export default function PortfolioTable() {
                 )}
               >
                 <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">{iolExpired ? "Reconnect" : "Connect"}</span>
+                <span className="hidden sm:inline">{iolExpired ? "Reconectar" : "Conectar"}</span>
               </button>
             )}
           </div>

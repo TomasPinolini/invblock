@@ -6,8 +6,9 @@ import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { decryptCredentials, encryptCredentials } from "@/lib/crypto";
 import { db } from "@/db";
 import { userConnections, assets } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import type { AssetCategory } from "@/lib/constants";
+import type { NewAsset } from "@/db/schema";
 
 function mapPPICategory(position: PPIPosition): AssetCategory {
   const t = (position.InstrumentType || "").toUpperCase();
@@ -57,46 +58,34 @@ export async function POST() {
       (p) => p.Ticker && p.Quantity > 0
     );
 
-    // Get existing assets for this user
-    const existingAssets = await db.query.assets.findMany({
-      where: eq(assets.userId, user.id),
-    });
+    // Build array of assets to upsert
+    const toUpsert: NewAsset[] = positions.map((position) => ({
+      userId: user.id,
+      ticker: position.Ticker.toUpperCase(),
+      name: position.Description || position.Ticker.toUpperCase(),
+      category: mapPPICategory(position),
+      currency: mapPPICurrency(position),
+      quantity: position.Quantity.toString(),
+      averagePrice: position.AveragePrice.toString(),
+      currentPrice: position.Price.toString(),
+    }));
 
-    const existingByTicker = new Map(
-      existingAssets.map((a) => [a.ticker.toUpperCase(), a])
-    );
+    let synced = 0;
 
-    let created = 0;
-    let updated = 0;
-
-    for (const position of positions) {
-      const ticker = position.Ticker.toUpperCase();
-      const existing = existingByTicker.get(ticker);
-
-      if (existing) {
-        await db
-          .update(assets)
-          .set({
-            quantity: position.Quantity.toString(),
-            averagePrice: position.AveragePrice.toString(),
-            currentPrice: position.Price.toString(),
+    if (toUpsert.length > 0) {
+      await db
+        .insert(assets)
+        .values(toUpsert)
+        .onConflictDoUpdate({
+          target: [assets.userId, assets.ticker, assets.category],
+          set: {
+            quantity: sql`excluded.quantity`,
+            averagePrice: sql`excluded.average_price`,
+            currentPrice: sql`excluded.current_price`,
             updatedAt: new Date(),
-          })
-          .where(eq(assets.id, existing.id));
-        updated++;
-      } else {
-        await db.insert(assets).values({
-          userId: user.id,
-          ticker,
-          name: position.Description || ticker,
-          category: mapPPICategory(position),
-          currency: mapPPICurrency(position),
-          quantity: position.Quantity.toString(),
-          averagePrice: position.AveragePrice.toString(),
-          currentPrice: position.Price.toString(),
+          },
         });
-        created++;
-      }
+      synced = toUpsert.length;
     }
 
     // Update token if refreshed
@@ -113,8 +102,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      created,
-      updated,
+      synced,
       total: positions.length,
     });
   } catch (error) {

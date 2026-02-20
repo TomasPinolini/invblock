@@ -40,6 +40,7 @@ export function encrypt(plaintext: string): string {
 /**
  * Decrypt a base64-encoded AES-256-GCM encrypted string.
  * Also handles legacy plaintext JSON (unencrypted) for migration.
+ * Falls back to returning raw string if decryption fails (key mismatch).
  */
 export function decrypt(encryptedBase64: string): string {
   // Handle legacy unencrypted JSON — starts with { or [
@@ -55,19 +56,32 @@ export function decrypt(encryptedBase64: string): string {
     return encryptedBase64;
   }
 
-  const iv = packed.subarray(0, IV_LENGTH);
-  const authTag = packed.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
-  const ciphertext = packed.subarray(IV_LENGTH + TAG_LENGTH);
+  try {
+    const iv = packed.subarray(0, IV_LENGTH);
+    const authTag = packed.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
+    const ciphertext = packed.subarray(IV_LENGTH + TAG_LENGTH);
 
-  const decipher = createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(authTag);
+    const decipher = createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
 
-  const decrypted = Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ]);
+    const decrypted = Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final(),
+    ]);
 
-  return decrypted.toString("utf8");
+    return decrypted.toString("utf8");
+  } catch {
+    // Decryption failed (key mismatch, corrupted data, etc.)
+    // Try treating as legacy plaintext — if it's valid JSON, return it
+    try {
+      JSON.parse(encryptedBase64);
+      return encryptedBase64;
+    } catch {
+      // Not valid JSON either — the credentials are unrecoverable
+      console.error("[Crypto] Decryption failed and data is not valid JSON. User needs to reconnect.");
+      throw new Error("Stored credentials could not be decrypted. Please reconnect your account.");
+    }
+  }
 }
 
 /**

@@ -46,30 +46,43 @@ export class IOLClient {
     const url = `${IOL_API_BASE}/token`;
     console.log("[IOL Auth] POST", url);
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        username,
-        password,
-        grant_type: "password",
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    const text = await response.text();
-    console.log("[IOL Auth] Response status:", response.status);
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          username,
+          password,
+          grant_type: "password",
+        }),
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      throw new Error(
-        `IOL authentication failed (${response.status}): ${text.slice(0, 200)}`
-      );
+      const text = await response.text();
+      console.log("[IOL Auth] Response status:", response.status);
+
+      if (!response.ok) {
+        throw new Error(
+          `IOL authentication failed (${response.status}): ${text.slice(0, 200)}`
+        );
+      }
+
+      const token: IOLToken = JSON.parse(text);
+      token.issued_at = Date.now();
+      return token;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error("IOL authentication timed out after 8s");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const token: IOLToken = JSON.parse(text);
-    token.issued_at = Date.now();
-    return token;
   }
 
   /**
@@ -80,26 +93,39 @@ export class IOLClient {
       throw new Error("No refresh token available");
     }
 
-    const response = await fetch(`${IOL_API_BASE}/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        refresh_token: this.token.refresh_token,
-        grant_type: "refresh_token",
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    if (!response.ok) {
-      // Refresh token expired or invalid - user needs to re-authenticate
-      throw new IOLTokenExpiredError();
+    try {
+      const response = await fetch(`${IOL_API_BASE}/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          refresh_token: this.token.refresh_token,
+          grant_type: "refresh_token",
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        // Refresh token expired or invalid - user needs to re-authenticate
+        throw new IOLTokenExpiredError();
+      }
+
+      const newToken: IOLToken = await response.json();
+      newToken.issued_at = Date.now();
+      this.token = newToken;
+      return newToken;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error("IOL token refresh timed out after 8s");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const newToken: IOLToken = await response.json();
-    newToken.issued_at = Date.now();
-    this.token = newToken;
-    return newToken;
   }
 
   /**
@@ -128,24 +154,37 @@ export class IOLClient {
       await this.refreshToken();
     }
 
-    const response = await fetch(`${IOL_API_BASE}${endpoint}`, {
-      ...options,
-      headers: {
-        ...options?.headers,
-        Authorization: `Bearer ${this.token.access_token}`,
-      },
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    if (!response.ok) {
-      if (response.status === 401 && !retried) {
-        // Try refreshing token once
-        await this.refreshToken();
-        return this.request(endpoint, options, true);
+    try {
+      const response = await fetch(`${IOL_API_BASE}${endpoint}`, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          ...options?.headers,
+          Authorization: `Bearer ${this.token.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 && !retried) {
+          // Try refreshing token once
+          await this.refreshToken();
+          return this.request(endpoint, options, true);
+        }
+        throw new Error(`IOL API error: ${response.status}`);
       }
-      throw new Error(`IOL API error: ${response.status}`);
-    }
 
-    return response.json();
+      return response.json();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error(`IOL request timed out after 8s: ${endpoint}`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   /**

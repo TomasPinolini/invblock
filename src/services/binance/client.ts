@@ -50,20 +50,33 @@ export class BinanceClient {
 
     const url = `${BINANCE_API_BASE}${endpoint}?${queryParams.toString()}`;
 
-    const response = await fetch(url, {
-      headers: {
-        "X-MBX-APIKEY": this.apiKey,
-      },
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(
-        error.msg || `Binance API error: ${response.status}`
-      );
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "X-MBX-APIKEY": this.apiKey,
+        },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(
+          error.msg || `Binance API error: ${response.status}`
+        );
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error(`Binance request timed out after 8s: ${endpoint}`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    return response.json();
   }
 
   /**
@@ -71,13 +84,28 @@ export class BinanceClient {
    */
   private async publicRequest<T>(endpoint: string): Promise<T> {
     const url = `${BINANCE_API_BASE}${endpoint}`;
-    const response = await fetch(url);
 
-    if (!response.ok) {
-      throw new Error(`Binance API error: ${response.status}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Binance API error: ${response.status}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error(`Binance request timed out after 8s: ${endpoint}`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    return response.json();
   }
 
   /**

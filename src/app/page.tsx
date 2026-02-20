@@ -51,7 +51,7 @@ export default function DashboardPage() {
       <div className="animate-fade-in-up stagger-1">
         <ErrorBoundary>
           <CollapsibleSection
-            title="Wallet"
+            title="Billetera"
             icon={<Wallet className="h-4 w-4 text-emerald-400" />}
           >
             <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
@@ -62,11 +62,18 @@ export default function DashboardPage() {
         </ErrorBoundary>
       </div>
 
-      {/* 2. Market Intelligence (2-col) */}
-      <div className="animate-fade-in-up stagger-2 grid gap-4 md:grid-cols-2">
+      {/* 2. Portfolio Table (always visible) */}
+      <div className="animate-fade-in-up stagger-2">
+        <ErrorBoundary>
+          <PortfolioTable />
+        </ErrorBoundary>
+      </div>
+
+      {/* 3. Market Intelligence (2-col) */}
+      <div className="animate-fade-in-up stagger-3 grid gap-4 md:grid-cols-2">
         <ErrorBoundary>
           <CollapsibleSection
-            title="US Market Movers"
+            title="Movers del mercado US"
             icon={<BarChart3 className="h-4 w-4 text-blue-400" />}
           >
             <MarketMovers />
@@ -74,7 +81,7 @@ export default function DashboardPage() {
         </ErrorBoundary>
         <ErrorBoundary>
           <CollapsibleSection
-            title="Argentine Macro"
+            title="Macro Argentina"
             icon={<Globe className="h-4 w-4 text-cyan-400" />}
             defaultOpen={false}
           >
@@ -83,11 +90,11 @@ export default function DashboardPage() {
         </ErrorBoundary>
       </div>
 
-      {/* 3. Portfolio Intelligence (2x2 grid) */}
-      <div className="animate-fade-in-up stagger-3">
+      {/* 4. Portfolio Intelligence (2x2 grid) */}
+      <div className="animate-fade-in-up stagger-4">
         <ErrorBoundary>
           <CollapsibleSection
-            title="Portfolio Intelligence"
+            title="Inteligencia del Portfolio"
             icon={<Sparkles className="h-4 w-4 text-amber-400" />}
             defaultOpen={false}
           >
@@ -109,11 +116,11 @@ export default function DashboardPage() {
         </ErrorBoundary>
       </div>
 
-      {/* 4. News & Sentiment */}
-      <div className="animate-fade-in-up stagger-4">
+      {/* 5. News & Sentiment */}
+      <div className="animate-fade-in-up stagger-5">
         <ErrorBoundary>
           <CollapsibleSection
-            title="News & Sentiment"
+            title="Noticias y Sentimiento"
             icon={<Newspaper className="h-4 w-4 text-purple-400" />}
             defaultOpen={false}
           >
@@ -122,11 +129,11 @@ export default function DashboardPage() {
         </ErrorBoundary>
       </div>
 
-      {/* 5. Portfolio Chat */}
-      <div className="animate-fade-in-up stagger-5">
+      {/* 6. Portfolio Chat */}
+      <div className="animate-fade-in-up stagger-6">
         <ErrorBoundary>
           <CollapsibleSection
-            title="Portfolio Chat"
+            title="Chat del Portfolio"
             icon={<MessageSquare className="h-4 w-4 text-blue-400" />}
             defaultOpen={false}
           >
@@ -135,11 +142,11 @@ export default function DashboardPage() {
         </ErrorBoundary>
       </div>
 
-      {/* 6. Report Analyzer */}
-      <div className="animate-fade-in-up stagger-6">
+      {/* 7. Report Analyzer */}
+      <div className="animate-fade-in-up stagger-7">
         <ErrorBoundary>
           <CollapsibleSection
-            title="Report Analyzer"
+            title="Analizador de Reportes"
             icon={<FileText className="h-4 w-4 text-red-400" />}
             defaultOpen={false}
           >
@@ -148,12 +155,6 @@ export default function DashboardPage() {
         </ErrorBoundary>
       </div>
 
-      {/* 7. Portfolio Table (always visible) */}
-      <div className="animate-fade-in-up stagger-7">
-        <ErrorBoundary>
-          <PortfolioTable />
-        </ErrorBoundary>
-      </div>
     </div>
   );
 }

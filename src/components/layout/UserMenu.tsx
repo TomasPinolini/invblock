@@ -23,7 +23,7 @@ export default function UserMenu() {
         className="h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-500
                    text-white text-sm font-medium transition-colors"
       >
-        Sign in
+        Iniciar sesion
       </button>
     );
   }
@@ -39,7 +39,7 @@ export default function UserMenu() {
       <button
         onClick={() => router.push("/settings")}
         className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:bg-zinc-800 transition-colors"
-        title="Settings"
+        title="Configuracion"
       >
         <div className="h-6 w-6 rounded-full bg-blue-600/20 flex items-center justify-center">
           <User className="h-3.5 w-3.5 text-blue-400" />
@@ -53,8 +53,8 @@ export default function UserMenu() {
         className="h-9 w-9 rounded-lg border border-zinc-800 bg-zinc-900/50
                    text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800
                    transition-colors flex items-center justify-center"
-        title="Sign out"
-        aria-label="Sign out"
+        title="Cerrar sesion"
+        aria-label="Cerrar sesion"
       >
         <LogOut className="h-4 w-4" />
       </button>

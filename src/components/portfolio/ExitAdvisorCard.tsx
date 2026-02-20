@@ -200,7 +200,7 @@ function ExitResult({
       {result.taxConsiderations && (
         <div className="rounded-lg border border-zinc-700 bg-zinc-800/30 p-4">
           <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
-            Tax Considerations
+            Consideraciones Impositivas
           </h4>
           <p className="text-xs text-zinc-400">{result.taxConsiderations}</p>
         </div>
@@ -214,7 +214,7 @@ function ExitResult({
                    items-center justify-center gap-2"
       >
         <RotateCcw className="h-4 w-4" />
-        Analyze Another Position
+        Analizar Otra Posicion
       </button>
     </div>
   );
@@ -255,15 +255,15 @@ export default function ExitAdvisorCard() {
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <LogOut className="h-5 w-5 text-indigo-400" />
-        <h2 className="text-lg font-semibold">Exit Advisor</h2>
+        <h2 className="text-lg font-semibold">Advisor de Salida</h2>
       </div>
 
       {/* Show form if no result yet and not loading */}
       {!result && !isPending && (
         <>
           <p className="text-sm text-zinc-500 mb-4">
-            Enter a ticker from your portfolio to get AI-powered advice on
-            whether to hold, trim, or exit the position.
+            Ingresa un ticker de tu portfolio para obtener recomendaciones con IA
+            sobre si mantener, reducir o salir de la posicion.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -273,7 +273,7 @@ export default function ExitAdvisorCard() {
                   type="text"
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder="Ticker e.g. GGAL"
+                  placeholder="Ticker ej. GGAL"
                   className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/50
                              px-3 text-sm font-mono text-zinc-200 placeholder:text-zinc-600
                              focus:outline-none focus:ring-1 focus:ring-indigo-500/50
@@ -286,7 +286,7 @@ export default function ExitAdvisorCard() {
                   type="number"
                   value={targetReturn}
                   onChange={(e) => setTargetReturn(e.target.value)}
-                  placeholder="Target %"
+                  placeholder="Objetivo %"
                   step="any"
                   className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/50
                              px-3 text-sm font-mono text-zinc-200 placeholder:text-zinc-600
@@ -299,7 +299,7 @@ export default function ExitAdvisorCard() {
             {error && (
               <div className="flex items-center gap-2 text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2">
                 <XCircle className="h-4 w-4 flex-shrink-0" />
-                {error instanceof Error ? error.message : "Analysis failed"}
+                {error instanceof Error ? error.message : "Error en el analisis"}
               </div>
             )}
 
@@ -311,13 +311,13 @@ export default function ExitAdvisorCard() {
                          transition-colors inline-flex items-center justify-center gap-2"
             >
               <LogOut className="h-4 w-4" />
-              Analyze Exit
+              Analizar Salida
             </button>
 
             {portfolioRows.length > 0 && (
               <p className="text-xs text-zinc-600 text-center">
                 <CheckCircle2 className="h-3 w-3 inline mr-1 text-emerald-500" />
-                Will analyze against {portfolioRows.length} portfolio positions
+                Se analizara contra {portfolioRows.length} posiciones del portfolio
               </p>
             )}
           </form>
@@ -330,14 +330,14 @@ export default function ExitAdvisorCard() {
           <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
           <div className="text-center">
             <p className="text-sm font-medium text-zinc-300">
-              Analyzing{" "}
+              Analizando{" "}
               <span className="font-mono text-indigo-400">
                 {ticker.trim().toUpperCase()}
               </span>
               ...
             </p>
             <p className="text-xs text-zinc-600 mt-1">
-              Evaluating exit strategy
+              Evaluando estrategia de salida
             </p>
           </div>
         </div>

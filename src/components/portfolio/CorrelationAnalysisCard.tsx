@@ -150,10 +150,10 @@ function CorrelationResult({
 
       {/* Group Charts */}
       <div className="grid grid-cols-1 gap-4">
-        <GroupBars title="By Sector" groups={result.groups.bySector} />
-        <GroupBars title="By Country" groups={result.groups.byCountry} />
+        <GroupBars title="Por Sector" groups={result.groups.bySector} />
+        <GroupBars title="Por Pais" groups={result.groups.byCountry} />
         <GroupBars
-          title="Correlation Clusters"
+          title="Clusters de Correlacion"
           groups={result.groups.byCorrelationGroup}
         />
       </div>
@@ -162,7 +162,7 @@ function CorrelationResult({
       {result.hiddenRisks.length > 0 && (
         <div className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-4">
           <h4 className="text-xs font-medium text-amber-400 uppercase tracking-wider mb-2">
-            Hidden Risks
+            Riesgos Ocultos
           </h4>
           <ul className="space-y-2">
             {result.hiddenRisks.map((risk, i) => (
@@ -179,7 +179,7 @@ function CorrelationResult({
       {result.decorrelationSuggestions.length > 0 && (
         <div className="rounded-lg border border-blue-900/40 bg-blue-950/20 p-4">
           <h4 className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-2">
-            Diversification Ideas
+            Ideas de Diversificacion
           </h4>
           <ul className="space-y-2">
             {result.decorrelationSuggestions.map((sug, i) => (
@@ -200,7 +200,7 @@ function CorrelationResult({
                    items-center justify-center gap-2"
       >
         <RotateCcw className="h-4 w-4" />
-        Re-analyze
+        Re-analizar
       </button>
     </div>
   );
@@ -222,21 +222,21 @@ export default function CorrelationAnalysisCard() {
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <Network className="h-5 w-5 text-violet-400" />
-        <h2 className="text-lg font-semibold">Correlation Analysis</h2>
+        <h2 className="text-lg font-semibold">Analisis de Correlacion</h2>
       </div>
 
       {/* Initial state */}
       {!result && !isPending && (
         <>
           <p className="text-sm text-zinc-500 mb-4">
-            Detect hidden concentration risks by analyzing sector, country, and
-            correlation clusters in your portfolio.
+            Detecta riesgos de concentracion ocultos analizando sectores, paises y
+            clusters de correlacion en tu portfolio.
           </p>
 
           {error && (
             <div className="flex items-center gap-2 text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2 mb-3">
               <XCircle className="h-4 w-4 flex-shrink-0" />
-              {error instanceof Error ? error.message : "Analysis failed"}
+              {error instanceof Error ? error.message : "Error en el analisis"}
             </div>
           )}
 
@@ -248,13 +248,13 @@ export default function CorrelationAnalysisCard() {
                        transition-colors inline-flex items-center justify-center gap-2"
           >
             <Network className="h-4 w-4" />
-            Analyze Correlations
+            Analizar Correlaciones
           </button>
 
           {portfolioRows.length > 0 && (
             <p className="text-xs text-zinc-600 text-center mt-3">
               <CheckCircle2 className="h-3 w-3 inline mr-1 text-emerald-500" />
-              Will analyze {portfolioRows.length} positions
+              Se analizaran {portfolioRows.length} posiciones
             </p>
           )}
         </>
@@ -266,10 +266,10 @@ export default function CorrelationAnalysisCard() {
           <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
           <div className="text-center">
             <p className="text-sm font-medium text-zinc-300">
-              Analyzing correlations...
+              Analizando correlaciones...
             </p>
             <p className="text-xs text-zinc-600 mt-1">
-              Detecting hidden concentration risks
+              Detectando riesgos de concentracion ocultos
             </p>
           </div>
         </div>

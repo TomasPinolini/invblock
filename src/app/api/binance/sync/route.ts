@@ -5,7 +5,8 @@ import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { decryptCredentials } from "@/lib/crypto";
 import { db } from "@/db";
 import { userConnections, assets } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
+import type { NewAsset } from "@/db/schema";
 
 export async function POST() {
   const user = await getAuthUser();
@@ -48,59 +49,41 @@ export async function POST() {
     // Filter out tiny dust balances (less than $1)
     const significantAssets = binanceAssets.filter((a) => a.usdValue >= 1);
 
-    // Get existing assets for this user
-    const existingAssets = await db.query.assets.findMany({
-      where: eq(assets.userId, user.id),
-    });
+    // Filter stablecoins and build array of assets to upsert
+    const STABLECOINS = ["USDT", "USDC", "BUSD", "DAI", "FDUSD"];
+    const toUpsert: NewAsset[] = significantAssets
+      .filter((item) => !STABLECOINS.includes(item.asset.toUpperCase()))
+      .map((item) => ({
+        userId: user.id,
+        ticker: item.asset.toUpperCase(),
+        name: getCryptoName(item.asset.toUpperCase()),
+        category: "crypto" as const,
+        currency: "USD" as const,
+        quantity: item.total.toString(),
+        averagePrice: "0", // Binance doesn't provide cost basis
+        currentPrice: item.price.toString(),
+      }));
 
-    const existingByTicker = new Map(
-      existingAssets.map((a) => [a.ticker.toUpperCase(), a])
-    );
+    let synced = 0;
 
-    let created = 0;
-    let updated = 0;
-
-    for (const item of significantAssets) {
-      const ticker = item.asset.toUpperCase();
-
-      // Skip stablecoins - they're essentially cash
-      if (["USDT", "USDC", "BUSD", "DAI", "FDUSD"].includes(ticker)) {
-        continue;
-      }
-
-      const existing = existingByTicker.get(ticker);
-
-      if (existing) {
-        // Update existing asset
-        await db
-          .update(assets)
-          .set({
-            quantity: item.total.toString(),
-            currentPrice: item.price.toString(),
+    if (toUpsert.length > 0) {
+      await db
+        .insert(assets)
+        .values(toUpsert)
+        .onConflictDoUpdate({
+          target: [assets.userId, assets.ticker, assets.category],
+          set: {
+            quantity: sql`excluded.quantity`,
+            currentPrice: sql`excluded.current_price`,
             updatedAt: new Date(),
-          })
-          .where(eq(assets.id, existing.id));
-        updated++;
-      } else {
-        // Create new asset
-        await db.insert(assets).values({
-          userId: user.id,
-          ticker,
-          name: getCryptoName(ticker),
-          category: "crypto",
-          currency: "USD",
-          quantity: item.total.toString(),
-          averagePrice: "0", // Binance doesn't provide cost basis
-          currentPrice: item.price.toString(),
+          },
         });
-        created++;
-      }
+      synced = toUpsert.length;
     }
 
     return NextResponse.json({
       success: true,
-      created,
-      updated,
+      synced,
       total: significantAssets.length,
     });
   } catch (error) {

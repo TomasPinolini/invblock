@@ -109,14 +109,14 @@ export default function NewsSentiment({ tickers }: { tickers?: string[] }) {
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
-          <span className="ml-2 text-sm text-zinc-500">Loading news...</span>
+          <span className="ml-2 text-sm text-zinc-500">Cargando noticias...</span>
         </div>
       ) : error || news.length === 0 ? (
         <div className="py-6 text-center">
           <p className="text-sm text-zinc-500">
             {budget?.isExhausted
-              ? "Daily API limit reached. Resets at midnight UTC."
-              : "No news available"}
+              ? "Limite diario de API alcanzado. Se reinicia a medianoche UTC."
+              : "No hay noticias disponibles"}
           </p>
         </div>
       ) : (

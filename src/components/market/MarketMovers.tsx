@@ -10,9 +10,9 @@ import type { AVTopMover } from "@/services/alphavantage";
 type Tab = "gainers" | "losers" | "active";
 
 const TABS: { key: Tab; label: string; icon: typeof TrendingUp }[] = [
-  { key: "gainers", label: "Gainers", icon: TrendingUp },
-  { key: "losers", label: "Losers", icon: TrendingDown },
-  { key: "active", label: "Active", icon: BarChart3 },
+  { key: "gainers", label: "Subas", icon: TrendingUp },
+  { key: "losers", label: "Bajas", icon: TrendingDown },
+  { key: "active", label: "Activos", icon: BarChart3 },
 ];
 
 function MoverRow({ mover, type }: { mover: AVTopMover; type: Tab }) {
@@ -99,19 +99,19 @@ export default function MarketMovers() {
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
-          <span className="ml-2 text-sm text-zinc-500">Loading movers...</span>
+          <span className="ml-2 text-sm text-zinc-500">Cargando movers...</span>
         </div>
       ) : error || !movers ? (
         <div className="py-6 text-center">
           <p className="text-sm text-zinc-500">
             {budget?.isExhausted
-              ? "Daily API limit reached. Resets at midnight UTC."
-              : "Could not load market movers"}
+              ? "Limite diario de API alcanzado. Se reinicia a medianoche UTC."
+              : "No se pudieron cargar los movers del mercado"}
           </p>
         </div>
       ) : currentList.length === 0 ? (
         <div className="py-6 text-center">
-          <p className="text-sm text-zinc-500">No data available</p>
+          <p className="text-sm text-zinc-500">No hay datos disponibles</p>
         </div>
       ) : (
         <div className="divide-y divide-zinc-800/50">

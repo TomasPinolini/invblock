@@ -356,23 +356,23 @@ export default function AssetDetailModal({
           {/* Current Holdings */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-zinc-800/50 rounded-lg p-3">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider">Current Price</p>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">Precio Actual</p>
               <p className="text-xl font-bold font-mono text-zinc-100">
                 {formatCurrency(asset.currentPrice, asset.currency)}
               </p>
             </div>
             <div className="bg-zinc-800/50 rounded-lg p-3">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider">Position Value</p>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">Valor Posicion</p>
               <p className="text-xl font-bold font-mono text-zinc-100">
                 {formatCurrency(asset.currentValue, displayCurrency)}
               </p>
             </div>
             <div className="bg-zinc-800/50 rounded-lg p-3">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider">Quantity</p>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">Cantidad</p>
               <p className="text-lg font-mono text-zinc-200">{asset.quantity}</p>
             </div>
             <div className="bg-zinc-800/50 rounded-lg p-3">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider">Avg Cost</p>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">Costo Prom.</p>
               <p className="text-lg font-mono text-zinc-200">
                 {formatCurrency(asset.averagePrice, asset.currency)}
               </p>
@@ -382,7 +382,7 @@ export default function AssetDetailModal({
           {/* Total P&L (since purchase) */}
           <div className="bg-zinc-800/50 rounded-lg p-3">
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
-              Total Return (since purchase)
+              Retorno Total (desde compra)
             </p>
             <div className="flex items-center gap-2">
               {totalPnl >= 0 ? (

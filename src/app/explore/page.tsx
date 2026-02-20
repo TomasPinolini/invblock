@@ -217,7 +217,7 @@ function ExplorePageInner() {
               <input
                 type="text"
                 placeholder={isFavoritesTab ? "Buscar en favoritos..." : "Buscar por símbolo o nombre..."}
-                aria-label="Search securities"
+                aria-label="Buscar instrumentos"
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
@@ -226,7 +226,7 @@ function ExplorePageInner() {
             <button
               onClick={() => refetch()}
               disabled={isFetching}
-              aria-label="Refresh"
+              aria-label="Actualizar"
               className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-300 font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}

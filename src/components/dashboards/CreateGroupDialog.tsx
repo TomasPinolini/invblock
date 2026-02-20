@@ -44,7 +44,7 @@ export function CreateGroupDialog({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-sm mx-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-zinc-100">New Group</h3>
+          <h3 className="text-sm font-semibold text-zinc-100">Nuevo Grupo</h3>
           <button
             onClick={onClose}
             className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
@@ -55,13 +55,13 @@ export function CreateGroupDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs text-zinc-400 mb-1.5">Name</label>
+            <label className="block text-xs text-zinc-400 mb-1.5">Nombre</label>
             <input
               ref={inputRef}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Tech, Dividends, Argentina"
+              placeholder="ej. Tech, Dividendos, Argentina"
               maxLength={60}
               className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-700 bg-zinc-800/60 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
             />
@@ -78,14 +78,14 @@ export function CreateGroupDialog({
               onClick={onClose}
               className="px-3 py-1.5 text-xs font-medium rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
             >
-              Cancel
+              Cancelar
             </button>
             <button
               type="submit"
               disabled={!name.trim() || isPending}
               className="px-4 py-1.5 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              {isPending ? "Creating..." : "Create"}
+              {isPending ? "Creando..." : "Crear"}
             </button>
           </div>
         </form>

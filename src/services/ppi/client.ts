@@ -59,37 +59,50 @@ export class PPIClient {
 
     console.log("[PPI Auth] POST", url);
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    const text = await response.text().catch(() => "");
-    console.log("[PPI Auth] Response status:", response.status);
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      throw new Error(
-        `PPI authentication failed (${response.status}): ${text.slice(0, 200)}`
-      );
+      const text = await response.text().catch(() => "");
+      console.log("[PPI Auth] Response status:", response.status);
+
+      if (!response.ok) {
+        throw new Error(
+          `PPI authentication failed (${response.status}): ${text.slice(0, 200)}`
+        );
+      }
+
+      const data = JSON.parse(text);
+      const accessToken = data.accessToken || data.AccessToken;
+      const refreshToken = data.refreshToken || data.RefreshToken;
+
+      if (!accessToken) {
+        console.error("[PPI Auth] Unexpected response shape:", Object.keys(data));
+        throw new Error(
+          `PPI login succeeded but response missing accessToken. Keys: ${Object.keys(data).join(", ")}`
+        );
+      }
+
+      return {
+        apiKey,
+        apiSecret,
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error("PPI authentication timed out after 8s");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const data = JSON.parse(text);
-    const accessToken = data.accessToken || data.AccessToken;
-    const refreshToken = data.refreshToken || data.RefreshToken;
-
-    if (!accessToken) {
-      console.error("[PPI Auth] Unexpected response shape:", Object.keys(data));
-      throw new Error(
-        `PPI login succeeded but response missing accessToken. Keys: ${Object.keys(data).join(", ")}`
-      );
-    }
-
-    return {
-      apiKey,
-      apiSecret,
-      accessToken,
-      refreshToken,
-    };
   }
 
   /**
@@ -100,27 +113,40 @@ export class PPIClient {
       throw new PPITokenExpiredError();
     }
 
-    const response = await fetch(
-      `${PPI_API_BASE}/api/1.0/Account/RefreshToken`,
-      {
-        method: "POST",
-        headers: {
-          ...buildPPIHeaders(this.credentials),
-          Authorization: `Bearer ${this.credentials.accessToken}`,
-        },
-        body: JSON.stringify({
-          refreshToken: this.credentials.refreshToken,
-        }),
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const response = await fetch(
+        `${PPI_API_BASE}/api/1.0/Account/RefreshToken`,
+        {
+          method: "POST",
+          headers: {
+            ...buildPPIHeaders(this.credentials),
+            Authorization: `Bearer ${this.credentials.accessToken}`,
+          },
+          body: JSON.stringify({
+            refreshToken: this.credentials.refreshToken,
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      if (!response.ok) {
+        throw new PPITokenExpiredError();
       }
-    );
 
-    if (!response.ok) {
-      throw new PPITokenExpiredError();
+      const data = await response.json() as Record<string, string>;
+      this.credentials.accessToken = data.accessToken || data.AccessToken;
+      this.credentials.refreshToken = data.refreshToken || data.RefreshToken;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error("PPI token refresh timed out after 8s");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const data = await response.json() as Record<string, string>;
-    this.credentials.accessToken = data.accessToken || data.AccessToken;
-    this.credentials.refreshToken = data.refreshToken || data.RefreshToken;
   }
 
   /**
@@ -136,27 +162,40 @@ export class PPIClient {
       throw new Error("Not authenticated with PPI");
     }
 
-    const response = await fetch(`${PPI_API_BASE}${endpoint}`, {
-      ...options,
-      headers: {
-        ...options?.headers,
-        ...buildPPIHeaders(this.credentials),
-        Authorization: `Bearer ${this.credentials.accessToken}`,
-      },
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    if (!response.ok) {
-      if (response.status === 401 && !retried) {
-        // Try refreshing token once
-        await this.refreshToken();
-        return this.request(endpoint, options, true);
+    try {
+      const response = await fetch(`${PPI_API_BASE}${endpoint}`, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          ...options?.headers,
+          ...buildPPIHeaders(this.credentials),
+          Authorization: `Bearer ${this.credentials.accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 && !retried) {
+          // Try refreshing token once
+          await this.refreshToken();
+          return this.request(endpoint, options, true);
+        }
+        const errorText = await response.text().catch(() => "");
+        console.error(`[PPI API] ${endpoint} failed (${response.status}):`, errorText.slice(0, 300));
+        throw new Error(`PPI API error: ${response.status} - ${errorText.slice(0, 200)}`);
       }
-      const errorText = await response.text().catch(() => "");
-      console.error(`[PPI API] ${endpoint} failed (${response.status}):`, errorText.slice(0, 300));
-      throw new Error(`PPI API error: ${response.status} - ${errorText.slice(0, 200)}`);
-    }
 
-    return response.json();
+      return response.json();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error(`PPI request timed out after 8s: ${endpoint}`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   /**

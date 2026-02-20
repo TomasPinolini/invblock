@@ -61,6 +61,11 @@ export const assets = pgTable(
   (table) => ({
     userIdx: index("assets_user_idx").on(table.userId),
     tickerIdx: index("assets_ticker_idx").on(table.ticker),
+    userTickerCategoryIdx: uniqueIndex("assets_user_ticker_category_idx").on(
+      table.userId,
+      table.ticker,
+      table.category
+    ),
   })
 );
 

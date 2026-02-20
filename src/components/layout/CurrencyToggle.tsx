@@ -8,7 +8,7 @@ export default function CurrencyToggle() {
   const set = useAppStore((s) => s.setDisplayCurrency);
 
   return (
-    <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-900/50 p-0.5" role="group" aria-label="Display currency">
+    <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-900/50 p-0.5" role="group" aria-label="Moneda de visualizacion">
       {(["USD", "ARS"] as const).map((cur) => (
         <button
           key={cur}

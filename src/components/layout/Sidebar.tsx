@@ -144,15 +144,15 @@ export default function Sidebar() {
               ? "bg-zinc-800/60 text-zinc-200"
               : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50"
           )}
-          title={expanded ? undefined : "Settings"}
+          title={expanded ? undefined : "Configuracion"}
         >
           <Settings className="h-[18px] w-[18px] shrink-0" />
           {expanded && (
-            <span className="text-[13px] font-medium truncate">Settings</span>
+            <span className="text-[13px] font-medium truncate">Configuracion</span>
           )}
           {!expanded && (
             <span className="absolute left-full ml-3 px-2.5 py-1.5 rounded-md bg-zinc-800 border border-zinc-700/80 text-xs text-zinc-200 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
-              Settings
+              Configuracion
             </span>
           )}
         </Link>
@@ -163,7 +163,7 @@ export default function Sidebar() {
         <div className={cn("px-3 pb-2", expanded ? "" : "flex justify-center")}>
           <div className="flex items-center gap-1.5 text-blue-400 text-[11px]">
             <RefreshCw className="h-3 w-3 animate-spin shrink-0" />
-            {expanded && <span>Syncing...</span>}
+            {expanded && <span>Sincronizando...</span>}
           </div>
         </div>
       )}
@@ -192,7 +192,7 @@ export default function Sidebar() {
                 ? "text-blue-400 hover:bg-blue-500/10"
                 : "text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50"
             )}
-            title={pinned ? "Unpin sidebar" : "Pin sidebar open"}
+            title={pinned ? "Desfijar barra lateral" : "Fijar barra lateral"}
           >
             {pinned ? (
               <PinOff className="h-3.5 w-3.5 shrink-0" />
@@ -201,7 +201,7 @@ export default function Sidebar() {
             )}
             {expanded && (
               <span className="text-xs">
-                {pinned ? "Unpin" : "Pin open"}
+                {pinned ? "Desfijar" : "Fijar"}
               </span>
             )}
           </button>
@@ -235,8 +235,8 @@ function UtilityRow({ expanded }: { expanded: boolean }) {
             ? "text-violet-400 bg-violet-500/10 hover:bg-violet-500/20"
             : "text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50"
         )}
-        title={privacyMode ? "Show values" : "Hide values"}
-        aria-label={privacyMode ? "Disable privacy mode" : "Enable privacy mode"}
+        title={privacyMode ? "Mostrar valores" : "Ocultar valores"}
+        aria-label={privacyMode ? "Desactivar modo privado" : "Activar modo privado"}
       >
         {privacyMode ? (
           <EyeOff className="h-3.5 w-3.5" />
@@ -267,7 +267,7 @@ function UtilityRow({ expanded }: { expanded: boolean }) {
         <button
           onClick={() => setCurrency(currency === "USD" ? "ARS" : "USD")}
           className="p-1.5 rounded-md text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50 transition-colors text-[10px] font-bold leading-none"
-          title={`Switch to ${currency === "USD" ? "ARS" : "USD"}`}
+          title={`Cambiar a ${currency === "USD" ? "ARS" : "USD"}`}
         >
           {currency}
         </button>
@@ -306,8 +306,8 @@ function SidebarUser({ expanded }: { expanded: boolean }) {
           <button
             onClick={handleSignOut}
             className="p-1 rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors shrink-0"
-            title="Sign out"
-            aria-label="Sign out"
+            title="Cerrar sesion"
+            aria-label="Cerrar sesion"
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>
@@ -317,13 +317,13 @@ function SidebarUser({ expanded }: { expanded: boolean }) {
           <button
             onClick={handleSignOut}
             className="p-1.5 rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors"
-            title="Sign out"
-            aria-label="Sign out"
+            title="Cerrar sesion"
+            aria-label="Cerrar sesion"
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>
           <span className="absolute left-full ml-3 px-2.5 py-1.5 rounded-md bg-zinc-800 border border-zinc-700/80 text-xs text-zinc-200 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
-            Sign out
+            Cerrar sesion
           </span>
         </div>
       )}

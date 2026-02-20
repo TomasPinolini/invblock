@@ -61,19 +61,19 @@ export default function HistoryPage() {
             {operations.length > 0 && (
               <button
                 onClick={handleExportCSV}
-                aria-label="Export operations as CSV"
+                aria-label="Exportar operaciones como CSV"
                 className="inline-flex items-center gap-2 px-3 py-2 rounded-lg
                            bg-zinc-800 hover:bg-zinc-700
                            text-sm font-medium transition-colors"
               >
                 <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Export</span>
+                <span className="hidden sm:inline">Exportar</span>
               </button>
             )}
             <button
               onClick={() => refetch()}
               disabled={isFetching}
-              aria-label="Refresh operations history"
+              aria-label="Actualizar historial de operaciones"
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg
                          bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50
                          text-sm font-medium transition-colors"

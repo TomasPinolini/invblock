@@ -33,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/mep", label: "MEP", icon: DollarSign, accent: "yellow" },
   { href: "/funds", label: "Fondos", icon: Landmark, accent: "green" },
   { href: "/history", label: "Historial", icon: History, accent: "cyan" },
-  { href: "/analytics", label: "Analytics", icon: BarChart3, accent: "purple" },
+  { href: "/analytics", label: "Analiticas", icon: BarChart3, accent: "purple" },
 ];
 
 /** Items shown in mobile bottom tab bar (max 4 + "More") */
@@ -53,7 +53,7 @@ export const MOBILE_MORE_ITEMS: NavItem[] = [
 
 export const ALERTS_NAV: NavItem = {
   href: "/alerts",
-  label: "Alerts",
+  label: "Alertas",
   icon: Bell,
   accent: "purple",
 };

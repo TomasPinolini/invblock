@@ -45,9 +45,9 @@ export default function SettingsPage() {
             <Settings className="h-5 w-5 text-zinc-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-zinc-100">Settings</h1>
+            <h1 className="text-xl font-bold text-zinc-100">Configuracion</h1>
             <p className="text-sm text-zinc-500">
-              Manage connections and notifications
+              Gestionar conexiones y notificaciones
             </p>
           </div>
         </div>
@@ -110,30 +110,35 @@ function IOLConnectionCard() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Connection failed");
+        throw new Error(data.error || "Error de conexion");
       }
 
       setStatus({ connected: true, updatedAt: new Date().toISOString() });
-      addToast("IOL connected successfully!", "success");
+      addToast("IOL conectado exitosamente!", "success");
 
       // Invalidate portfolio cache and redirect to dashboard
       queryClient.invalidateQueries({ queryKey: ["iol-portfolio"] });
       router.push("/");
     } catch (err) {
-      addToast(err instanceof Error ? err.message : "Connection failed", "error");
+      addToast(err instanceof Error ? err.message : "Error de conexion", "error");
       setConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
+    const confirmed = window.confirm(
+      "Estas seguro de que queres desconectar IOL? Vas a necesitar volver a ingresar tus credenciales para reconectar."
+    );
+    if (!confirmed) return;
+
     setLoading(true);
 
     try {
       await fetch("/api/iol/auth", { method: "DELETE" });
       setStatus({ connected: false, updatedAt: null });
-      addToast("IOL disconnected", "info");
+      addToast("IOL desconectado", "info");
     } catch {
-      addToast("Failed to disconnect", "error");
+      addToast("Error al desconectar", "error");
     } finally {
       setLoading(false);
     }
@@ -147,10 +152,10 @@ function IOLConnectionCard() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Sync failed");
+        throw new Error(data.error || "Error de sincronizacion");
       }
 
-      addToast("Portfolio synced successfully!", "success");
+      addToast("Portfolio sincronizado!", "success");
 
       // Invalidate portfolio cache so dashboard shows fresh data
       queryClient.invalidateQueries({ queryKey: ["iol-portfolio"] });
@@ -158,7 +163,7 @@ function IOLConnectionCard() {
       // Redirect to dashboard after successful sync
       router.push("/");
     } catch (err) {
-      addToast(err instanceof Error ? err.message : "Sync failed", "error");
+      addToast(err instanceof Error ? err.message : "Error de sincronizacion", "error");
       setSyncing(false);
     }
   };
@@ -183,14 +188,14 @@ function IOLConnectionCard() {
           <div>
             <h3 className="font-semibold text-zinc-100">InvertirOnline</h3>
             <p className="text-xs text-zinc-500">
-              Sync your CEDEARs and Argentine stocks
+              Sincroniza tus CEDEARs y acciones argentinas
             </p>
           </div>
         </div>
         {status?.connected && (
           <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs">
             <CheckCircle2 className="h-3 w-3" />
-            Connected
+            Conectado
           </span>
         )}
       </div>
@@ -199,7 +204,7 @@ function IOLConnectionCard() {
         <div className="space-y-4">
           {status.updatedAt && (
             <p className="text-xs text-zinc-500">
-              Last synced: {relativeDate(status.updatedAt)}
+              Ultima sincronizacion: {relativeDate(status.updatedAt)}
             </p>
           )}
 
@@ -216,7 +221,7 @@ function IOLConnectionCard() {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              {syncing ? "Syncing..." : "Sync Portfolio"}
+              {syncing ? "Sincronizando..." : "Sincronizar Portfolio"}
             </button>
             <button
               onClick={handleDisconnect}
@@ -226,7 +231,7 @@ function IOLConnectionCard() {
                          inline-flex items-center justify-center gap-2"
             >
               <Unlink className="h-4 w-4" />
-              Disconnect
+              Desconectar
             </button>
           </div>
         </div>
@@ -235,7 +240,7 @@ function IOLConnectionCard() {
           <div className="space-y-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                IOL Username / Email
+                Usuario / Email de IOL
               </label>
               <input
                 type="text"
@@ -251,14 +256,14 @@ function IOLConnectionCard() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                IOL Password
+                Contrasena de IOL
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                aria-label="IOL Password"
+                aria-label="Contrasena de IOL"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
                            px-3 text-sm text-zinc-200 placeholder:text-zinc-600
@@ -268,8 +273,8 @@ function IOLConnectionCard() {
           </div>
 
           <p className="text-xs text-zinc-600">
-            Your credentials are used only to authenticate with IOL's API. We
-            store only the access token, not your password.
+            Tus credenciales se usan solo para autenticar con la API de IOL.
+            Solo almacenamos el token de acceso, no tu contrasena.
           </p>
 
           <button
@@ -284,7 +289,7 @@ function IOLConnectionCard() {
             ) : (
               <Link2 className="h-4 w-4" />
             )}
-            {connecting ? "Connecting..." : "Connect to IOL"}
+            {connecting ? "Conectando..." : "Conectar a IOL"}
           </button>
         </form>
       )}
@@ -332,31 +337,36 @@ function BinanceConnectionCard() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Connection failed");
+        throw new Error(data.error || "Error de conexion");
       }
 
       setStatus({ connected: true, updatedAt: new Date().toISOString() });
-      addToast("Binance connected successfully!", "success");
+      addToast("Binance conectado exitosamente!", "success");
 
       // Invalidate portfolio cache and redirect to dashboard
       queryClient.invalidateQueries({ queryKey: ["binance-portfolio"] });
       router.push("/");
     } catch (err) {
-      addToast(err instanceof Error ? err.message : "Connection failed", "error");
+      addToast(err instanceof Error ? err.message : "Error de conexion", "error");
       setConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
+    const confirmed = window.confirm(
+      "Estas seguro de que queres desconectar Binance? Vas a necesitar volver a ingresar tus API keys para reconectar."
+    );
+    if (!confirmed) return;
+
     setLoading(true);
 
     try {
       await fetch("/api/binance/auth", { method: "DELETE" });
       setStatus({ connected: false, updatedAt: null });
       queryClient.invalidateQueries({ queryKey: ["binance-portfolio"] });
-      addToast("Binance disconnected", "info");
+      addToast("Binance desconectado", "info");
     } catch {
-      addToast("Failed to disconnect", "error");
+      addToast("Error al desconectar", "error");
     } finally {
       setLoading(false);
     }
@@ -382,14 +392,14 @@ function BinanceConnectionCard() {
           <div>
             <h3 className="font-semibold text-zinc-100">Binance</h3>
             <p className="text-xs text-zinc-500">
-              Sync your crypto holdings
+              Sincroniza tus tenencias crypto
             </p>
           </div>
         </div>
         {status?.connected && (
           <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs">
             <CheckCircle2 className="h-3 w-3" />
-            Connected
+            Conectado
           </span>
         )}
       </div>
@@ -398,7 +408,7 @@ function BinanceConnectionCard() {
         <div className="space-y-4">
           {status.updatedAt && (
             <p className="text-xs text-zinc-500">
-              Connected: {relativeDate(status.updatedAt)}
+              Conectado: {relativeDate(status.updatedAt)}
             </p>
           )}
 
@@ -410,7 +420,7 @@ function BinanceConnectionCard() {
                        inline-flex items-center justify-center gap-2"
           >
             <Unlink className="h-4 w-4" />
-            Disconnect
+            Desconectar
           </button>
         </div>
       ) : (
@@ -424,7 +434,7 @@ function BinanceConnectionCard() {
                 type="text"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Enter your Binance API key"
+                placeholder="Ingresa tu API key de Binance"
                 aria-label="Binance API Key"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
@@ -441,7 +451,7 @@ function BinanceConnectionCard() {
                 type="password"
                 value={apiSecret}
                 onChange={(e) => setApiSecret(e.target.value)}
-                placeholder="Enter your Binance API secret"
+                placeholder="Ingresa tu API secret de Binance"
                 aria-label="Binance API Secret"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
@@ -453,7 +463,7 @@ function BinanceConnectionCard() {
           </div>
 
           <p className="text-xs text-zinc-600">
-            Create an API key at{" "}
+            Crea una API key en{" "}
             <a
               href="https://www.binance.com/en/my/settings/api-management"
               target="_blank"
@@ -462,7 +472,7 @@ function BinanceConnectionCard() {
             >
               Binance API Management
             </a>
-            . Only &quot;Read&quot; permission is required.
+            . Solo se requiere permiso de &quot;lectura&quot;.
           </p>
 
           <button
@@ -477,7 +487,7 @@ function BinanceConnectionCard() {
             ) : (
               <Link2 className="h-4 w-4" />
             )}
-            {connecting ? "Connecting..." : "Connect to Binance"}
+            {connecting ? "Conectando..." : "Conectar a Binance"}
           </button>
         </form>
       )}
@@ -526,22 +536,27 @@ function PPIConnectionCard() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Connection failed");
+        throw new Error(data.error || "Error de conexion");
       }
 
       setStatus({ connected: true, updatedAt: new Date().toISOString() });
-      addToast("PPI connected successfully!", "success");
+      addToast("PPI conectado exitosamente!", "success");
 
       queryClient.invalidateQueries({ queryKey: ["ppi-portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["ppi-status"] });
       router.push("/");
     } catch (err) {
-      addToast(err instanceof Error ? err.message : "Connection failed", "error");
+      addToast(err instanceof Error ? err.message : "Error de conexion", "error");
       setConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
+    const confirmed = window.confirm(
+      "Estas seguro de que queres desconectar PPI? Vas a necesitar volver a ingresar tus API keys para reconectar."
+    );
+    if (!confirmed) return;
+
     setLoading(true);
 
     try {
@@ -549,9 +564,9 @@ function PPIConnectionCard() {
       setStatus({ connected: false, updatedAt: null });
       queryClient.invalidateQueries({ queryKey: ["ppi-portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["ppi-status"] });
-      addToast("PPI disconnected", "info");
+      addToast("PPI desconectado", "info");
     } catch {
-      addToast("Failed to disconnect", "error");
+      addToast("Error al desconectar", "error");
     } finally {
       setLoading(false);
     }
@@ -565,14 +580,14 @@ function PPIConnectionCard() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Sync failed");
+        throw new Error(data.error || "Error de sincronizacion");
       }
 
-      addToast("PPI portfolio synced successfully!", "success");
+      addToast("Portfolio PPI sincronizado!", "success");
       queryClient.invalidateQueries({ queryKey: ["ppi-portfolio"] });
       router.push("/");
     } catch (err) {
-      addToast(err instanceof Error ? err.message : "Sync failed", "error");
+      addToast(err instanceof Error ? err.message : "Error de sincronizacion", "error");
       setSyncing(false);
     }
   };
@@ -597,14 +612,14 @@ function PPIConnectionCard() {
           <div>
             <h3 className="font-semibold text-zinc-100">Portfolio Personal</h3>
             <p className="text-xs text-zinc-500">
-              Sync your stocks, CEDEARs, and bonds
+              Sincroniza tus acciones, CEDEARs y bonos
             </p>
           </div>
         </div>
         {status?.connected && (
           <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs">
             <CheckCircle2 className="h-3 w-3" />
-            Connected
+            Conectado
           </span>
         )}
       </div>
@@ -613,7 +628,7 @@ function PPIConnectionCard() {
         <div className="space-y-4">
           {status.updatedAt && (
             <p className="text-xs text-zinc-500">
-              Last synced: {relativeDate(status.updatedAt)}
+              Ultima sincronizacion: {relativeDate(status.updatedAt)}
             </p>
           )}
 
@@ -630,7 +645,7 @@ function PPIConnectionCard() {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              {syncing ? "Syncing..." : "Sync Portfolio"}
+              {syncing ? "Sincronizando..." : "Sincronizar Portfolio"}
             </button>
             <button
               onClick={handleDisconnect}
@@ -640,7 +655,7 @@ function PPIConnectionCard() {
                          inline-flex items-center justify-center gap-2"
             >
               <Unlink className="h-4 w-4" />
-              Disconnect
+              Desconectar
             </button>
           </div>
         </div>
@@ -649,14 +664,14 @@ function PPIConnectionCard() {
           <div className="space-y-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                Public Key
+                Clave Publica
               </label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Enter your public key"
-                aria-label="PPI Public Key"
+                placeholder="Ingresa tu clave publica"
+                aria-label="PPI Clave Publica"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
                            px-3 text-sm text-zinc-200 placeholder:text-zinc-600
@@ -666,14 +681,14 @@ function PPIConnectionCard() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                Private Key
+                Clave Privada
               </label>
               <input
                 type="password"
                 value={apiSecret}
                 onChange={(e) => setApiSecret(e.target.value)}
-                placeholder="Enter your private key"
-                aria-label="PPI Private Key"
+                placeholder="Ingresa tu clave privada"
+                aria-label="PPI Clave Privada"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
                            px-3 text-sm text-zinc-200 placeholder:text-zinc-600
@@ -684,8 +699,8 @@ function PPIConnectionCard() {
           </div>
 
           <p className="text-xs text-zinc-600">
-            Get API credentials from PPI &rarr; Gestiones &rarr; Gestion de servicio API.
-            Only read permissions are required.
+            Obtene las credenciales API desde PPI &rarr; Gestiones &rarr; Gestion de servicio API.
+            Solo se requieren permisos de lectura.
           </p>
 
           <button
@@ -700,7 +715,7 @@ function PPIConnectionCard() {
             ) : (
               <Link2 className="h-4 w-4" />
             )}
-            {connecting ? "Connecting..." : "Connect to PPI"}
+            {connecting ? "Conectando..." : "Conectar a PPI"}
           </button>
         </form>
       )}

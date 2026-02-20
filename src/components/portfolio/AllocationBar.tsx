@@ -47,11 +47,11 @@ export default function AllocationBar() {
     return (
       <div className="hidden sm:block card-surface p-4">
         <p className="text-xs uppercase tracking-wider text-zinc-500 mb-3">
-          Portfolio Allocation
+          Distribucion del Portfolio
         </p>
         <div className="h-3 rounded-full bg-zinc-800" />
         <p className="text-xs text-zinc-600 mt-2 text-center">
-          Connect a broker to see allocation
+          Conecta un broker para ver la distribucion
         </p>
       </div>
     );

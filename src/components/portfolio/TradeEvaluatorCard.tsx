@@ -145,7 +145,7 @@ function EvaluationResult({
             confidenceStyles[result.confidence]
           )}
         >
-          {result.confidence} confidence
+          {result.confidence} confianza
         </span>
       </div>
 
@@ -175,7 +175,7 @@ function EvaluationResult({
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-zinc-600">No pros identified</p>
+              <p className="text-xs text-zinc-600">Sin ventajas identificadas</p>
             )}
           </div>
 
@@ -194,7 +194,7 @@ function EvaluationResult({
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-zinc-600">No cons identified</p>
+              <p className="text-xs text-zinc-600">Sin desventajas identificadas</p>
             )}
           </div>
         </div>
@@ -204,7 +204,7 @@ function EvaluationResult({
       {result.portfolioImpact && (
         <div className="rounded-lg border border-zinc-700 bg-zinc-800/40 p-4">
           <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
-            Portfolio Impact
+            Impacto en el Portfolio
           </h4>
           <p className="text-sm text-zinc-300">{result.portfolioImpact}</p>
         </div>
@@ -217,7 +217,7 @@ function EvaluationResult({
             <Info className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
             <div>
               <h4 className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-1">
-                Alternative to Consider
+                Alternativa a Considerar
               </h4>
               <p className="text-sm text-zinc-300">
                 {result.alternativeConsideration}
@@ -232,11 +232,11 @@ function EvaluationResult({
         {result.currentExposure.alreadyHeld ? (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-800 border border-zinc-700">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-            Already held &middot;{" "}
+            Ya en cartera &middot;{" "}
             <span className="font-mono text-zinc-300">
               {result.currentExposure.currentAllocation.toFixed(1)}%
             </span>{" "}
-            allocation
+            del portfolio
             {result.currentExposure.category && (
               <>
                 {" "}
@@ -247,7 +247,7 @@ function EvaluationResult({
         ) : (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-800 border border-zinc-700">
             <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
-            Not currently in portfolio
+            No esta en el portfolio actualmente
           </span>
         )}
       </div>
@@ -260,7 +260,7 @@ function EvaluationResult({
                    items-center justify-center gap-2"
       >
         <RotateCcw className="h-4 w-4" />
-        Evaluate Another
+        Evaluar Otro
       </button>
     </div>
   );
@@ -301,15 +301,15 @@ export default function TradeEvaluatorCard() {
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <Zap className="h-5 w-5 text-amber-400" />
-        <h2 className="text-lg font-semibold">Trade Evaluator</h2>
+        <h2 className="text-lg font-semibold">Evaluador de Trades</h2>
       </div>
 
       {/* Show form if no result yet and not loading */}
       {!result && !isPending && (
         <>
           <p className="text-sm text-zinc-500 mb-4">
-            Enter a ticker to get an AI-powered evaluation of whether a trade
-            makes sense given your current portfolio composition.
+            Ingresa un ticker para obtener una evaluacion con IA sobre si un trade
+            tiene sentido dada la composicion actual de tu portfolio.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -320,12 +320,12 @@ export default function TradeEvaluatorCard() {
                   type="text"
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder="Enter ticker e.g. GGAL"
+                  placeholder="Ticker ej. GGAL"
                   className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/50
                              px-3 text-sm font-mono text-zinc-200 placeholder:text-zinc-600
                              focus:outline-none focus:ring-1 focus:ring-blue-500/50
                              uppercase"
-                  aria-label="Ticker symbol"
+                  aria-label="Ticker"
                 />
               </div>
               {/* Quantity input (optional) */}
@@ -334,13 +334,13 @@ export default function TradeEvaluatorCard() {
                   type="number"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="Qty"
+                  placeholder="Cant."
                   min="0"
                   step="any"
                   className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/50
                              px-3 text-sm font-mono text-zinc-200 placeholder:text-zinc-600
                              focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                  aria-label="Quantity (optional)"
+                  aria-label="Cantidad (opcional)"
                 />
               </div>
             </div>
@@ -349,7 +349,7 @@ export default function TradeEvaluatorCard() {
             {error && (
               <div className="flex items-center gap-2 text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2">
                 <XCircle className="h-4 w-4 flex-shrink-0" />
-                {error instanceof Error ? error.message : "Evaluation failed"}
+                {error instanceof Error ? error.message : "Error en la evaluacion"}
               </div>
             )}
 
@@ -362,13 +362,13 @@ export default function TradeEvaluatorCard() {
                          transition-colors inline-flex items-center justify-center gap-2"
             >
               <Search className="h-4 w-4" />
-              Evaluate
+              Evaluar
             </button>
 
             {portfolioRows.length > 0 && (
               <p className="text-xs text-zinc-600 text-center">
                 <CheckCircle2 className="h-3 w-3 inline mr-1 text-emerald-500" />
-                Will analyze against {portfolioRows.length} portfolio positions
+                Se analizara contra {portfolioRows.length} posiciones del portfolio
               </p>
             )}
           </form>
@@ -381,14 +381,14 @@ export default function TradeEvaluatorCard() {
           <Loader2 className="h-8 w-8 animate-spin text-amber-400" />
           <div className="text-center">
             <p className="text-sm font-medium text-zinc-300">
-              Evaluating{" "}
+              Evaluando{" "}
               <span className="font-mono text-amber-400">
                 {ticker.trim().toUpperCase()}
               </span>
               ...
             </p>
             <p className="text-xs text-zinc-600 mt-1">
-              Analyzing trade against your portfolio
+              Analizando trade contra tu portfolio
             </p>
           </div>
         </div>

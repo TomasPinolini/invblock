@@ -258,15 +258,15 @@ function ChipGroup<T extends string>({
 }
 
 const riskOptions: { value: RiskTolerance; label: string }[] = [
-  { value: "conservative", label: "Conservative" },
-  { value: "moderate", label: "Moderate" },
-  { value: "aggressive", label: "Aggressive" },
+  { value: "conservative", label: "Conservador" },
+  { value: "moderate", label: "Moderado" },
+  { value: "aggressive", label: "Agresivo" },
 ];
 
 const horizonOptions: { value: InvestmentHorizon; label: string }[] = [
-  { value: "short", label: "Short" },
-  { value: "medium", label: "Medium" },
-  { value: "long", label: "Long-term" },
+  { value: "short", label: "Corto" },
+  { value: "medium", label: "Medio" },
+  { value: "long", label: "Largo plazo" },
 ];
 
 // ── Main Component ───────────────────────────────────────────────────────────
@@ -309,24 +309,24 @@ export default function PortfolioAdvisorCard() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Target className="h-5 w-5 text-blue-400" />
-            Portfolio Advisor
+            Advisor del Portfolio
           </h2>
         </div>
         <p className="text-sm text-zinc-500 mb-4">
-          Get AI-powered portfolio analysis with actionable buy/sell/rebalance
-          recommendations tailored to your risk profile.
+          Obtene un analisis del portfolio con IA con recomendaciones de compra/venta/rebalanceo
+          adaptadas a tu perfil de riesgo.
         </p>
 
         {/* Profile Chips */}
         <div className="space-y-2.5 mb-5 p-3 rounded-lg bg-zinc-800/30 border border-zinc-800">
           <ChipGroup
-            label="Risk"
+            label="Riesgo"
             options={riskOptions}
             value={riskTolerance}
             onChange={setRiskTolerance}
           />
           <ChipGroup
-            label="Horizon"
+            label="Horizonte"
             options={horizonOptions}
             value={investmentHorizon}
             onChange={setInvestmentHorizon}
@@ -339,11 +339,11 @@ export default function PortfolioAdvisorCard() {
           className="btn-primary w-full"
         >
           <Target className="h-4 w-4" />
-          Get Advisor Analysis
+          Obtener Analisis del Advisor
         </button>
         {portfolioRows.length === 0 && !portfolioLoading && (
           <p className="text-xs text-zinc-600 mt-2 text-center">
-            Connect a broker account to analyze your portfolio
+            Conecta una cuenta de broker para analizar tu portfolio
           </p>
         )}
       </div>
@@ -359,10 +359,10 @@ export default function PortfolioAdvisorCard() {
           <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
           <div className="text-center">
             <p className="text-sm font-medium text-zinc-300">
-              Analyzing portfolio...
+              Analizando portfolio...
             </p>
             <p className="text-xs text-zinc-600 mt-1">
-              Evaluating health, trends, and generating recommendations
+              Evaluando salud, tendencias y generando recomendaciones
             </p>
           </div>
         </div>
@@ -377,10 +377,10 @@ export default function PortfolioAdvisorCard() {
       <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-6">
         <div className="flex items-center gap-2 mb-3">
           <XCircle className="h-5 w-5 text-red-400" />
-          <h2 className="text-lg font-semibold text-red-400">Analysis Failed</h2>
+          <h2 className="text-lg font-semibold text-red-400">Error en el analisis</h2>
         </div>
         <p className="text-sm text-zinc-400 mb-4">
-          {error instanceof Error ? error.message : "An unexpected error occurred"}
+          {error instanceof Error ? error.message : "Ocurrio un error inesperado"}
         </p>
         <button
           onClick={handleReanalyze}
@@ -388,7 +388,7 @@ export default function PortfolioAdvisorCard() {
                      text-sm font-medium transition-colors inline-flex items-center gap-2"
         >
           <RefreshCw className="h-4 w-4" />
-          Try Again
+          Reintentar
         </button>
       </div>
     );
@@ -423,7 +423,7 @@ export default function PortfolioAdvisorCard() {
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Target className="h-5 w-5 text-blue-400" />
-            Portfolio Advisor
+            Advisor del Portfolio
           </h2>
           {/* Compact score badge when collapsed */}
           <span
@@ -464,7 +464,7 @@ export default function PortfolioAdvisorCard() {
             className="btn-ghost"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Re-analyze</span>
+            <span className="hidden sm:inline">Re-analizar</span>
           </button>
           <ChevronDown
             className={cn(
@@ -487,13 +487,13 @@ export default function PortfolioAdvisorCard() {
           {/* Profile Chips (editable for re-analyze) */}
           <div className="space-y-2 p-3 rounded-lg bg-zinc-800/30 border border-zinc-800">
             <ChipGroup
-              label="Risk"
+              label="Riesgo"
               options={riskOptions}
               value={riskTolerance}
               onChange={setRiskTolerance}
             />
             <ChipGroup
-              label="Horizon"
+              label="Horizonte"
               options={horizonOptions}
               value={investmentHorizon}
               onChange={setInvestmentHorizon}
@@ -523,7 +523,7 @@ export default function PortfolioAdvisorCard() {
             <div className="p-3 rounded-lg bg-zinc-800/30 border border-zinc-800">
               <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                 <Globe className="h-3.5 w-3.5" />
-                Market Outlook
+                Perspectiva de Mercado
               </h3>
               <p className="text-sm text-zinc-300 leading-relaxed">
                 {marketOutlook}
@@ -536,7 +536,7 @@ export default function PortfolioAdvisorCard() {
             <div>
               <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <Target className="h-3.5 w-3.5" />
-                Recommendations
+                Recomendaciones
               </h3>
               <div className="space-y-2">
                 {recommendations.map((rec, i) => (
@@ -550,7 +550,7 @@ export default function PortfolioAdvisorCard() {
           {sortedFindings.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-2">
-                Findings
+                Hallazgos
               </h3>
               <div className="divide-y divide-zinc-800/60">
                 {sortedFindings.map((finding, i) => (
@@ -564,7 +564,7 @@ export default function PortfolioAdvisorCard() {
           {suggestions.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-2">
-                Suggestions
+                Sugerencias
               </h3>
               <div className="divide-y divide-zinc-800/60">
                 {suggestions.map((suggestion, i) => (

@@ -63,7 +63,7 @@ export default function PortfolioSummary() {
       <div className="card-prominent glow-blue hover-lift p-4">
         <div className="flex items-center gap-2 text-zinc-500 mb-2">
           <Wallet className="h-4 w-4" />
-          <span className="text-xs uppercase tracking-wider">Total Value</span>
+          <span className="text-xs uppercase tracking-wider">Valor Total</span>
         </div>
         <p data-sensitive className="text-2xl font-bold font-mono text-zinc-50 animate-value-reveal">
           {formatCurrency(summary.totalValue, displayCurrency)}
@@ -107,7 +107,7 @@ export default function PortfolioSummary() {
       <div className="card-prominent hover-lift p-4">
         <div className="flex items-center gap-2 text-zinc-500 mb-2">
           <PieChart className="h-4 w-4" />
-          <span className="text-xs uppercase tracking-wider">Cost Basis</span>
+          <span className="text-xs uppercase tracking-wider">Costo Base</span>
         </div>
         <p data-sensitive className="text-2xl font-bold font-mono text-zinc-50 animate-value-reveal">
           {formatCurrency(summary.totalCost, displayCurrency)}
@@ -117,7 +117,7 @@ export default function PortfolioSummary() {
       {/* Asset Count by Category */}
       <div className="card-prominent hover-lift p-4">
         <div className="flex items-center gap-2 text-zinc-500 mb-3">
-          <span className="text-xs uppercase tracking-wider">Allocation</span>
+          <span className="text-xs uppercase tracking-wider">Distribucion</span>
         </div>
         <div className="space-y-2">
           {(Object.entries(summary.byCategory) as [AssetCategory, { value: number; count: number }][]).map(

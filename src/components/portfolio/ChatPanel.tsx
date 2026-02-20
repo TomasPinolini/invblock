@@ -96,10 +96,10 @@ function InlineMarkdown({ text }: { text: string }) {
 // ── Suggested Prompts ────────────────────────────────────────────────────────
 
 const SUGGESTED_PROMPTS = [
-  "How diversified is my portfolio?",
-  "Which positions should I worry about?",
-  "How does inflation affect my holdings?",
-  "Suggest a rebalancing strategy",
+  "Que tan diversificado esta mi portfolio?",
+  "Que posiciones deberian preocuparme?",
+  "Como afecta la inflacion a mis tenencias?",
+  "Sugeri una estrategia de rebalanceo",
 ];
 
 // ── Main Component ───────────────────────────────────────────────────────────
@@ -143,16 +143,16 @@ export default function ChatPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-blue-400" />
-          <h3 className="text-sm font-semibold">Portfolio Chat</h3>
+          <h3 className="text-sm font-semibold">Chat del Portfolio</h3>
           {messages.length > 0 && (
-            <span className="text-[10px] text-zinc-600">{messages.length} messages</span>
+            <span className="text-[10px] text-zinc-600">{messages.length} mensajes</span>
           )}
         </div>
         {messages.length > 0 && (
           <button
             onClick={clearChat}
             className="p-1.5 rounded-md hover:bg-zinc-800 transition-colors text-zinc-500 hover:text-zinc-300"
-            title="Clear chat"
+            title="Limpiar chat"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -165,7 +165,7 @@ export default function ChatPanel() {
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <Bot className="h-10 w-10 text-zinc-700" />
             <p className="text-sm text-zinc-500 text-center">
-              Ask anything about your portfolio, market conditions, or investment strategy.
+              Pregunta lo que quieras sobre tu portfolio, condiciones de mercado o estrategia de inversion.
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               {SUGGESTED_PROMPTS.map((prompt) => (
@@ -240,7 +240,7 @@ export default function ChatPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about your portfolio..."
+            placeholder="Pregunta sobre tu portfolio..."
             disabled={isStreaming}
             className="flex-1 h-9 rounded-lg border border-zinc-700 bg-zinc-800/50 px-3
                        text-sm text-zinc-200 placeholder:text-zinc-600
@@ -253,7 +253,7 @@ export default function ChatPanel() {
               className="h-9 w-9 rounded-lg bg-red-600/20 border border-red-500/30
                          text-red-400 flex items-center justify-center hover:bg-red-600/30
                          transition-colors"
-              title="Stop generating"
+              title="Detener generacion"
             >
               <Square className="h-3.5 w-3.5" />
             </button>
@@ -264,7 +264,7 @@ export default function ChatPanel() {
               className="h-9 w-9 rounded-lg bg-blue-600 hover:bg-blue-500
                          disabled:opacity-50 text-white flex items-center justify-center
                          transition-colors"
-              title="Send message"
+              title="Enviar mensaje"
             >
               <Send className="h-3.5 w-3.5" />
             </button>

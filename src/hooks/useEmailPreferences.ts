@@ -55,7 +55,7 @@ export function useUpdateEmailPreferences() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["email-preferences"] });
-      addToast("Email preferences updated", "success");
+      addToast("Preferencias de email actualizadas", "success");
     },
     onError: (error) => {
       addToast(error.message, "error");
