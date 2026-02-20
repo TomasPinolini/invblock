@@ -48,7 +48,7 @@ export function PortfolioValueChart({ days = 90 }: { days?: number }) {
   if (points.length === 0) {
     return (
       <div className="h-[300px] flex flex-col items-center justify-center gap-3 text-zinc-500">
-        <Clock className="h-8 w-8 text-zinc-600" />
+        <Clock className="h-8 w-8 text-zinc-500" />
         <div className="text-center">
           <p className="text-sm font-medium text-zinc-400">No historical data yet</p>
           <p className="text-xs mt-1">Snapshots are captured daily</p>

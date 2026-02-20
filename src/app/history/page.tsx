@@ -120,7 +120,7 @@ export default function HistoryPage() {
         />
 
         {/* Footer */}
-        <div className="text-xs text-zinc-600 text-center">
+        <div className="text-xs text-zinc-500 text-center">
           Datos de InvertirOnline · Última actualización: {new Date().toLocaleTimeString()}
         </div>
       </div>

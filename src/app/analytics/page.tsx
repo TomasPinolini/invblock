@@ -40,7 +40,7 @@ export default function AnalyticsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState(90);
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 sm:py-8 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-purple-500/15">

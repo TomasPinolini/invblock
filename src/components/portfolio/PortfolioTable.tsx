@@ -229,7 +229,7 @@ export default function PortfolioTable() {
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="h-9 w-full sm:w-40 rounded-lg border border-zinc-800 bg-zinc-900/50
-                         px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                         px-3 text-sm text-zinc-200 placeholder:text-zinc-500
                          focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             />
             {data.length > 0 && (
@@ -337,7 +337,7 @@ export default function PortfolioTable() {
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-12 text-center text-zinc-600"
+                  className="px-4 py-12 text-center text-zinc-500"
                 >
                   {iolExpired ? (
                     <div className="space-y-2">
@@ -392,7 +392,7 @@ export default function PortfolioTable() {
       </div>
 
       {/* ── Footer Stats ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between text-xs text-zinc-600" aria-live="polite">
+      <div className="flex items-center justify-between text-xs text-zinc-500" aria-live="polite">
         <span>
           {data.length} asset{data.length !== 1 && "s"} ·{" "}
           {table.getFilteredRowModel().rows.length} shown

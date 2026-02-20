@@ -50,7 +50,7 @@ export default function AllocationBar() {
           Distribucion del Portfolio
         </p>
         <div className="h-3 rounded-full bg-zinc-800" />
-        <p className="text-xs text-zinc-600 mt-2 text-center">
+        <p className="text-xs text-zinc-500 mt-2 text-center">
           Conecta un broker para ver la distribucion
         </p>
       </div>

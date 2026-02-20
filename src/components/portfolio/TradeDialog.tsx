@@ -54,6 +54,7 @@ export default function TradeDialog({
   // Update price when quote changes
   useEffect(() => {
     if (liveQuote?.ultimoPrecio) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPrecio(liveQuote.ultimoPrecio.toFixed(2));
     }
   }, [liveQuote]);
@@ -112,7 +113,6 @@ export default function TradeDialog({
   };
 
   const isBuy = action === "buy";
-  const actionColor = isBuy ? "emerald" : "red";
   const actionLabel = isBuy ? "Comprar" : "Vender";
   const ActionIcon = isBuy ? TrendingUp : TrendingDown;
 
@@ -195,7 +195,7 @@ export default function TradeDialog({
                 </div>
                 {liveQuote?.variacion !== undefined && (
                   <div className="flex justify-between items-center mt-1">
-                    <span className="text-xs text-zinc-600">Variación hoy</span>
+                    <span className="text-xs text-zinc-500">Variación hoy</span>
                     <span
                       className={cn(
                         "text-xs font-mono",
@@ -211,7 +211,7 @@ export default function TradeDialog({
                 )}
                 {action === "sell" && (
                   <div className="flex justify-between items-center mt-1 pt-1 border-t border-zinc-700">
-                    <span className="text-xs text-zinc-600">Tenencia actual</span>
+                    <span className="text-xs text-zinc-500">Tenencia actual</span>
                     <span className="text-xs font-mono text-zinc-400">
                       {asset.quantity} unidades
                     </span>
@@ -464,7 +464,7 @@ export default function TradeDialog({
                   })}
                 </p>
                 {tradeMutation.data?.numeroOperacion && (
-                  <p className="text-xs text-zinc-600 mt-2">
+                  <p className="text-xs text-zinc-500 mt-2">
                     N° de operación: {tradeMutation.data.numeroOperacion}
                   </p>
                 )}

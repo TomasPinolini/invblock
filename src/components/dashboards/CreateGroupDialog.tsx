@@ -24,8 +24,10 @@ export function CreateGroupDialog({
 
   useEffect(() => {
     if (open) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setName("");
       setColor("blue");
+      /* eslint-enable react-hooks/set-state-in-effect */
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
@@ -63,7 +65,7 @@ export function CreateGroupDialog({
               onChange={(e) => setName(e.target.value)}
               placeholder="ej. Tech, Dividendos, Argentina"
               maxLength={60}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-700 bg-zinc-800/60 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-700 bg-zinc-800/60 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
             />
           </div>
 

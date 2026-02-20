@@ -9,22 +9,7 @@ import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 import type { BrokerPortfolioAsset } from "@/types/portfolio";
-
-function mapCategory(tipo: string, pais: string): BrokerPortfolioAsset["category"] {
-  const t = tipo?.toLowerCase() || "";
-  const p = pais?.toLowerCase() || "";
-
-  if (t.includes("cedear")) return "cedear";
-  if (t.includes("crypto") || t.includes("cripto")) return "crypto";
-  if (p === "estados_unidos") return "stock";
-  return "stock";
-}
-
-function mapCurrency(moneda: string): "USD" | "ARS" {
-  const m = moneda?.toLowerCase() || "";
-  if (m.includes("dolar") || m.includes("dollar")) return "USD";
-  return "ARS";
-}
+import { mapIOLCategory, mapIOLCurrency } from "@/services/shared/mappers";
 
 export async function GET() {
   const user = await getAuthUser();
@@ -67,8 +52,8 @@ export async function GET() {
         id: item.titulo.simbolo, // Use ticker as ID since we're not storing
         ticker: item.titulo.simbolo.toUpperCase(),
         name: item.titulo.descripcion || item.titulo.simbolo,
-        category: mapCategory(item.titulo.tipo, item.titulo.pais),
-        currency: mapCurrency(item.titulo.moneda),
+        category: mapIOLCategory(item.titulo.tipo, item.titulo.pais),
+        currency: mapIOLCurrency(item.titulo.moneda),
         quantity: item.cantidad,
         averagePrice: item.ppc,
         currentPrice: item.ultimoPrecio,

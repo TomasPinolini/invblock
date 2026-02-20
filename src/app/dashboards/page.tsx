@@ -6,7 +6,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Loader2,
   AlertCircle,
   Star,
 } from "lucide-react";
@@ -246,12 +245,12 @@ export default function DashboardsPage() {
                 <div className="rounded-xl border border-dashed border-zinc-800/80 bg-zinc-900/20">
                   <div className="flex flex-col items-center justify-center py-14 text-center">
                     <div className="h-10 w-10 rounded-lg bg-zinc-800/60 border border-zinc-700/40 flex items-center justify-center mb-3">
-                      <Star className="h-5 w-5 text-zinc-600" />
+                      <Star className="h-5 w-5 text-zinc-500" />
                     </div>
                     <p className="text-xs text-zinc-400 mb-1">
                       No tickers in <span className="font-medium text-zinc-300">{activeGroup.name}</span>
                     </p>
-                    <p className="text-[11px] text-zinc-600 mb-4">
+                    <p className="text-[11px] text-zinc-500 mb-4">
                       Add from your watchlist to see live prices here
                     </p>
                     <button

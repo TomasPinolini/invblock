@@ -29,6 +29,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-layout md:h-screen md:overflow-hidden">
+      {/* Skip to content — visible only on keyboard focus */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-zinc-900 focus:text-zinc-100 focus:rounded-lg focus:border focus:border-zinc-700"
+      >
+        Ir al contenido principal
+      </a>
+
       {/* Desktop sidebar */}
       <Sidebar />
 

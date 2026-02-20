@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { X, Search, Check, Loader2 } from "lucide-react";
+import { X, Search, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import type { WatchlistItem } from "@/db/schema";
@@ -71,7 +71,7 @@ export function AddToGroupDialog({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar en watchlist..."
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-700 bg-zinc-800/60 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-700 bg-zinc-800/60 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
             />
           </div>
         </div>
@@ -120,7 +120,7 @@ export function AddToGroupDialog({
                         {item.name}
                       </p>
                     </div>
-                    <span className="text-[10px] text-zinc-600 shrink-0">
+                    <span className="text-[10px] text-zinc-500 shrink-0">
                       {CATEGORY_LABELS[item.category]}
                     </span>
                   </button>

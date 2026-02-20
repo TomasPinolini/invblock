@@ -86,7 +86,7 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                   required
                   className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
-                           pl-10 pr-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           pl-10 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500
                            focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                 />
               </div>
@@ -106,7 +106,7 @@ export default function LoginPage() {
                   required
                   minLength={6}
                   className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
-                           pl-10 pr-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           pl-10 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500
                            focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                 />
               </div>

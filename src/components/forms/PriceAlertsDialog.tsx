@@ -254,7 +254,7 @@ export default function PriceAlertsDialog() {
                 aria-label="Target price"
                 value={targetPrice}
                 onChange={(e) => setTargetPrice(e.target.value)}
-                className="w-28 px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                className="w-28 px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
               />
 
               {/* Create Button */}
@@ -443,7 +443,7 @@ export default function PriceAlertsDialog() {
           </div>
 
           {/* Footer */}
-          <div className="p-3 border-t border-zinc-800 text-xs text-zinc-600 text-center">
+          <div className="p-3 border-t border-zinc-800 text-xs text-zinc-500 text-center">
             Alerts are checked every 15 minutes during market hours
           </div>
         </Dialog.Content>

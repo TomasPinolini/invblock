@@ -275,7 +275,7 @@ export default function ExitAdvisorCard() {
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
                   placeholder="Ticker ej. GGAL"
                   className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/50
-                             px-3 text-sm font-mono text-zinc-200 placeholder:text-zinc-600
+                             px-3 text-sm font-mono text-zinc-200 placeholder:text-zinc-500
                              focus:outline-none focus:ring-1 focus:ring-indigo-500/50
                              uppercase"
                   aria-label="Ticker symbol"
@@ -289,7 +289,7 @@ export default function ExitAdvisorCard() {
                   placeholder="Objetivo %"
                   step="any"
                   className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/50
-                             px-3 text-sm font-mono text-zinc-200 placeholder:text-zinc-600
+                             px-3 text-sm font-mono text-zinc-200 placeholder:text-zinc-500
                              focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
                   aria-label="Target return percentage (optional)"
                 />
@@ -315,7 +315,7 @@ export default function ExitAdvisorCard() {
             </button>
 
             {portfolioRows.length > 0 && (
-              <p className="text-xs text-zinc-600 text-center">
+              <p className="text-xs text-zinc-500 text-center">
                 <CheckCircle2 className="h-3 w-3 inline mr-1 text-emerald-500" />
                 Se analizara contra {portfolioRows.length} posiciones del portfolio
               </p>
@@ -336,7 +336,7 @@ export default function ExitAdvisorCard() {
               </span>
               ...
             </p>
-            <p className="text-xs text-zinc-600 mt-1">
+            <p className="text-xs text-zinc-500 mt-1">
               Evaluando estrategia de salida
             </p>
           </div>

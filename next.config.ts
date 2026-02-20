@@ -2,6 +2,19 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const securityHeaders = [
+  // Content Security Policy — permissive enough for Next.js + Tailwind + Supabase
+  {
+    key: "Content-Security-Policy",
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self'",
+      "connect-src 'self' https://*.supabase.co https://*.sentry.io wss://*.supabase.co https://api.anthropic.com",
+      "frame-ancestors 'self'",
+    ].join("; "),
+  },
   // Prevent clickjacking — only allow same-origin framing
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
   // Prevent MIME-type sniffing

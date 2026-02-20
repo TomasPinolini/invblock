@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/auth";
 import { createAlertSchema, updateAlertSchema, parseBody } from "@/lib/api-schemas";
 
 // GET /api/alerts - List all alerts for current user
 export async function GET() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabase = await createClient();
 
   const { data: alerts, error } = await supabase
     .from("price_alerts")
@@ -30,15 +28,12 @@ export async function GET() {
 
 // POST /api/alerts - Create a new alert
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabase = await createClient();
 
   const raw = await req.json();
   const [body, validationError] = parseBody(createAlertSchema, raw);
@@ -77,15 +72,12 @@ export async function POST(req: NextRequest) {
 
 // PATCH /api/alerts - Update an alert
 export async function PATCH(req: NextRequest) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabase = await createClient();
 
   const raw = await req.json();
   const [body, validationError] = parseBody(updateAlertSchema, raw);
@@ -127,15 +119,12 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE /api/alerts?id=xxx - Delete an alert
 export async function DELETE(req: NextRequest) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabase = await createClient();
 
   const alertId = req.nextUrl.searchParams.get("id");
 

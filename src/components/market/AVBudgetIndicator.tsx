@@ -15,7 +15,7 @@ export function AVBudgetIndicator({ budget }: { budget?: AVBudgetStatus }) {
           ? "text-red-400"
           : budget.isWarning
             ? "text-amber-400"
-            : "text-zinc-600"
+            : "text-zinc-500"
       )}
     >
       <Activity className="h-3 w-3" />

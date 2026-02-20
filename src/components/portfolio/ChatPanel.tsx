@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import {
   MessageSquare,
   Send,
-  Loader2,
   Trash2,
   Square,
   Bot,
@@ -145,7 +144,7 @@ export default function ChatPanel() {
           <MessageSquare className="h-4 w-4 text-blue-400" />
           <h3 className="text-sm font-semibold">Chat del Portfolio</h3>
           {messages.length > 0 && (
-            <span className="text-[10px] text-zinc-600">{messages.length} mensajes</span>
+            <span className="text-[10px] text-zinc-500">{messages.length} mensajes</span>
           )}
         </div>
         {messages.length > 0 && (
@@ -243,7 +242,7 @@ export default function ChatPanel() {
             placeholder="Pregunta sobre tu portfolio..."
             disabled={isStreaming}
             className="flex-1 h-9 rounded-lg border border-zinc-700 bg-zinc-800/50 px-3
-                       text-sm text-zinc-200 placeholder:text-zinc-600
+                       text-sm text-zinc-200 placeholder:text-zinc-500
                        focus:outline-none focus:ring-1 focus:ring-blue-500/50
                        disabled:opacity-50"
           />

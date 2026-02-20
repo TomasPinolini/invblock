@@ -7,32 +7,11 @@ import { decryptCredentials, encryptCredentials } from "@/lib/crypto";
 import { db } from "@/db";
 import { userConnections, assets, transactions } from "@/db/schema";
 import { eq, and, like } from "drizzle-orm";
-
-// Map IOL operation type to our transaction type
-function mapOperationType(tipo: string): "buy" | "sell" | null {
-  const t = tipo.toLowerCase();
-  if (t.includes("compra")) return "buy";
-  if (t.includes("venta")) return "sell";
-  return null;
-}
-
-// Map IOL currency
-function mapCurrency(mercado: string): "USD" | "ARS" {
-  const m = mercado.toLowerCase();
-  if (m.includes("nyse") || m.includes("nasdaq") || m.includes("estados")) {
-    return "USD";
-  }
-  return "ARS";
-}
-
-// Infer asset category from IOL market
-function inferCategory(mercado: string): "stock" | "cedear" | "crypto" | "cash" {
-  const m = mercado.toLowerCase();
-  if (m.includes("nyse") || m.includes("nasdaq") || m.includes("amex")) {
-    return "stock";
-  }
-  return "cedear";
-}
+import {
+  mapOperationType,
+  inferCurrencyFromMarket,
+  inferCategoryFromMarket,
+} from "@/services/shared/mappers";
 
 export async function POST() {
   const user = await getAuthUser();
@@ -117,8 +96,8 @@ export async function POST() {
             userId: user.id,
             ticker,
             name: ticker, // We don't have the full name from operations
-            category: inferCategory(op.mercado),
-            currency: mapCurrency(op.mercado),
+            category: inferCategoryFromMarket(op.mercado),
+            currency: inferCurrencyFromMarket(op.mercado),
             quantity: "0",
             averagePrice: "0",
             currentPrice: op.precio.toString(),
@@ -145,7 +124,7 @@ export async function POST() {
         quantity: quantity.toString(),
         pricePerUnit: pricePerUnit.toString(),
         totalAmount: totalAmount.toString(),
-        currency: mapCurrency(op.mercado),
+        currency: inferCurrencyFromMarket(op.mercado),
         executedAt,
         notes: `IOL#${op.numero}`,
       });

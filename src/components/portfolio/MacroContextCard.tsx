@@ -142,7 +142,7 @@ export default function MacroContextCard() {
       )}
 
       {data && data.errors.length > 0 && (
-        <p className="text-[10px] text-zinc-600 mt-2">
+        <p className="text-[10px] text-zinc-500 mt-2">
           {data.errors.length} indicator{data.errors.length > 1 ? "s" : ""} unavailable
         </p>
       )}

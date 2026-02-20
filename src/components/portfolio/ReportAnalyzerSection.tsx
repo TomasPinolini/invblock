@@ -202,7 +202,7 @@ export default function ReportAnalyzerSection() {
               Elegir Archivo
             </span>
           </label>
-          <p className="text-xs text-zinc-600 mt-4">
+          <p className="text-xs text-zinc-500 mt-4">
             Soportado: PPI Daily Mercados, Cierre Mercados, Perspectivas, Noticias del Domingo
           </p>
         </div>

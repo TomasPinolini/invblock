@@ -9,21 +9,7 @@ import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 import type { BrokerPortfolioAsset } from "@/types/portfolio";
-
-function mapCategory(instrumentType: string): BrokerPortfolioAsset["category"] {
-  const t = (instrumentType || "").toUpperCase();
-  if (t.includes("CEDEAR")) return "cedear";
-  if (t.includes("ACCION")) return "stock";
-  if (t.includes("ETF")) return "stock";
-  if (t.includes("BONO") || t.includes("LETRA") || t === "ON") return "stock";
-  return "stock";
-}
-
-function mapCurrency(currency: string): "USD" | "ARS" {
-  const c = (currency || "").toUpperCase();
-  if (c.includes("USD") || c.includes("DOLAR") || c.includes("DOLLAR")) return "USD";
-  return "ARS";
-}
+import { mapPPICategory, mapPPICurrency } from "@/services/shared/mappers";
 
 export async function GET() {
   const user = await getAuthUser();
@@ -58,8 +44,8 @@ export async function GET() {
         id: `ppi-${p.Ticker}`,
         ticker: p.Ticker.toUpperCase(),
         name: p.Description || p.Ticker,
-        category: mapCategory(p.InstrumentType),
-        currency: mapCurrency(p.Currency),
+        category: mapPPICategory(p.InstrumentType),
+        currency: mapPPICurrency(p.Currency),
         quantity: p.Quantity,
         averagePrice: p.AveragePrice,
         currentPrice: p.Price,

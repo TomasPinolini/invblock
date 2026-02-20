@@ -12,7 +12,6 @@ import {
   RefreshCw,
   Loader2,
   CheckCircle2,
-  AlertCircle,
 } from "lucide-react";
 import { relativeDate } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
@@ -250,7 +249,7 @@ function IOLConnectionCard() {
                 aria-label="IOL Username or Email"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
-                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-500
                            focus:outline-none focus:ring-1 focus:ring-blue-500/50"
               />
             </div>
@@ -266,13 +265,13 @@ function IOLConnectionCard() {
                 aria-label="Contrasena de IOL"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
-                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-500
                            focus:outline-none focus:ring-1 focus:ring-blue-500/50"
               />
             </div>
           </div>
 
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs text-zinc-500">
             Tus credenciales se usan solo para autenticar con la API de IOL.
             Solo almacenamos el token de acceso, no tu contrasena.
           </p>
@@ -438,7 +437,7 @@ function BinanceConnectionCard() {
                 aria-label="Binance API Key"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
-                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-500
                            focus:outline-none focus:ring-1 focus:ring-yellow-500/50
                            font-mono text-xs"
               />
@@ -455,14 +454,14 @@ function BinanceConnectionCard() {
                 aria-label="Binance API Secret"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
-                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-500
                            focus:outline-none focus:ring-1 focus:ring-yellow-500/50
                            font-mono text-xs"
               />
             </div>
           </div>
 
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs text-zinc-500">
             Crea una API key en{" "}
             <a
               href="https://www.binance.com/en/my/settings/api-management"
@@ -674,7 +673,7 @@ function PPIConnectionCard() {
                 aria-label="PPI Clave Publica"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
-                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-500
                            focus:outline-none focus:ring-1 focus:ring-violet-500/50
                            font-mono text-xs"
               />
@@ -691,14 +690,14 @@ function PPIConnectionCard() {
                 aria-label="PPI Clave Privada"
                 required
                 className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900
-                           px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+                           px-3 text-sm text-zinc-200 placeholder:text-zinc-500
                            focus:outline-none focus:ring-1 focus:ring-violet-500/50
                            font-mono text-xs"
               />
             </div>
           </div>
 
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs text-zinc-500">
             Obtene las credenciales API desde PPI &rarr; Gestiones &rarr; Gestion de servicio API.
             Solo se requieren permisos de lectura.
           </p>

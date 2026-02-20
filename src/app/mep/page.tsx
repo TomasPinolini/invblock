@@ -109,9 +109,9 @@ export default function MepPage() {
             </div>
           ) : pairs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <DollarSign className="h-10 w-10 text-zinc-600 mb-3" />
+              <DollarSign className="h-10 w-10 text-zinc-500 mb-3" />
               <p className="text-zinc-400">Sin cotizaciones disponibles</p>
-              <p className="text-sm text-zinc-600 mt-1">
+              <p className="text-sm text-zinc-500 mt-1">
                 El mercado puede estar cerrado o no hay liquidez en los bonos
               </p>
             </div>
@@ -125,7 +125,7 @@ export default function MepPage() {
                     <p className="text-4xl font-bold font-mono text-yellow-400">
                       ${averageRate.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
-                    <p className="text-xs text-zinc-600 mt-1">
+                    <p className="text-xs text-zinc-500 mt-1">
                       Promedio de {pairs.length} par{pairs.length !== 1 ? "es" : ""} de bonos
                     </p>
                   </div>
@@ -152,7 +152,7 @@ export default function MepPage() {
                         ${blueRate.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
                       </span>
                       {!isBlueRateLive && (
-                        <span className="text-xs text-zinc-600 ml-1">(fallback)</span>
+                        <span className="text-xs text-zinc-500 ml-1">(fallback)</span>
                       )}
                     </div>
                     <div className={cn(
@@ -196,13 +196,13 @@ export default function MepPage() {
                       </p>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
-                          <p className="text-zinc-600">{pair.arsSymbol} (ARS)</p>
+                          <p className="text-zinc-500">{pair.arsSymbol} (ARS)</p>
                           <p className="font-mono text-zinc-400">
                             ${pair.arsPrice.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
                           </p>
                         </div>
                         <div>
-                          <p className="text-zinc-600">{pair.usdSymbol} (USD)</p>
+                          <p className="text-zinc-500">{pair.usdSymbol} (USD)</p>
                           <p className="font-mono text-zinc-400">
                             ${pair.usdPrice.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
                           </p>
@@ -258,7 +258,7 @@ export default function MepPage() {
                       value={amount}
                       onChange={(e) => handleAmountChange(e.target.value)}
                       className="w-full pl-12 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg
-                               text-zinc-100 placeholder:text-zinc-600 font-mono
+                               text-zinc-100 placeholder:text-zinc-500 font-mono
                                focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
                     />
                   </div>
@@ -326,12 +326,12 @@ export default function MepPage() {
                 )}
 
                 {!estimate && amount && (
-                  <p className="text-xs text-zinc-600 mt-2">
+                  <p className="text-xs text-zinc-500 mt-2">
                     Ingrese un monto válido para ver el cálculo
                   </p>
                 )}
 
-                <p className="text-xs text-zinc-600 mt-4">
+                <p className="text-xs text-zinc-500 mt-4">
                   * Cálculo estimativo. La comisión real puede variar. El tipo de cambio MEP se calcula como el cociente entre el precio en ARS y USD del mismo bono.
                 </p>
               </div>

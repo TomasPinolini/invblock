@@ -92,7 +92,7 @@ export default function FundsPage() {
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg
-                         text-zinc-100 placeholder:text-zinc-600
+                         text-zinc-100 placeholder:text-zinc-500
                          focus:outline-none focus:ring-2 focus:ring-green-500/50"
               />
             </div>
@@ -200,9 +200,9 @@ export default function FundsPage() {
             </div>
           ) : funds.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <Landmark className="h-10 w-10 text-zinc-600 mb-3" />
+              <Landmark className="h-10 w-10 text-zinc-500 mb-3" />
               <p className="text-zinc-400">No se encontraron fondos</p>
-              <p className="text-sm text-zinc-600 mt-1">
+              <p className="text-sm text-zinc-500 mt-1">
                 Intente con otros filtros o términos de búsqueda
               </p>
             </div>
@@ -288,7 +288,7 @@ function FundCard({
         {/* Last value */}
         {fund.ultimoOperado != null && (
           <div className="mt-3 pt-3 border-t border-zinc-800 flex justify-between text-xs">
-            <span className="text-zinc-600">Último operado</span>
+            <span className="text-zinc-500">Último operado</span>
             <span className="font-mono text-zinc-300">
               ${fund.ultimoOperado.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
             </span>
@@ -334,7 +334,7 @@ function FundDetails({ symbol }: { symbol: string }) {
 
   if (error || !data?.fund) {
     return (
-      <div className="px-4 pb-4 text-xs text-zinc-600">
+      <div className="px-4 pb-4 text-xs text-zinc-500">
         No se pudieron cargar los detalles
       </div>
     );
@@ -346,26 +346,26 @@ function FundDetails({ symbol }: { symbol: string }) {
     <div className="px-4 pb-4 border-t border-zinc-800 pt-3 space-y-2 text-xs">
       {fund.objetivoInversion && (
         <div>
-          <span className="text-zinc-600 block">Objetivo</span>
+          <span className="text-zinc-500 block">Objetivo</span>
           <span className="text-zinc-400">{fund.objetivoInversion}</span>
         </div>
       )}
       {fund.perfilInversor && (
         <div>
-          <span className="text-zinc-600 block">Perfil inversor</span>
+          <span className="text-zinc-500 block">Perfil inversor</span>
           <span className="text-zinc-400">{fund.perfilInversor}</span>
         </div>
       )}
       {fund.horizonteInversion && (
         <div>
-          <span className="text-zinc-600 block">Horizonte</span>
+          <span className="text-zinc-500 block">Horizonte</span>
           <span className="text-zinc-400">{fund.horizonteInversion}</span>
         </div>
       )}
       <div className="grid grid-cols-2 gap-2 pt-1">
         {fund.rentabilidadAnual != null && (
           <div>
-            <span className="text-zinc-600 block">Rend. anual</span>
+            <span className="text-zinc-500 block">Rend. anual</span>
             <span className={cn(
               "font-mono",
               fund.rentabilidadAnual >= 0 ? "text-emerald-400" : "text-red-400"
@@ -376,7 +376,7 @@ function FundDetails({ symbol }: { symbol: string }) {
         )}
         {fund.rentabilidadMensual != null && (
           <div>
-            <span className="text-zinc-600 block">Rend. mensual</span>
+            <span className="text-zinc-500 block">Rend. mensual</span>
             <span className={cn(
               "font-mono",
               fund.rentabilidadMensual >= 0 ? "text-emerald-400" : "text-red-400"
@@ -387,7 +387,7 @@ function FundDetails({ symbol }: { symbol: string }) {
         )}
         {fund.comisionAdministracion != null && (
           <div>
-            <span className="text-zinc-600 block">Comisión adm.</span>
+            <span className="text-zinc-500 block">Comisión adm.</span>
             <span className="font-mono text-zinc-400">
               {fund.comisionAdministracion.toFixed(2)}%
             </span>
@@ -395,7 +395,7 @@ function FundDetails({ symbol }: { symbol: string }) {
         )}
         {fund.montoMinimo != null && (
           <div>
-            <span className="text-zinc-600 block">Monto mínimo</span>
+            <span className="text-zinc-500 block">Monto mínimo</span>
             <span className="font-mono text-zinc-400">
               ${fund.montoMinimo.toLocaleString("es-AR")}
             </span>
@@ -404,13 +404,13 @@ function FundDetails({ symbol }: { symbol: string }) {
       </div>
       {fund.plazosRescate && (
         <div className="pt-1">
-          <span className="text-zinc-600 block">Plazo de rescate</span>
+          <span className="text-zinc-500 block">Plazo de rescate</span>
           <span className="text-zinc-400">{fund.plazosRescate}</span>
         </div>
       )}
       {fund.patrimonio != null && (
         <div>
-          <span className="text-zinc-600 block">Patrimonio</span>
+          <span className="text-zinc-500 block">Patrimonio</span>
           <span className="font-mono text-zinc-400">
             ${fund.patrimonio.toLocaleString("es-AR")}
           </span>

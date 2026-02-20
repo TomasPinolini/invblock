@@ -18,7 +18,7 @@ export function PortfolioCardList({
 }: PortfolioCardListProps) {
   if (rows.length === 0) {
     return (
-      <div className="px-4 py-12 text-center text-zinc-600">
+      <div className="px-4 py-12 text-center text-zinc-500">
         No assets to display.
       </div>
     );

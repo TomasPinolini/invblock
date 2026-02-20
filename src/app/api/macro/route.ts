@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/auth";
 import { fetchMacroData, type MacroData } from "@/services/macro/client";
 
 // In-memory cache with 5-min TTL
@@ -10,11 +10,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 export async function GET() {
   try {
     // Auth check
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

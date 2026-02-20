@@ -427,25 +427,25 @@ export default function AssetDetailModal({
                   {/* OHLC Grid */}
                   <div className="grid grid-cols-4 gap-2 pt-2 border-t border-zinc-700">
                     <div>
-                      <p className="text-[10px] text-zinc-600 uppercase">Open</p>
+                      <p className="text-[10px] text-zinc-500 uppercase">Open</p>
                       <p className="text-xs font-mono text-zinc-300">
                         {liveQuote.apertura ? formatCurrency(liveQuote.apertura, asset.currency) : "--"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-zinc-600 uppercase">High</p>
+                      <p className="text-[10px] text-zinc-500 uppercase">High</p>
                       <p className="text-xs font-mono text-emerald-400">
                         {liveQuote.maximo ? formatCurrency(liveQuote.maximo, asset.currency) : "--"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-zinc-600 uppercase">Low</p>
+                      <p className="text-[10px] text-zinc-500 uppercase">Low</p>
                       <p className="text-xs font-mono text-red-400">
                         {liveQuote.minimo ? formatCurrency(liveQuote.minimo, asset.currency) : "--"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-zinc-600 uppercase">Prev Close</p>
+                      <p className="text-[10px] text-zinc-500 uppercase">Prev Close</p>
                       <p className="text-xs font-mono text-zinc-300">
                         {liveQuote.cierreAnterior ? formatCurrency(liveQuote.cierreAnterior, asset.currency) : "--"}
                       </p>
@@ -454,11 +454,11 @@ export default function AssetDetailModal({
                   {/* Volume */}
                   {(liveQuote.volumenNominal || liveQuote.montoOperado) && (
                     <div className="flex items-center justify-between pt-2 border-t border-zinc-700">
-                      <span className="text-[10px] text-zinc-600 uppercase">Volume</span>
+                      <span className="text-[10px] text-zinc-500 uppercase">Volume</span>
                       <span className="text-xs font-mono text-zinc-400">
                         {liveQuote.volumenNominal?.toLocaleString() ?? "--"} shares
                         {liveQuote.montoOperado && (
-                          <span className="text-zinc-600 ml-2">
+                          <span className="text-zinc-500 ml-2">
                             ({formatCurrency(liveQuote.montoOperado, asset.currency)})
                           </span>
                         )}
@@ -468,12 +468,12 @@ export default function AssetDetailModal({
                   {/* Bid/Ask */}
                   {liveQuote.puntas && liveQuote.puntas.length > 0 && (
                     <div className="flex items-center justify-between pt-2 border-t border-zinc-700">
-                      <span className="text-[10px] text-zinc-600 uppercase">Bid / Ask</span>
+                      <span className="text-[10px] text-zinc-500 uppercase">Bid / Ask</span>
                       <span className="text-xs font-mono">
                         <span className="text-emerald-400">
                           {formatCurrency(liveQuote.puntas[0]?.precioCompra ?? 0, asset.currency)}
                         </span>
-                        <span className="text-zinc-600 mx-1">/</span>
+                        <span className="text-zinc-500 mx-1">/</span>
                         <span className="text-red-400">
                           {formatCurrency(liveQuote.puntas[0]?.precioVenta ?? 0, asset.currency)}
                         </span>
@@ -482,7 +482,7 @@ export default function AssetDetailModal({
                   )}
                 </div>
               ) : !quoteLoading ? (
-                <p className="text-xs text-zinc-600">Quote data unavailable</p>
+                <p className="text-xs text-zinc-500">Quote data unavailable</p>
               ) : null}
             </div>
           )}
@@ -517,7 +517,7 @@ export default function AssetDetailModal({
                     IOL
                   </button>
                 </div>
-                <span className="text-[10px] text-zinc-600">
+                <span className="text-[10px] text-zinc-500">
                   {dataSource === "iol" ? "Adjusted for AR market" : "Global data"}
                 </span>
               </div>
@@ -578,7 +578,7 @@ export default function AssetDetailModal({
                   </div>
                 )}
 
-                <p className="text-[10px] text-zinc-600 mt-2">
+                <p className="text-[10px] text-zinc-500 mt-2">
                   {historyData.history.length} data points · {dataSource === "iol" ? "IOL (adjusted)" : "Yahoo Finance"}
                 </p>
               </div>
@@ -623,7 +623,7 @@ export default function AssetDetailModal({
               </button>
             </div>
           )}
-          <p className="text-xs text-zinc-600 text-center">
+          <p className="text-xs text-zinc-500 text-center">
             {dataSource === "iol" ? "IOL (adjusted for AR market)" : "Yahoo Finance"} · Tap outside to close
           </p>
         </div>

@@ -62,9 +62,9 @@ function NewsItem({ item }: { item: AVNewsFeed }) {
           </p>
           <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{item.summary}</p>
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-[10px] text-zinc-600">{item.source}</span>
+            <span className="text-[10px] text-zinc-500">{item.source}</span>
             <span className="text-[10px] text-zinc-700">·</span>
-            <span className="text-[10px] text-zinc-600">
+            <span className="text-[10px] text-zinc-500">
               {formatTimeAgo(item.timePublished)}
             </span>
             <SentimentBadge label={item.overallSentimentLabel} />
@@ -82,7 +82,7 @@ function NewsItem({ item }: { item: AVNewsFeed }) {
             </div>
           )}
         </div>
-        <ExternalLink className="h-3.5 w-3.5 text-zinc-600 group-hover:text-zinc-400 shrink-0 mt-0.5" />
+        <ExternalLink className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-400 shrink-0 mt-0.5" />
       </div>
     </a>
   );

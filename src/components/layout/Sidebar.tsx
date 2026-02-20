@@ -14,10 +14,39 @@ import {
   User,
   Settings,
 } from "lucide-react";
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuth } from "@/hooks/useAuth";
 import { NAV_ITEMS, ALERTS_NAV, ACCENT_CLASSES } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+
+/** Radix tooltip wrapper for collapsed sidebar items */
+function SidebarTooltip({
+  label,
+  enabled,
+  children,
+}: {
+  label: string;
+  enabled: boolean;
+  children: React.ReactNode;
+}) {
+  if (!enabled) return <>{children}</>;
+
+  return (
+    <Tooltip.Root delayDuration={200}>
+      <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          side="right"
+          sideOffset={12}
+          className="px-2.5 py-1.5 rounded-md bg-zinc-800 border border-zinc-700/80 text-xs text-zinc-200 whitespace-nowrap z-50 shadow-lg animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
+        >
+          {label}
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -31,6 +60,7 @@ export default function Sidebar() {
   const expanded = pinned || hovered;
 
   return (
+    <Tooltip.Provider delayDuration={200} skipDelayDuration={100}>
     <aside
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -72,90 +102,75 @@ export default function Sidebar() {
           const colors = ACCENT_CLASSES[item.accent];
 
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "relative flex items-center rounded-lg transition-all duration-150 group",
-                expanded ? "gap-3 px-3 h-9" : "justify-center h-9 mx-auto",
-                isActive
-                  ? colors.active
-                  : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50"
-              )}
-              title={expanded ? undefined : item.label}
-            >
-              {isActive && (
-                <span
-                  className={cn(
-                    "sidebar-nav-active-indicator",
-                    colors.indicator
-                  )}
-                />
-              )}
+            <SidebarTooltip key={item.href} label={item.label} enabled={!expanded}>
+              <Link
+                href={item.href}
+                className={cn(
+                  "relative flex items-center rounded-lg transition-all duration-150",
+                  expanded ? "gap-3 px-3 h-9" : "justify-center h-9 mx-auto",
+                  isActive
+                    ? colors.active
+                    : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50"
+                )}
+              >
+                {isActive && (
+                  <span
+                    className={cn(
+                      "sidebar-nav-active-indicator",
+                      colors.indicator
+                    )}
+                  />
+                )}
 
-              <Icon className="h-[18px] w-[18px] shrink-0" />
+                <Icon className="h-[18px] w-[18px] shrink-0" />
 
-              {expanded && (
-                <span className="text-[13px] font-medium truncate">
-                  {item.label}
-                </span>
-              )}
-
-              {/* Tooltip for collapsed */}
-              {!expanded && (
-                <span className="absolute left-full ml-3 px-2.5 py-1.5 rounded-md bg-zinc-800 border border-zinc-700/80 text-xs text-zinc-200 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
-                  {item.label}
-                </span>
-              )}
-            </Link>
+                {expanded && (
+                  <span className="text-[13px] font-medium truncate">
+                    {item.label}
+                  </span>
+                )}
+              </Link>
+            </SidebarTooltip>
           );
         })}
 
         {/* Alerts button */}
-        <button
-          onClick={openAlerts}
-          className={cn(
-            "relative flex items-center rounded-lg transition-all duration-150 w-full group",
-            expanded ? "gap-3 px-3 h-9" : "justify-center h-9",
-            "text-zinc-500 hover:text-purple-400 hover:bg-purple-500/8"
-          )}
-          title={expanded ? undefined : ALERTS_NAV.label}
-        >
-          <Bell className="h-[18px] w-[18px] shrink-0" />
-          {expanded && (
-            <span className="text-[13px] font-medium truncate">
-              {ALERTS_NAV.label}
-            </span>
-          )}
-          {!expanded && (
-            <span className="absolute left-full ml-3 px-2.5 py-1.5 rounded-md bg-zinc-800 border border-zinc-700/80 text-xs text-zinc-200 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
-              {ALERTS_NAV.label}
-            </span>
-          )}
-        </button>
+        <SidebarTooltip label={ALERTS_NAV.label} enabled={!expanded}>
+          <button
+            onClick={openAlerts}
+            className={cn(
+              "relative flex items-center rounded-lg transition-all duration-150 w-full",
+              expanded ? "gap-3 px-3 h-9" : "justify-center h-9",
+              "text-zinc-500 hover:text-purple-400 hover:bg-purple-500/8"
+            )}
+          >
+            <Bell className="h-[18px] w-[18px] shrink-0" />
+            {expanded && (
+              <span className="text-[13px] font-medium truncate">
+                {ALERTS_NAV.label}
+              </span>
+            )}
+          </button>
+        </SidebarTooltip>
 
         {/* Settings */}
-        <Link
-          href="/settings"
-          className={cn(
-            "relative flex items-center rounded-lg transition-all duration-150 group",
-            expanded ? "gap-3 px-3 h-9" : "justify-center h-9",
-            pathname === "/settings"
-              ? "bg-zinc-800/60 text-zinc-200"
-              : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50"
-          )}
-          title={expanded ? undefined : "Configuracion"}
-        >
-          <Settings className="h-[18px] w-[18px] shrink-0" />
-          {expanded && (
-            <span className="text-[13px] font-medium truncate">Configuracion</span>
-          )}
-          {!expanded && (
-            <span className="absolute left-full ml-3 px-2.5 py-1.5 rounded-md bg-zinc-800 border border-zinc-700/80 text-xs text-zinc-200 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
-              Configuracion
-            </span>
-          )}
-        </Link>
+        <SidebarTooltip label="Configuracion" enabled={!expanded}>
+          <Link
+            href="/settings"
+            className={cn(
+              "relative flex items-center rounded-lg transition-all duration-150",
+              expanded ? "gap-3 px-3 h-9" : "justify-center h-9",
+              pathname === "/settings"
+                ? "bg-zinc-800/60 text-zinc-200"
+                : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50"
+            )}
+          >
+            <Settings className="h-[18px] w-[18px] shrink-0" />
+            {expanded && (
+              <span className="text-[13px] font-medium truncate">Configuracion</span>
+            )}
+          </Link>
+        </SidebarTooltip>
       </nav>
 
       {/* Sync status — subtle indicator */}
@@ -190,7 +205,7 @@ export default function Sidebar() {
               expanded ? "gap-2 px-2 py-1.5 w-full" : "p-1.5",
               pinned
                 ? "text-blue-400 hover:bg-blue-500/10"
-                : "text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50"
+                : "text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50"
             )}
             title={pinned ? "Desfijar barra lateral" : "Fijar barra lateral"}
           >
@@ -208,6 +223,7 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+    </Tooltip.Provider>
   );
 }
 
@@ -233,7 +249,7 @@ function UtilityRow({ expanded }: { expanded: boolean }) {
           expanded ? "p-1.5" : "p-2",
           privacyMode
             ? "text-violet-400 bg-violet-500/10 hover:bg-violet-500/20"
-            : "text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50"
+            : "text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50"
         )}
         title={privacyMode ? "Mostrar valores" : "Ocultar valores"}
         aria-label={privacyMode ? "Desactivar modo privado" : "Activar modo privado"}
@@ -256,7 +272,7 @@ function UtilityRow({ expanded }: { expanded: boolean }) {
                 "px-2 py-0.5 text-[11px] font-semibold rounded transition-colors",
                 currency === cur
                   ? "bg-zinc-800 text-zinc-200"
-                  : "text-zinc-600 hover:text-zinc-400"
+                  : "text-zinc-500 hover:text-zinc-400"
               )}
             >
               {cur}
@@ -266,7 +282,7 @@ function UtilityRow({ expanded }: { expanded: boolean }) {
       ) : (
         <button
           onClick={() => setCurrency(currency === "USD" ? "ARS" : "USD")}
-          className="p-1.5 rounded-md text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50 transition-colors text-[10px] font-bold leading-none"
+          className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50 transition-colors text-[10px] font-bold leading-none"
           title={`Cambiar a ${currency === "USD" ? "ARS" : "USD"}`}
         >
           {currency}
@@ -305,7 +321,7 @@ function SidebarUser({ expanded }: { expanded: boolean }) {
           </div>
           <button
             onClick={handleSignOut}
-            className="p-1 rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors shrink-0"
+            className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors shrink-0"
             title="Cerrar sesion"
             aria-label="Cerrar sesion"
           >
@@ -313,19 +329,15 @@ function SidebarUser({ expanded }: { expanded: boolean }) {
           </button>
         </div>
       ) : (
-        <div className="relative group">
+        <SidebarTooltip label="Cerrar sesion" enabled>
           <button
             onClick={handleSignOut}
-            className="p-1.5 rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors"
-            title="Cerrar sesion"
+            className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors"
             aria-label="Cerrar sesion"
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>
-          <span className="absolute left-full ml-3 px-2.5 py-1.5 rounded-md bg-zinc-800 border border-zinc-700/80 text-xs text-zinc-200 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
-            Cerrar sesion
-          </span>
-        </div>
+        </SidebarTooltip>
       )}
     </div>
   );

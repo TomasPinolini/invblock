@@ -88,8 +88,9 @@ function ExplorePageInner() {
     notes?: string | null;
   } | null>(null);
 
-  // Sync tab from URL on mount
+  // Sync tab from URL on back/forward navigation
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (searchParams.get("tab") === "favorites") setActiveTab("favorites");
   }, [searchParams]);
 
@@ -135,7 +136,7 @@ function ExplorePageInner() {
 
   // Build unified securities list
   let securities: IOLSecurityWithQuote[] = [];
-  let favMeta: Map<string, { watchlistId: string; category: AssetCategory; notes: string | null }> =
+  const favMeta: Map<string, { watchlistId: string; category: AssetCategory; notes: string | null }> =
     new Map();
 
   if (isFavoritesTab && favData) {
@@ -220,7 +221,7 @@ function ExplorePageInner() {
                 aria-label="Buscar instrumentos"
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
               />
             </div>
             <button
@@ -297,7 +298,7 @@ function ExplorePageInner() {
                 <>
                   <Star className="h-12 w-12 text-zinc-700 mb-4" />
                   <p className="text-zinc-400 text-lg font-medium">No tenés favoritos todavía</p>
-                  <p className="text-sm text-zinc-600 mt-1 max-w-sm">
+                  <p className="text-sm text-zinc-500 mt-1 max-w-sm">
                     Explorá instrumentos y tocá la estrella para agregarlos a tus favoritos.
                   </p>
                   <button
@@ -310,9 +311,9 @@ function ExplorePageInner() {
                 </>
               ) : (
                 <>
-                  <Search className="h-10 w-10 text-zinc-600 mb-3" />
+                  <Search className="h-10 w-10 text-zinc-500 mb-3" />
                   <p className="text-zinc-400">No se encontraron instrumentos</p>
-                  <p className="text-sm text-zinc-600 mt-1">Intente con otro filtro o término de búsqueda</p>
+                  <p className="text-sm text-zinc-500 mt-1">Intente con otro filtro o término de búsqueda</p>
                 </>
               )}
             </div>
@@ -444,7 +445,7 @@ function SecurityCard({
               "p-1.5 rounded-lg transition-colors",
               isInWatchlist
                 ? "text-yellow-400 hover:bg-yellow-500/10"
-                : "text-zinc-600 hover:text-yellow-400 hover:bg-yellow-500/10"
+                : "text-zinc-500 hover:text-yellow-400 hover:bg-yellow-500/10"
             )}
             title={isInWatchlist ? "Quitar de favoritos" : "Agregar a favoritos"}
             aria-label={isInWatchlist ? `Remove ${security.simbolo} from favorites` : `Add ${security.simbolo} to favorites`}
@@ -475,7 +476,7 @@ function SecurityCard({
         </div>
       ) : (
         <div className="mb-3">
-          <p className="text-sm text-zinc-600 italic">Precio no disponible</p>
+          <p className="text-sm text-zinc-500 italic">Precio no disponible</p>
         </div>
       )}
 
@@ -486,19 +487,19 @@ function SecurityCard({
       {!marketClosed && security.apertura != null && (
         <div className="grid grid-cols-4 gap-2 text-xs">
           <div>
-            <p className="text-zinc-600 uppercase">Apertura</p>
+            <p className="text-zinc-500 uppercase">Apertura</p>
             <p className="font-mono text-zinc-400">{security.apertura?.toLocaleString("es-AR") || "--"}</p>
           </div>
           <div>
-            <p className="text-zinc-600 uppercase">Máximo</p>
+            <p className="text-zinc-500 uppercase">Máximo</p>
             <p className="font-mono text-emerald-400">{security.maximo?.toLocaleString("es-AR") || "--"}</p>
           </div>
           <div>
-            <p className="text-zinc-600 uppercase">Mínimo</p>
+            <p className="text-zinc-500 uppercase">Mínimo</p>
             <p className="font-mono text-red-400">{security.minimo?.toLocaleString("es-AR") || "--"}</p>
           </div>
           <div>
-            <p className="text-zinc-600 uppercase">Anterior</p>
+            <p className="text-zinc-500 uppercase">Anterior</p>
             <p className="font-mono text-zinc-400">{security.cierreAnterior?.toLocaleString("es-AR") || "--"}</p>
           </div>
         </div>
@@ -507,7 +508,7 @@ function SecurityCard({
       {/* Volume */}
       {!marketClosed && security.volumen != null && security.volumen > 0 && (
         <div className="mt-3 pt-3 border-t border-zinc-800 flex justify-between text-xs">
-          <span className="text-zinc-600">Volumen</span>
+          <span className="text-zinc-500">Volumen</span>
           <span className="font-mono text-zinc-400">{security.volumen.toLocaleString("es-AR")} acciones</span>
         </div>
       )}
@@ -554,6 +555,7 @@ function SecurityDetailModal({
 
   // Sync notes when watchlist data updates
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!editingNotes) setNotesValue(resolvedNotes || "");
   }, [resolvedNotes, editingNotes]);
 
@@ -825,7 +827,7 @@ function SecurityDetailModal({
               disabled={addMutation.isPending || removeMutation.isPending}
               className={cn(
                 "p-1 rounded-lg transition-colors shrink-0",
-                isInWatchlist ? "text-yellow-400" : "text-zinc-600 hover:text-yellow-400"
+                isInWatchlist ? "text-yellow-400" : "text-zinc-500 hover:text-yellow-400"
               )}
               title={isInWatchlist ? "Quitar de favoritos" : "Agregar a favoritos"}
             >
@@ -907,7 +909,7 @@ function SecurityDetailModal({
             ) : history.length >= 2 ? (
               <div>
                 {renderChart()}
-                <p className="text-[10px] text-zinc-600 mt-2">{history.length} puntos · Yahoo Finance</p>
+                <p className="text-[10px] text-zinc-500 mt-2">{history.length} puntos · Yahoo Finance</p>
               </div>
             ) : (
               <div className="flex items-center justify-center h-48 text-zinc-500">
@@ -950,11 +952,11 @@ function SecurityDetailModal({
                     autoFocus
                     rows={3}
                     onKeyDown={(e) => { if (e.key === "Escape") { setNotesValue(resolvedNotes || ""); setEditingNotes(false); } }}
-                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-yellow-500/50 resize-none"
+                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-300 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-yellow-500/50 resize-none"
                     placeholder="Escribí tus notas sobre este instrumento..."
                   />
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-600">{notesValue.length}/500</span>
+                    <span className="text-[10px] text-zinc-500">{notesValue.length}/500</span>
                     <div className="flex gap-1.5">
                       <button onClick={() => { setNotesValue(resolvedNotes || ""); setEditingNotes(false); }} className="px-3 py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 rounded-md transition-colors">
                         Cancelar
@@ -972,7 +974,7 @@ function SecurityDetailModal({
                   </div>
                 </div>
               ) : (
-                <p className={cn("text-sm", resolvedNotes ? "text-zinc-300" : "text-zinc-600 italic")}>
+                <p className={cn("text-sm", resolvedNotes ? "text-zinc-300" : "text-zinc-500 italic")}>
                   {resolvedNotes || "Sin notas — hacé clic en el lápiz para agregar."}
                 </p>
               )}
@@ -1001,7 +1003,7 @@ function SecurityDetailModal({
               Agregar a favoritos
             </button>
           )}
-          <p className="text-[10px] text-zinc-600">Yahoo Finance · Clic afuera para cerrar</p>
+          <p className="text-[10px] text-zinc-500">Yahoo Finance · Clic afuera para cerrar</p>
         </div>
       </div>
     </div>

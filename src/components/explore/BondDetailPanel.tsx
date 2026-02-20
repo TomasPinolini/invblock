@@ -277,7 +277,7 @@ function SpreadSection({
           <span className="font-mono font-medium text-blue-400">{arTicker}</span>
           <span className="text-zinc-500">: </span>
           <span className="font-mono">{formatPrice(tickerLaw === "argentina" ? tickerPrice : pairPrice)}</span>
-          <span className="text-zinc-600 mx-1.5">vs</span>
+          <span className="text-zinc-500 mx-1.5">vs</span>
           <span className="font-mono font-medium text-emerald-400">{nyTicker}</span>
           <span className="text-zinc-500">: </span>
           <span className="font-mono">{formatPrice(tickerLaw === "argentina" ? pairPrice : tickerPrice)}</span>

@@ -252,7 +252,7 @@ export default function CorrelationAnalysisCard() {
           </button>
 
           {portfolioRows.length > 0 && (
-            <p className="text-xs text-zinc-600 text-center mt-3">
+            <p className="text-xs text-zinc-500 text-center mt-3">
               <CheckCircle2 className="h-3 w-3 inline mr-1 text-emerald-500" />
               Se analizaran {portfolioRows.length} posiciones
             </p>
@@ -268,7 +268,7 @@ export default function CorrelationAnalysisCard() {
             <p className="text-sm font-medium text-zinc-300">
               Analizando correlaciones...
             </p>
-            <p className="text-xs text-zinc-600 mt-1">
+            <p className="text-xs text-zinc-500 mt-1">
               Detectando riesgos de concentracion ocultos
             </p>
           </div>

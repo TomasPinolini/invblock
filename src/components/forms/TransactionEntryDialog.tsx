@@ -57,7 +57,7 @@ function Field({
 // ── Styled input ────────────────────────────────────────────────────────────
 
 const inputClass = `h-9 w-full rounded-lg border border-zinc-700 bg-zinc-900
-  px-3 text-sm text-zinc-200 placeholder:text-zinc-600
+  px-3 text-sm text-zinc-200 placeholder:text-zinc-500
   focus:outline-none focus:ring-1 focus:ring-blue-500/50
   disabled:opacity-50`;
 

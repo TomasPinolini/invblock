@@ -161,7 +161,7 @@ function SuggestionItem({
 }) {
   return (
     <div className="flex items-start gap-3 py-2">
-      <span className="text-xs font-mono text-zinc-600 mt-0.5 flex-shrink-0 w-5 text-right">
+      <span className="text-xs font-mono text-zinc-500 mt-0.5 flex-shrink-0 w-5 text-right">
         {index + 1}.
       </span>
       <div className="flex-1 flex items-start gap-2">
@@ -342,7 +342,7 @@ export default function PortfolioAdvisorCard() {
           Obtener Analisis del Advisor
         </button>
         {portfolioRows.length === 0 && !portfolioLoading && (
-          <p className="text-xs text-zinc-600 mt-2 text-center">
+          <p className="text-xs text-zinc-500 mt-2 text-center">
             Conecta una cuenta de broker para analizar tu portfolio
           </p>
         )}
@@ -361,7 +361,7 @@ export default function PortfolioAdvisorCard() {
             <p className="text-sm font-medium text-zinc-300">
               Analizando portfolio...
             </p>
-            <p className="text-xs text-zinc-600 mt-1">
+            <p className="text-xs text-zinc-500 mt-1">
               Evaluando salud, tendencias y generando recomendaciones
             </p>
           </div>

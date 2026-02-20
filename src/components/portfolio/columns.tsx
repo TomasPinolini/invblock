@@ -148,7 +148,7 @@ export function buildColumns(displayCurrency: "USD" | "ARS") {
       cell: (info) => {
         const v = info.getValue();
         if (v === null) {
-          return <span className="text-zinc-600 text-xs">--</span>;
+          return <span className="text-zinc-500 text-xs">--</span>;
         }
         const isPositive = v >= 0;
         return (

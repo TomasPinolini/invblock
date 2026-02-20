@@ -127,7 +127,7 @@ export default function OperationsTable({
                   </span>
                   {op.cantidadOperada !== undefined &&
                     op.cantidadOperada !== op.cantidad && (
-                      <span className="text-zinc-600 text-xs ml-1">
+                      <span className="text-zinc-500 text-xs ml-1">
                         / {op.cantidad}
                       </span>
                     )}
