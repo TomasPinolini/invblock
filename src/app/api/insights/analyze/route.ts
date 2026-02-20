@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const rateLimited = checkRateLimit(user.id, "insights", RATE_LIMITS.insights);
+    const rateLimited = await checkRateLimit(user.id, "insights", RATE_LIMITS.insights);
     if (rateLimited) return rateLimited;
 
     // Get the form data with PDF file

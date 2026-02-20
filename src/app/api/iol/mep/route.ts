@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rateLimited = checkRateLimit(user.id, "mep", RATE_LIMITS.mep);
+  const rateLimited = await checkRateLimit(user.id, "mep", RATE_LIMITS.mep);
   if (rateLimited) return rateLimited;
 
   try {

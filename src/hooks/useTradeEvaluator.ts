@@ -2,21 +2,12 @@
 
 import { useMutation } from "@tanstack/react-query";
 
-// ── Input Types ───────────────────────────────────────────────────────────────
+import type { PortfolioAsset } from "@/types/portfolio";
 
-export interface PortfolioAsset {
-  ticker: string;
-  name?: string;
-  category?: string;
-  currency?: string;
-  quantity: number;
-  averagePrice: number;
-  currentPrice: number;
-  currentValue: number;
-  pnl?: number;
-  pnlPercent?: number;
-  allocation?: number;
-}
+// Re-export for consumers
+export type { PortfolioAsset } from "@/types/portfolio";
+
+// ── Input Types ───────────────────────────────────────────────────────────────
 
 export interface EvaluateTradeInput {
   ticker: string;

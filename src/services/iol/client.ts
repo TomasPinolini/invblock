@@ -60,8 +60,6 @@ export class IOLClient {
 
     const text = await response.text();
     console.log("[IOL Auth] Response status:", response.status);
-    console.log("[IOL Auth] Response headers:", JSON.stringify(Object.fromEntries(response.headers.entries())));
-    console.log("[IOL Auth] Response body:", text.slice(0, 500));
 
     if (!response.ok) {
       throw new Error(
@@ -118,7 +116,8 @@ export class IOLClient {
    */
   private async request<T>(
     endpoint: string,
-    options?: RequestInit
+    options?: RequestInit,
+    retried = false
   ): Promise<T> {
     if (!this.token) {
       throw new Error("Not authenticated with IOL");
@@ -138,10 +137,10 @@ export class IOLClient {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 && !retried) {
         // Try refreshing token once
         await this.refreshToken();
-        return this.request(endpoint, options);
+        return this.request(endpoint, options, true);
       }
       throw new Error(`IOL API error: ${response.status}`);
     }

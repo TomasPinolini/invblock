@@ -8,22 +8,9 @@ import { db } from "@/db";
 import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
-// Portfolio item formatted for the frontend
-interface PortfolioAsset {
-  id: string;
-  ticker: string;
-  name: string;
-  category: "stock" | "cedear" | "crypto" | "cash";
-  currency: "USD" | "ARS";
-  quantity: number;
-  averagePrice: number;
-  currentPrice: number;
-  currentValue: number;
-  pnl: number;
-  pnlPercent: number;
-}
+import type { BrokerPortfolioAsset } from "@/types/portfolio";
 
-function mapCategory(tipo: string, pais: string): PortfolioAsset["category"] {
+function mapCategory(tipo: string, pais: string): BrokerPortfolioAsset["category"] {
   const t = tipo?.toLowerCase() || "";
   const p = pais?.toLowerCase() || "";
 
@@ -46,7 +33,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rateLimited = checkRateLimit(user.id, "iol-portfolio", RATE_LIMITS.default);
+  const rateLimited = await checkRateLimit(user.id, "iol-portfolio", RATE_LIMITS.default);
   if (rateLimited) return rateLimited;
 
   try {
@@ -74,7 +61,7 @@ export async function GET() {
       ...(us.activos || []),
     ];
 
-    const assets: PortfolioAsset[] = iolAssets
+    const assets: BrokerPortfolioAsset[] = iolAssets
       .filter((item) => item.titulo?.simbolo && item.cantidad > 0)
       .map((item) => ({
         id: item.titulo.simbolo, // Use ticker as ID since we're not storing

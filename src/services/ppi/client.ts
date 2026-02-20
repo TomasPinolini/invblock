@@ -58,7 +58,6 @@ export class PPIClient {
     const headers = buildPPIHeaders({ apiKey, apiSecret });
 
     console.log("[PPI Auth] POST", url);
-    console.log("[PPI Auth] Headers:", Object.keys(headers).join(", "));
 
     const response = await fetch(url, {
       method: "POST",
@@ -67,7 +66,6 @@ export class PPIClient {
 
     const text = await response.text().catch(() => "");
     console.log("[PPI Auth] Response status:", response.status);
-    console.log("[PPI Auth] Response body:", text.slice(0, 500));
 
     if (!response.ok) {
       throw new Error(
@@ -131,7 +129,8 @@ export class PPIClient {
    */
   private async request<T>(
     endpoint: string,
-    options?: RequestInit
+    options?: RequestInit,
+    retried = false
   ): Promise<T> {
     if (!this.credentials.accessToken) {
       throw new Error("Not authenticated with PPI");
@@ -147,10 +146,10 @@ export class PPIClient {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 && !retried) {
         // Try refreshing token once
         await this.refreshToken();
-        return this.request(endpoint, options);
+        return this.request(endpoint, options, true);
       }
       const errorText = await response.text().catch(() => "");
       console.error(`[PPI API] ${endpoint} failed (${response.status}):`, errorText.slice(0, 300));
@@ -165,7 +164,6 @@ export class PPIClient {
    */
   async getAccountNumber(): Promise<string> {
     const accounts = await this.request<Record<string, unknown>[]>("/api/1.0/Account/Accounts");
-    console.log("[PPI Accounts] Response:", JSON.stringify(accounts).slice(0, 500));
     if (!accounts || accounts.length === 0) {
       throw new Error("No PPI accounts found");
     }

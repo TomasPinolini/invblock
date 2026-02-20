@@ -48,55 +48,63 @@ export async function POST(req: NextRequest) {
   const { assetId, type, quantity, pricePerUnit, totalAmount, currency, notes } =
     parsed.data;
 
-  // Verify asset belongs to user
-  const asset = await db.query.assets.findFirst({
-    where: and(eq(assets.id, assetId), eq(assets.userId, user.id)),
+  // Wrap asset read + transaction insert + asset update in a DB transaction
+  // to prevent race conditions on concurrent requests for the same asset
+  const result = await db.transaction(async (tx) => {
+    // Verify asset belongs to user (read within transaction)
+    const asset = await tx.query.assets.findFirst({
+      where: and(eq(assets.id, assetId), eq(assets.userId, user.id)),
+    });
+
+    if (!asset) return null;
+
+    // Create transaction
+    const [txn] = await tx
+      .insert(transactions)
+      .values({
+        userId: user.id,
+        assetId,
+        type,
+        quantity: quantity.toString(),
+        pricePerUnit: pricePerUnit.toString(),
+        totalAmount: totalAmount.toString(),
+        currency,
+        notes,
+      })
+      .returning();
+
+    // Update asset quantity and average price
+    const currentQty = Number(asset.quantity);
+    const currentAvgPrice = Number(asset.averagePrice);
+
+    let newQty: number;
+    let newAvgPrice: number;
+
+    if (type === "buy") {
+      const totalCost = currentQty * currentAvgPrice + quantity * pricePerUnit;
+      newQty = currentQty + quantity;
+      newAvgPrice = newQty > 0 ? totalCost / newQty : 0;
+    } else {
+      // sell
+      newQty = Math.max(0, currentQty - quantity);
+      newAvgPrice = currentAvgPrice; // Average price doesn't change on sell
+    }
+
+    await tx
+      .update(assets)
+      .set({
+        quantity: newQty.toString(),
+        averagePrice: newAvgPrice.toString(),
+        updatedAt: new Date(),
+      })
+      .where(eq(assets.id, assetId));
+
+    return txn;
   });
 
-  if (!asset) {
+  if (!result) {
     return NextResponse.json({ message: "Asset not found" }, { status: 404 });
   }
 
-  // Create transaction
-  const [txn] = await db
-    .insert(transactions)
-    .values({
-      userId: user.id,
-      assetId,
-      type,
-      quantity: quantity.toString(),
-      pricePerUnit: pricePerUnit.toString(),
-      totalAmount: totalAmount.toString(),
-      currency,
-      notes,
-    })
-    .returning();
-
-  // Update asset quantity and average price
-  const currentQty = Number(asset.quantity);
-  const currentAvgPrice = Number(asset.averagePrice);
-
-  let newQty: number;
-  let newAvgPrice: number;
-
-  if (type === "buy") {
-    const totalCost = currentQty * currentAvgPrice + quantity * pricePerUnit;
-    newQty = currentQty + quantity;
-    newAvgPrice = newQty > 0 ? totalCost / newQty : 0;
-  } else {
-    // sell
-    newQty = Math.max(0, currentQty - quantity);
-    newAvgPrice = currentAvgPrice; // Average price doesn't change on sell
-  }
-
-  await db
-    .update(assets)
-    .set({
-      quantity: newQty.toString(),
-      averagePrice: newAvgPrice.toString(),
-      updatedAt: new Date(),
-    })
-    .where(eq(assets.id, assetId));
-
-  return NextResponse.json(txn, { status: 201 });
+  return NextResponse.json(result, { status: 201 });
 }

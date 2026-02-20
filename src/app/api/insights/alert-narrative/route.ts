@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit (shared insights bucket)
-    const rateLimited = checkRateLimit(user.id, "insights", RATE_LIMITS.insights);
+    const rateLimited = await checkRateLimit(user.id, "insights", RATE_LIMITS.insights);
     if (rateLimited) return rateLimited;
 
     // Check for API key

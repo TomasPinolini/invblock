@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Rate limit
-    const rateLimited = checkRateLimit(user.id, "chat", RATE_LIMITS.chat);
+    const rateLimited = await checkRateLimit(user.id, "chat", RATE_LIMITS.chat);
     if (rateLimited) return rateLimited;
 
     // 3. Parse input

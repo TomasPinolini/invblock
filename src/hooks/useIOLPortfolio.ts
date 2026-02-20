@@ -2,19 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-export interface IOLAsset {
-  id: string;
-  ticker: string;
-  name: string;
-  category: "stock" | "cedear" | "crypto" | "cash";
-  currency: "USD" | "ARS";
-  quantity: number;
-  averagePrice: number;
-  currentPrice: number;
-  currentValue: number;
-  pnl: number;
-  pnlPercent: number;
-}
+import type { BrokerPortfolioAsset } from "@/types/portfolio";
+
+export type IOLAsset = BrokerPortfolioAsset;
 
 interface IOLPortfolioResponse {
   connected: boolean;

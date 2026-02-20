@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Rate limit check
-    const rateLimited = checkRateLimit(user.id, "insights", RATE_LIMITS.insights);
+    const rateLimited = await checkRateLimit(user.id, "insights", RATE_LIMITS.insights);
     if (rateLimited) return rateLimited;
 
     // 3. Parse and validate input

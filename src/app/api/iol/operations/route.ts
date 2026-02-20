@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rateLimited = checkRateLimit(user.id, "iol-operations", RATE_LIMITS.default);
+  const rateLimited = await checkRateLimit(user.id, "iol-operations", RATE_LIMITS.default);
   if (rateLimited) return rateLimited;
 
   const { searchParams } = new URL(request.url);

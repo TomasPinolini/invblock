@@ -1,5 +1,5 @@
 FINANCIAL COMMAND CENTER — Development Plan
-Last Updated: 2026-02-16
+Last Updated: 2026-02-19
 
 ================================================================================
 1. PROJECT OVERVIEW
@@ -107,46 +107,279 @@ Last Updated: 2026-02-16
       Buttons next to Refresh on both pages.
 
 ================================================================================
-10. REMAINING ISSUES
+10. PROJECT AUDIT — 2026-02-19 (5-Expert Review)
 ================================================================================
 
-  Open Bugs:
-    - pg_cron schedules not yet enabled — run 002_automation_tables.sql
-    - IOL API only works 11:00-17:00 ART (market hours)
+  Reviewed by: DevOps Engineer, Product Manager, Software Architect,
+  QA Engineer, UI/UX Designer. Full codebase analysis: ~195 files, ~27,700 LOC.
 
-  Technical Debt:
-    - Zero E2E tests (Playwright setup deferred)
-    - Service client tests need mocking (IOL, Binance, Yahoo)
-    - Credentials encryption requires ENCRYPTION_KEY env var (64 hex chars)
-    - DNS issues with Fibertel ISP (workaround: pooler connection)
-    - No error monitoring in production (see Section 11A)
-    - drizzle-kit push broken (check constraint parse error) — use direct SQL
-    - Vercel env vars can get deleted — verify before deploys
+  Scorecard:
+    Data Architecture ............ GREEN   (strong schema, proper indexing)
+    API Design ................... GREEN   (consistent patterns, Zod validation)
+    State Management ............. GREEN   (clean Zustand/TanStack split)
+    Service Layer ................ GREEN   (well-typed clients, smart fallbacks)
+    Dependencies ................. GREEN   (lean, modern stack)
+    Monitoring (Sentry) .......... GREEN   (full stack: server, edge, client, replay)
+    Security Headers ............. GREEN   (HSTS, X-Frame, Permissions-Policy)
+    Project Structure ............ YELLOW  (good layout, type duplication)
+    Security Architecture ........ YELLOW  (encryption good, auth gaps)
+    Scalability .................. YELLOW  (in-memory caches fail serverless)
+    CI/CD Pipeline ............... RED     (no pipeline at all)
+    Test Coverage ................ RED     (69 tests, only utilities)
+    Developer Experience ......... RED     (no README, incomplete .env.example)
 
 ================================================================================
-11. NEXT UP — Operations & Reliability
+11. CRITICAL BUGS — Fix Immediately
 ================================================================================
 
-  A) Error Monitoring
-    [ ] Install @sentry/nextjs, configure DSN
-    [ ] Wrap trade endpoints with Sentry.captureException
-    [ ] Session replay for debugging
-    [ ] Alerts: trade failures, auth errors, API 5xx spikes
+  BUG-1: IOL Plaintext Credentials on First Connect [SECURITY]
+    Audit: Architect §3-B, QA §2 "IOL Auth Plaintext Credentials Bug"
+    File: src/app/api/iol/auth/route.ts, line 47
+    Issue: `JSON.stringify(token)` instead of `encryptCredentials(token)`
+    Impact: First-time IOL connections stored unencrypted in DB
+    Fix: Change to encryptCredentials(token), add migration for existing rows
 
-  B) Deployment & CI
-    [ ] GitHub Actions: lint, typecheck, vitest
-    [ ] Branch protection on master
-    [ ] Pre-deploy checklist, rollback strategy
+  BUG-2: Infinite Retry Loop in Broker Clients [RELIABILITY]
+    Audit: Architect §5-A, QA §2 "IOL Client Infinite Recursion"
+    Files: src/services/iol/client.ts line 141, src/services/ppi/client.ts line 152
+    Issue: 401 retry calls request() recursively with no depth guard
+    Impact: Stack overflow if refresh succeeds but next request still 401
+    Fix: Add `retried = false` parameter, only retry once
 
-  C) CCL Spread Calculator
-    [ ] GET /api/iol/ccl-spread?ticker=GGAL — implied CCL per CEDEAR
-    [ ] Fetch CEDEAR price (ARS) from IOL + underlying price (USD) from Yahoo
-    [ ] Static CEDEAR ratio map (or fetch from IOL metadata)
-    [ ] Compare implied CCL vs blue/MEP rates from exchange_rates table
-    [ ] Return: implied CCL, spread vs blue, spread vs MEP, signal
-    [ ] Small UI card on dashboard showing arbitrage opportunities
+  BUG-3: Auth Response Bodies Logged to Stdout [SECURITY]
+    Audit: Architect §6-E, QA §2 "Token/Credential Logging", QA §6 "Credential Exposure"
+    Files: src/services/iol/client.ts lines 62-64, src/services/ppi/client.ts line 70
+    Issue: console.log of response bodies containing access_token/refresh_token
+    Impact: Tokens visible in Vercel logs and forwarded to Sentry (sendDefaultPii)
+    Fix: Remove body logging, keep only status code logging
 
-  D) Live Data in Portfolio Chat
-    [ ] Enhance /api/insights/chat to fetch fresh portfolio + rates on demand
-    [ ] Inject live holdings, balances, and FX rates into system prompt
-    [ ] Replace stale context with real-time data before each response
+  BUG-4: Transaction Race Condition [DATA INTEGRITY]
+    Audit: QA §5 "Race Conditions" item 1, Architect §8-C (related N+1)
+    File: src/app/api/transactions/route.ts, lines 76-99
+    Issue: Non-atomic read-modify-write on asset quantity/average price
+    Impact: Concurrent transactions produce incorrect financial calculations
+    Fix: Wrap in DB transaction with SELECT ... FOR UPDATE
+
+  BUG-5: Sentry sendDefaultPii Enabled [PRIVACY]
+    Audit: QA §2 "Sentry PII Exposure", DevOps §4 "Areas for Improvement"
+    File: sentry.server.config.ts, line 16
+    Issue: sendDefaultPii: true sends cookies, IP, request bodies to Sentry
+    Impact: Credential data from BUG-3 forwarded to third-party service
+    Fix: Set sendDefaultPii: false
+
+================================================================================
+12. HIGH PRIORITY — Fix This Sprint
+================================================================================
+
+  SEC-1: No CSRF Protection [SECURITY]
+    Audit: QA §6 "CSRF", DevOps §6 "Strategic Recommendations"
+    Issue: No middleware.ts — state-changing endpoints (especially /api/iol/trade)
+           accept requests from any origin. Combined with cookie-based auth, a
+           malicious site could craft trades on behalf of the user.
+    Fix: Add middleware.ts with Origin header validation on POST/PUT/DELETE
+
+  SEC-2: No Global Auth Middleware [SECURITY]
+    Audit: Architect §1-C, §3-A, §6-B; QA §6 "Auth Bypass"; DevOps §6 "Critical Gaps"
+    Issue: Each of 55 API routes independently calls getAuthUser(). A forgotten
+           check on a new route = unauthenticated endpoint. Also, 10 routes use
+           supabase.auth.getUser() directly instead of the getAuthUser() helper.
+    Fix: Add middleware.ts route matcher for /api/* (except public routes)
+
+  SEC-3: In-Memory Rate Limiter Broken on Serverless [SECURITY]
+    Audit: Architect §8-A, QA §2 "Rate limiter is in-memory", DevOps §6 "Critical Gaps"
+    File: src/lib/rate-limit.ts
+    Issue: JavaScript Map resets on every Vercel cold start. Rate limiting for
+           trades (5/min) is effectively non-functional in production.
+    Fix: Replace with Upstash Redis or Vercel KV
+
+  SEC-4: Trade Validation Gaps [FINANCIAL]
+    Audit: QA §2 "Trading Flow" risk findings, QA §3 "Numeric precision"
+    File: src/lib/api-schemas.ts (tradeSchema)
+    Issues:
+      - No .finite() check: Infinity passes .positive()
+      - No max value: cantidad/precio accept Number.MAX_SAFE_INTEGER
+      - No sell-quantity validation (doesn't check user holdings)
+      - validez has no date format validation (only min(1))
+      - No price sanity check (typo could execute at wrong price)
+    Fix: Add .finite(), .max() bounds, sell-side validation in route
+
+  ARCH-1: PortfolioAsset Type Duplicated 8 Times [MAINTAINABILITY]
+    Audit: Architect §1-A, §9 item 5
+    Files: iol/portfolio/route.ts, ppi/portfolio/route.ts, binance/portfolio/route.ts,
+           useExitAdvisor.ts, useCorrelationAnalysis.ts, useChatInsights.ts,
+           usePortfolioAdvisor.ts, useTradeEvaluator.ts
+    Fix: Create src/types/portfolio.ts with canonical interface, import everywhere
+
+  DEVOPS-1: No CI Pipeline [RELIABILITY]
+    Audit: DevOps §1 (full section), Architect §9 item 1 (testing gap)
+    Issue: Zero pre-merge checks. Broken code auto-deploys to production on push
+           to master. No lint, typecheck, or test gates.
+    Fix: Add .github/workflows/ci.yml (npm ci, tsc --noEmit, eslint, vitest, build)
+         Enable branch protection on master requiring CI pass.
+
+  DEVOPS-2: Incomplete .env.example [DX]
+    Audit: DevOps §2 "Critical Gaps"
+    File: .env.example (only 3 of 10+ required vars listed)
+    Missing: SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY, ENCRYPTION_KEY,
+             BREVO_API_KEY, SENTRY_AUTH_TOKEN, SENDER_EMAIL, APP_URL,
+             PPI_API_URL, PPI_AUTHORIZED_CLIENT, PPI_CLIENT_KEY
+    Fix: Add all required vars with placeholder values and comments
+
+  DEVOPS-3: Stale .vercel/project.json [DEPLOY]
+    Audit: DevOps §1 "Current State"
+    Issue: Contains prj_WL3Uk2QoQlIjUo9XxaP0nqrBee6X but actual project is
+           prj_vpLTcblHnCv3GcGC9WduQEEKmSia
+    Fix: Update to correct project ID
+
+================================================================================
+13. MEDIUM PRIORITY — Next Sprint
+================================================================================
+
+  TEST-1: Trade Route Test Suite [TESTING]
+    Audit: QA §8 Priority 1+2, Architect §9 item 4
+    File: src/app/api/iol/trade/route.test.ts (new)
+    Tests needed:
+      - Returns 401 when not authenticated
+      - Returns 429 when rate limited
+      - Returns 400 on invalid input (all edge cases)
+      - Returns 400 when IOL not connected
+      - Creates audit log entry on attempt/success/failure
+      - Token refresh persisted after trade
+      - Idempotency (same order not submitted twice)
+
+  TEST-2: Financial Calculation Tests [TESTING]
+    Audit: QA §8 Priority 1 "transaction-calculations", QA §5 "Currency/Number Precision"
+    Tests needed:
+      - Average price on buy (weighted correctly)
+      - Average price unchanged on sell
+      - Multiple buys at different prices
+      - Floating-point edge cases with small crypto quantities
+      - Currency conversion division by zero guard
+      - formatCurrency edge cases (0, negative, very large)
+
+  TEST-3: Service Client Tests with Mocked Fetch [TESTING]
+    Audit: QA §8 Priority 3, Architect §5-A/B
+    Files: src/services/iol/client.test.ts, ppi/client.test.ts, binance/client.test.ts
+    Tests needed:
+      - Token refresh on 401 (with retry guard)
+      - Timeout handling (add AbortController to all clients)
+      - Error response parsing
+      - HMAC signing correctness (Binance)
+
+  ARCH-2: Add Request Timeouts to All Service Clients [RELIABILITY]
+    Audit: Architect §5-B, QA §4 "Service Client Error Handling"
+    Files: iol/client.ts, ppi/client.ts, binance/client.ts
+    Issue: Bare fetch() with no AbortController. Hanging broker API blocks
+           serverless function until Vercel's 10s default timeout.
+    Fix: Add AbortController with 8s timeout to all external API calls
+
+  ARCH-3: N+1 Query in IOL Sync [PERFORMANCE]
+    Audit: Architect §8-C
+    File: src/app/api/iol/sync/route.ts, lines 80-117
+    Issue: Each portfolio asset updated individually in a loop (30+ queries)
+    Fix: Use db.insert().values([...]).onConflictDoUpdate() in single statement
+
+  ARCH-4: Unique Constraint on (userId, ticker) [DATA INTEGRITY]
+    Audit: QA §5 "Race Conditions" item 2, Architect §2 "Minor issues"
+    Issue: Concurrent syncs could create duplicate portfolio entries
+    Fix: Add unique index on assets table for (userId, ticker, category)
+
+  UX-1: Dashboard Portfolio Table Buried [USABILITY]
+    Audit: UX §2 "Dashboard is overwhelmingly dense", PM §5 "Dashboard"
+    File: src/app/page.tsx
+    Issue: Portfolio Table is section 7 of 7 — below 6 collapsible sections.
+           Users must scroll past Market Movers, AI Intelligence, News, Chat,
+           and Report Analyzer to reach their positions.
+    Fix: Move Portfolio Table to position 2 (after Wallet)
+
+  UX-2: Mixed English/Spanish Throughout UI [CONSISTENCY]
+    Audit: UX §2 "Language inconsistency", PM §4 item 11
+    Issue: Nav labels, settings, toasts in English; Explore, MEP, trade dialog
+           in Spanish. Target audience is Argentine investors.
+    Fix: Unify to Spanish (with conventional English financial terms)
+
+  UX-3: No Confirmation on Broker Disconnect [SAFETY]
+    Audit: UX §7 "No confirmation dialog for destructive broker disconnection"
+    File: src/app/settings/page.tsx
+    Issue: "Disconnect" button immediately removes broker without confirmation
+    Fix: Add confirmation dialog ("Are you sure? You'll need to re-enter
+         credentials to reconnect.")
+
+  UX-4: Toast Obscured by Mobile Tab Bar [MOBILE]
+    Audit: UX §3 "Toast positioning conflicts with mobile bottom tab bar"
+    File: src/components/ui/Toast.tsx
+    Issue: Toasts positioned at `bottom-4` overlap mobile bottom tab bar (h-16)
+    Fix: Change to `bottom-20 md:bottom-4`
+
+================================================================================
+14. LOWER PRIORITY — Backlog
+================================================================================
+
+  A) Accessibility — Audit: UX §5
+    [ ] Focus trapping in TradeDialog and AssetDetailModal (use Radix Dialog)
+    [ ] Fix color contrast: text-zinc-600 on dark bg is 3.8:1 (needs 4.5:1)
+    [ ] Add skip-to-content link in AppShell
+    [ ] Replace CSS-only sidebar tooltips with Radix Tooltip (keyboard accessible)
+    [ ] Add Escape key handling to custom modals
+
+  B) Architecture Cleanup — Audit: Architect §1, §5, §8, §9
+    [ ] Extract shared <PriceChart> component (~300 lines duplicated) — UX §3
+    [ ] Extract mapCategory()/mapCurrency() to src/services/iol/mappers.ts — Architect §1-B
+    [ ] Create shared <Button> component (CSS classes exist, no React component) — UX §1
+    [ ] Remove MOCK_PRICES from constants.ts (dead code) — Architect §9 item 4
+    [ ] Standardize auth: migrate 10 routes to getAuthUser() — Architect §3-A
+    [ ] Move Alpha Vantage cache/budget to DB (serverless fails) — Architect §8-B
+    [ ] Add connection pool limit: postgres({ prepare: false, max: 5 }) — Architect §8-F
+    [ ] Consolidate migration strategy (Drizzle OR Supabase SQL) — DevOps §8
+
+  C) DevOps — Audit: DevOps §4-§9
+    [ ] Add /api/health endpoint (DB connectivity check) — DevOps §4
+    [ ] Add CSP header to next.config.ts — DevOps §6
+    [ ] Lower Sentry tracesSampleRate to 0.2 in production — DevOps §4
+    [ ] Restrict Edge Function CORS (currently Allow-Origin: *) — DevOps §6
+    [ ] Add @next/bundle-analyzer for build analysis — DevOps §7
+    [ ] Fix drizzle-kit version (0.18.1 → 0.30+ for ORM 0.45.x) — Architect §7
+    [ ] Add husky + lint-staged for pre-commit hooks — Architect §7
+    [ ] Move @tanstack/react-query-devtools to devDependencies — Architect §7
+    [ ] Consider replacing pdf-parse (last updated 2020, advisories) — Architect §7
+
+  D) UX Polish — Audit: UX §1-§7
+    [ ] Add touch interaction for charts on mobile (hover-only) — UX §6
+    [ ] Add compact number formatting for large ARS (50M vs 50.000.000) — UX §4
+    [ ] Add 7-day sparklines to portfolio table rows — UX §4
+    [ ] Create semantic CSS design tokens for colors/spacing/borders — UX §1
+    [ ] Add "Forgot Password" link to login page — UX §7
+    [ ] Keep CollapsibleSection children mounted (display:none) — UX §7
+    [ ] Auto-collapse sidebar at md: breakpoint (768-1024px) — UX §6
+    [ ] Add padding to Analytics page (touches screen edges) — UX §6
+
+  E) Product Features — Audit: PM §4, §6
+    [ ] Onboarding wizard (3-step: connect, explore, alert) — PM §6 Priority 1
+    [ ] Portfolio performance sparkline on dashboard — PM §6 Priority 2
+    [ ] In-app notification center — PM §6 Priority 4
+    [ ] Dividend tracking (Yahoo Finance + CEDEAR yield) — PM §6 Priority 5
+    [ ] Tax reporting / cost basis (bienes personales) — PM §4 item 5
+    [ ] Goal tracking / target allocation with drift — PM §4 item 6
+    [ ] Transaction history sync for PPI and Binance — PM §4 item 7
+    [ ] Market-hours awareness indicator on dashboard — PM §4 item 8
+    [ ] PWA support (installable, offline cached portfolio) — PM §4 item 10
+
+  F) Previously Planned Features (carried forward)
+    [ ] CCL Spread Calculator (GET /api/iol/ccl-spread, dashboard card)
+    [ ] Live data in Portfolio Chat (inject fresh portfolio + rates per message)
+    [ ] MEP execution button (needs security audit)
+    [ ] Fund subscribe/redeem flows
+    [ ] EF3: rebalance-check, EF4: dividend-tracker
+
+================================================================================
+15. KNOWN CONSTRAINTS
+================================================================================
+
+  - IOL API only works 11:00-17:00 ART (market hours)
+  - pg_cron schedules not yet enabled — run 002_automation_tables.sql
+  - drizzle-kit push broken (check constraint parse error) — use direct SQL
+  - Supabase MCP targets different project than app DB (fxclh... vs givoh...)
+  - DNS issues with Fibertel ISP (workaround: pooler connection string)
+  - Vercel env vars can get deleted — verify before deploys
+  - PPI production credentials pending (only sandbox tested so far)
+  - AMAT and possibly other tickers not resolving via Yahoo Finance

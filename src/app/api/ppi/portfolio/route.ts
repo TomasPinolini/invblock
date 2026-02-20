@@ -8,21 +8,9 @@ import { db } from "@/db";
 import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
-interface PortfolioAsset {
-  id: string;
-  ticker: string;
-  name: string;
-  category: "stock" | "cedear" | "crypto" | "cash";
-  currency: "USD" | "ARS";
-  quantity: number;
-  averagePrice: number;
-  currentPrice: number;
-  currentValue: number;
-  pnl: number;
-  pnlPercent: number;
-}
+import type { BrokerPortfolioAsset } from "@/types/portfolio";
 
-function mapCategory(instrumentType: string): PortfolioAsset["category"] {
+function mapCategory(instrumentType: string): BrokerPortfolioAsset["category"] {
   const t = (instrumentType || "").toUpperCase();
   if (t.includes("CEDEAR")) return "cedear";
   if (t.includes("ACCION")) return "stock";
@@ -44,7 +32,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rateLimited = checkRateLimit(user.id, "ppi-portfolio", RATE_LIMITS.default);
+  const rateLimited = await checkRateLimit(user.id, "ppi-portfolio", RATE_LIMITS.default);
   if (rateLimited) return rateLimited;
 
   try {
@@ -64,7 +52,7 @@ export async function GET() {
 
     const data = await client.getBalancesAndPositions();
 
-    const assets: PortfolioAsset[] = (data.Positions || [])
+    const assets: BrokerPortfolioAsset[] = (data.Positions || [])
       .filter((p: PPIPosition) => p.Ticker && p.Quantity > 0)
       .map((p: PPIPosition) => ({
         id: `ppi-${p.Ticker}`,

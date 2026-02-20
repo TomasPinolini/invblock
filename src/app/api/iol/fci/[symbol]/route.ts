@@ -23,7 +23,7 @@ export async function GET(
     return NextResponse.json({ error: "Missing symbol" }, { status: 400 });
   }
 
-  const rateLimited = checkRateLimit(user.id, "fci-details", RATE_LIMITS.securities);
+  const rateLimited = await checkRateLimit(user.id, "fci-details", RATE_LIMITS.securities);
   if (rateLimited) return rateLimited;
 
   try {

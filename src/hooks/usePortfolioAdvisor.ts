@@ -7,16 +7,10 @@ import { useMutation } from "@tanstack/react-query";
 export type RiskTolerance = "conservative" | "moderate" | "aggressive";
 export type InvestmentHorizon = "short" | "medium" | "long";
 
-export interface PortfolioAsset {
-  ticker: string;
-  name: string;
-  category: string;
-  currency: string;
-  quantity: number;
-  currentValue: number;
-  pnl: number;
-  pnlPercent: number;
-}
+import type { PortfolioAsset } from "@/types/portfolio";
+
+// Re-export for consumers
+export type { PortfolioAsset } from "@/types/portfolio";
 
 export interface HealthFinding {
   type: "strength" | "warning" | "critical";

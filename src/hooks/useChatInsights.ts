@@ -1,22 +1,14 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import type { PortfolioAsset } from "@/types/portfolio";
+
+// Re-export for consumers
+export type { PortfolioAsset } from "@/types/portfolio";
 
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
-}
-
-export interface PortfolioAsset {
-  ticker: string;
-  name?: string;
-  category?: string;
-  currency?: string;
-  quantity: number;
-  currentValue: number;
-  pnl?: number;
-  pnlPercent?: number;
-  allocation?: number;
 }
 
 export function useChatInsights() {

@@ -2,18 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-export interface BinanceAsset {
-  id: string;
-  ticker: string;
-  name: string;
-  category: "crypto";
-  currency: "USD";
-  quantity: number;
-  averagePrice: number;
-  currentPrice: number;
-  currentValue: number;
-  pnl: number;
-  pnlPercent: number;
+import type { BrokerPortfolioAsset } from "@/types/portfolio";
+
+export interface BinanceAsset extends BrokerPortfolioAsset {
   locked: number;
 }
 

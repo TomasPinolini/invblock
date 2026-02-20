@@ -41,7 +41,7 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rateLimited = checkRateLimit(user.id, "iol-transactions", RATE_LIMITS.default);
+  const rateLimited = await checkRateLimit(user.id, "iol-transactions", RATE_LIMITS.default);
   if (rateLimited) return rateLimited;
 
   try {
@@ -191,7 +191,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rateLimited = checkRateLimit(user.id, "iol-transactions", RATE_LIMITS.default);
+  const rateLimited = await checkRateLimit(user.id, "iol-transactions", RATE_LIMITS.default);
   if (rateLimited) return rateLimited;
 
   try {

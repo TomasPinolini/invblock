@@ -34,7 +34,7 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rateLimited = checkRateLimit(user.id, "iol-sync", RATE_LIMITS.default);
+  const rateLimited = await checkRateLimit(user.id, "iol-sync", RATE_LIMITS.default);
   if (rateLimited) return rateLimited;
 
   try {

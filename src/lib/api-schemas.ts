@@ -7,10 +7,10 @@ export const tradeSchema = z.object({
   action: z.enum(["buy", "sell"], { message: "Must be 'buy' or 'sell'" }),
   mercado: z.string().min(1, "mercado is required"),
   simbolo: z.string().min(1, "simbolo is required"),
-  cantidad: z.number().positive("cantidad must be positive"),
-  precio: z.number().positive("precio must be positive"),
+  cantidad: z.number().int("cantidad must be a whole number").positive("cantidad must be positive").finite().max(1_000_000, "cantidad exceeds maximum of 1,000,000"),
+  precio: z.number().positive("precio must be positive").finite().max(100_000_000, "precio exceeds maximum of 100,000,000"),
   plazo: z.enum(["t0", "t1", "t2"], { message: "Must be 't0', 't1', or 't2'" }),
-  validez: z.string().min(1, "validez is required (YYYY-MM-DD)"),
+  validez: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "validez must be YYYY-MM-DD format"),
   tipoOrden: z.enum(["precioLimite", "precioMercado"], {
     message: "Must be 'precioLimite' or 'precioMercado'",
   }),

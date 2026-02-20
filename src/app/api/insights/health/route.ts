@@ -57,9 +57,11 @@ const advisorResponseSchema = z.object({
   strategy: z.string(),
 });
 
-// --- Types ---
+// Validated portfolio asset — stricter than the canonical PortfolioAsset
+// because the Zod schema guarantees all fields are present after parsing.
+type ValidatedPortfolioAsset = z.infer<typeof portfolioAssetSchema>;
 
-type PortfolioAsset = z.infer<typeof portfolioAssetSchema>;
+// --- Types ---
 
 interface PortfolioMetrics {
   totalValue: number;
@@ -72,7 +74,7 @@ interface PortfolioMetrics {
 
 // --- Server-side metric computation ---
 
-function computeMetrics(portfolio: PortfolioAsset[]): PortfolioMetrics {
+function computeMetrics(portfolio: ValidatedPortfolioAsset[]): PortfolioMetrics {
   const totalValue = portfolio.reduce((sum, a) => sum + Math.abs(a.currentValue), 0);
 
   // Allocation percentages per asset
@@ -237,7 +239,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const rateLimited = checkRateLimit(user.id, "insights", RATE_LIMITS.insights);
+    const rateLimited = await checkRateLimit(user.id, "insights", RATE_LIMITS.insights);
     if (rateLimited) return rateLimited;
 
     // Parse and validate request body

@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       await db.insert(userConnections).values({
         userId: user.id,
         provider: "iol",
-        credentials: JSON.stringify(token),
+        credentials: encryptCredentials(token),
       });
     }
 

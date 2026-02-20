@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   }
 
   // Rate limit: max 5 trades per minute
-  const rateLimited = checkRateLimit(user.id, "trade", RATE_LIMITS.trade);
+  const rateLimited = await checkRateLimit(user.id, "trade", RATE_LIMITS.trade);
   if (rateLimited) return rateLimited;
 
   try {
@@ -51,6 +51,29 @@ export async function POST(request: Request) {
 
     const token = decryptCredentials<IOLToken>(connection.credentials);
     const client = new IOLClient(token);
+
+    // For sell orders, verify the user holds enough shares
+    if (body.action === "sell") {
+      const { argentina, us } = await client.getAllPortfolios();
+      const allAssets = [
+        ...(argentina.activos || []),
+        ...(us.activos || []),
+      ];
+      const symbolUpper = body.simbolo.toUpperCase();
+      const holding = allAssets.find(
+        (item) => item.titulo?.simbolo?.toUpperCase() === symbolUpper
+      );
+      const heldQuantity = holding?.cantidad ?? 0;
+
+      if (heldQuantity < body.cantidad) {
+        return NextResponse.json(
+          {
+            error: `Insufficient holdings: you have ${heldQuantity} shares of ${symbolUpper}`,
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     // Build order request
     const order: IOLOrderRequest = {

@@ -7,20 +7,11 @@ import { db } from "@/db";
 import { userConnections } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
-// Formatted asset for the frontend
-interface PortfolioAsset {
-  id: string;
-  ticker: string;
-  name: string;
-  category: "crypto";
-  currency: "USD";
-  quantity: number;
-  averagePrice: number; // Not available from Binance spot API
-  currentPrice: number;
-  currentValue: number;
-  pnl: number;
-  pnlPercent: number;
-  locked: number; // In orders
+import type { BrokerPortfolioAsset } from "@/types/portfolio";
+
+// Binance assets extend the broker type with a locked field
+interface BinancePortfolioAsset extends BrokerPortfolioAsset {
+  locked: number; // Units in open orders
 }
 
 export async function GET() {
@@ -33,7 +24,7 @@ export async function GET() {
       );
     }
 
-    const rateLimited = checkRateLimit(user.id, "binance-portfolio", RATE_LIMITS.default);
+    const rateLimited = await checkRateLimit(user.id, "binance-portfolio", RATE_LIMITS.default);
     if (rateLimited) return rateLimited;
 
     // Get Binance credentials
@@ -64,7 +55,7 @@ export async function GET() {
     const significantAssets = binanceAssets.filter((a) => a.usdValue >= 1);
 
     // Map to our format
-    const assets: PortfolioAsset[] = significantAssets.map((asset) => ({
+    const assets: BinancePortfolioAsset[] = significantAssets.map((asset) => ({
       id: `binance-${asset.asset}`,
       ticker: asset.asset,
       name: getCryptoName(asset.asset),
