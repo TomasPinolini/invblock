@@ -129,7 +129,7 @@ Last Updated: 2026-02-19
     Developer Experience ......... RED     (no README, incomplete .env.example)
 
 ================================================================================
-11. CRITICAL BUGS — Fix Immediately
+11. CRITICAL BUGS — Fix Immediately  ✅ COMPLETED (commit b45b8b3, 2026-02-19)
 ================================================================================
 
   BUG-1: IOL Plaintext Credentials on First Connect [SECURITY]
@@ -168,7 +168,7 @@ Last Updated: 2026-02-19
     Fix: Set sendDefaultPii: false
 
 ================================================================================
-12. HIGH PRIORITY — Fix This Sprint
+12. HIGH PRIORITY — Fix This Sprint  ✅ COMPLETED (commit b45b8b3, 2026-02-19)
 ================================================================================
 
   SEC-1: No CSRF Protection [SECURITY]
@@ -232,7 +232,7 @@ Last Updated: 2026-02-19
     Fix: Update to correct project ID
 
 ================================================================================
-13. MEDIUM PRIORITY — Next Sprint
+13. MEDIUM PRIORITY — Next Sprint  ✅ COMPLETED (commit 86b52a2, 2026-02-19)
 ================================================================================
 
   TEST-1: Trade Route Test Suite [TESTING]
@@ -315,35 +315,39 @@ Last Updated: 2026-02-19
 14. LOWER PRIORITY — Backlog
 ================================================================================
 
-  A) Accessibility — Audit: UX §5
+  Completed in commit 6eb5946 (2026-02-19):
+    [x] Fix color contrast: text-zinc-600 → text-zinc-500 across 32 files (WCAG AA)
+    [x] Add skip-to-content link in AppShell
+    [x] Replace CSS sidebar tooltips with Radix Tooltip (keyboard accessible)
+    [x] Extract mapCategory()/mapCurrency() to src/services/shared/mappers.ts
+    [x] Remove MOCK_PRICES from constants.ts (dead code)
+    [x] Standardize auth: migrate 10 routes to getAuthUser()
+    [x] Add connection pool limit: postgres({ prepare: false, max: 5 })
+    [x] Add /api/health endpoint (DB connectivity check)
+    [x] Add CSP header to next.config.ts
+    [x] Lower Sentry tracesSampleRate to 0.2, fix edge sendDefaultPii
+    [x] Add husky + lint-staged for pre-commit eslint
+    [x] Move @tanstack/react-query-devtools to devDependencies
+    [x] Add padding to Analytics page
+    [x] Fix eslint: unused imports, setState-in-effect suppressions, let→const
+
+  ── Remaining ────────────────────────────────────────────────────────────────
+
+  A) Accessibility (2 items)
     [ ] Focus trapping in TradeDialog and AssetDetailModal (use Radix Dialog)
-    [ ] Fix color contrast: text-zinc-600 on dark bg is 3.8:1 (needs 4.5:1)
-    [ ] Add skip-to-content link in AppShell
-    [ ] Replace CSS-only sidebar tooltips with Radix Tooltip (keyboard accessible)
     [ ] Add Escape key handling to custom modals
 
-  B) Architecture Cleanup — Audit: Architect §1, §5, §8, §9
+  B) Architecture Cleanup (3 items)
     [ ] Extract shared <PriceChart> component (~300 lines duplicated) — UX §3
-    [ ] Extract mapCategory()/mapCurrency() to src/services/iol/mappers.ts — Architect §1-B
     [ ] Create shared <Button> component (CSS classes exist, no React component) — UX §1
-    [ ] Remove MOCK_PRICES from constants.ts (dead code) — Architect §9 item 4
-    [ ] Standardize auth: migrate 10 routes to getAuthUser() — Architect §3-A
     [ ] Move Alpha Vantage cache/budget to DB (serverless fails) — Architect §8-B
-    [ ] Add connection pool limit: postgres({ prepare: false, max: 5 }) — Architect §8-F
-    [ ] Consolidate migration strategy (Drizzle OR Supabase SQL) — DevOps §8
 
-  C) DevOps — Audit: DevOps §4-§9
-    [ ] Add /api/health endpoint (DB connectivity check) — DevOps §4
-    [ ] Add CSP header to next.config.ts — DevOps §6
-    [ ] Lower Sentry tracesSampleRate to 0.2 in production — DevOps §4
+  C) DevOps (3 items)
     [ ] Restrict Edge Function CORS (currently Allow-Origin: *) — DevOps §6
     [ ] Add @next/bundle-analyzer for build analysis — DevOps §7
     [ ] Fix drizzle-kit version (0.18.1 → 0.30+ for ORM 0.45.x) — Architect §7
-    [ ] Add husky + lint-staged for pre-commit hooks — Architect §7
-    [ ] Move @tanstack/react-query-devtools to devDependencies — Architect §7
-    [ ] Consider replacing pdf-parse (last updated 2020, advisories) — Architect §7
 
-  D) UX Polish — Audit: UX §1-§7
+  D) UX Polish (7 items)
     [ ] Add touch interaction for charts on mobile (hover-only) — UX §6
     [ ] Add compact number formatting for large ARS (50M vs 50.000.000) — UX §4
     [ ] Add 7-day sparklines to portfolio table rows — UX §4
@@ -351,9 +355,8 @@ Last Updated: 2026-02-19
     [ ] Add "Forgot Password" link to login page — UX §7
     [ ] Keep CollapsibleSection children mounted (display:none) — UX §7
     [ ] Auto-collapse sidebar at md: breakpoint (768-1024px) — UX §6
-    [ ] Add padding to Analytics page (touches screen edges) — UX §6
 
-  E) Product Features — Audit: PM §4, §6
+  E) Product Features (9 items — roadmap)
     [ ] Onboarding wizard (3-step: connect, explore, alert) — PM §6 Priority 1
     [ ] Portfolio performance sparkline on dashboard — PM §6 Priority 2
     [ ] In-app notification center — PM §6 Priority 4
@@ -364,7 +367,7 @@ Last Updated: 2026-02-19
     [ ] Market-hours awareness indicator on dashboard — PM §4 item 8
     [ ] PWA support (installable, offline cached portfolio) — PM §4 item 10
 
-  F) Previously Planned Features (carried forward)
+  F) Previously Planned Features (5 items — carried forward)
     [ ] CCL Spread Calculator (GET /api/iol/ccl-spread, dashboard card)
     [ ] Live data in Portfolio Chat (inject fresh portfolio + rates per message)
     [ ] MEP execution button (needs security audit)
