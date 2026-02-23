@@ -19,10 +19,15 @@ export async function POST(req: NextRequest) {
     const [body, validationError] = parseBody(iolAuthSchema, raw);
     if (validationError) return validationError;
 
-    const { username, password } = body;
-
-    // Authenticate with IOL
-    const token = await IOLClient.authenticate(username, password);
+    // Two modes:
+    // 1. { username, password } → server authenticates with IOL API
+    // 2. { token }             → browser already authenticated (bypasses Vercel IP restrictions)
+    let token;
+    if ("token" in body) {
+      token = { ...body.token, issued_at: body.token.issued_at ?? Date.now() };
+    } else {
+      token = await IOLClient.authenticate(body.username, body.password);
+    }
 
     // Store token in database (encrypted with AES-256-GCM)
     const existingConnection = await db.query.userConnections.findFirst({

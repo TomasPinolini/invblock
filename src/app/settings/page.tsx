@@ -100,11 +100,43 @@ function IOLConnectionCard() {
     setConnecting(true);
 
     try {
-      const res = await fetch("/api/iol/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
+      // Try 1: Authenticate directly from browser (bypasses Vercel IP restrictions)
+      // IOL API may block non-Argentine server IPs but accepts browser requests
+      let clientToken = null;
+      try {
+        const iolRes = await fetch("https://api.invertironline.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            username,
+            password,
+            grant_type: "password",
+          }),
+        });
+        if (iolRes.ok) {
+          clientToken = await iolRes.json();
+          clientToken.issued_at = Date.now();
+        }
+      } catch {
+        // CORS blocked or network error — fall through to server-side auth
+      }
+
+      let res;
+      if (clientToken) {
+        // Store the pre-authenticated token
+        res = await fetch("/api/iol/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: clientToken }),
+        });
+      } else {
+        // Fallback: server-side auth (works from localhost / Argentine IPs)
+        res = await fetch("/api/iol/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+      }
 
       const data = await res.json();
 

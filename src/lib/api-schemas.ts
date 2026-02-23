@@ -46,10 +46,24 @@ export const alertNarrativeResponseSchema = z.object({
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
-export const iolAuthSchema = z.object({
+// Server-side auth: username + password → IOL API call
+const iolAuthCredentials = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
+
+// Client-side auth: browser already obtained the token (bypasses IP restrictions)
+const iolAuthToken = z.object({
+  token: z.object({
+    access_token: z.string().min(1),
+    token_type: z.string(),
+    expires_in: z.number().positive(),
+    refresh_token: z.string().min(1),
+    issued_at: z.number().optional(),
+  }),
+});
+
+export const iolAuthSchema = z.union([iolAuthCredentials, iolAuthToken]);
 
 export const binanceAuthSchema = z.object({
   apiKey: z.string().min(1, "API key is required"),
