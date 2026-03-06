@@ -36,6 +36,8 @@ import { useTickerHistory } from "@/hooks/useHistoricalPrices";
 import { useIOLHistorical, getDateRangeForPeriod } from "@/hooks/useIOLHistorical";
 import type { TimePeriod } from "@/services/yahoo/client";
 import { getBondMeta } from "@/lib/bond-metadata";
+import { getTradingViewSymbol } from "@/lib/tradingview";
+import TradingViewChart from "@/components/charts/TradingViewChart";
 import dynamic from "next/dynamic";
 import { CATEGORY_LABELS, CATEGORY_COLORS } from "@/lib/constants";
 
@@ -561,6 +563,7 @@ function SecurityDetailModal({
 
   // Use IOL historical for bonds/ONs, Yahoo Finance for stocks/CEDEARs
   const isBond = !!getBondMeta(security.simbolo);
+  const tvSymbol = isBond ? null : getTradingViewSymbol(security.simbolo, resolvedCategory);
   const iolDateRange = getDateRangeForPeriod(selectedPeriod);
 
   const {
@@ -878,45 +881,53 @@ function SecurityDetailModal({
             </div>
           )}
 
-          {/* Period Tabs */}
-          <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-1">
-            {TIME_PERIODS.map((p) => (
-              <button
-                key={p}
-                onClick={() => { setSelectedPeriod(p); setHoveredIndex(null); }}
-                className={cn(
-                  "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-                  selectedPeriod === p ? "bg-zinc-700 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
-                )}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+          {/* Period Tabs (hidden when TradingView is active) */}
+          {!tvSymbol && (
+            <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-1">
+              {TIME_PERIODS.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => { setSelectedPeriod(p); setHoveredIndex(null); }}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                    selectedPeriod === p ? "bg-zinc-700 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Chart */}
-          <div className="bg-zinc-800/50 rounded-lg p-3 min-h-[280px]">
-            {chartLoading ? (
-              <div className="flex items-center justify-center h-48">
-                <Loader2 className="h-6 w-6 animate-spin text-yellow-400" />
-                <span className="ml-2 text-sm text-zinc-500">Cargando gráfico...</span>
-              </div>
-            ) : chartError ? (
-              <div className="flex items-center justify-center h-48 text-amber-400">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                <span className="text-sm">No se pudo cargar el historial</span>
-              </div>
-            ) : history.length >= 2 ? (
-              <div>
-                {renderChart()}
-                <p className="text-[10px] text-zinc-500 mt-2">{history.length} puntos · Yahoo Finance</p>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-48 text-zinc-500">
-                <span className="text-sm">Sin datos históricos para este período</span>
-              </div>
-            )}
-          </div>
+          {tvSymbol ? (
+            <div className="rounded-lg overflow-hidden">
+              <TradingViewChart symbol={tvSymbol} height={350} />
+            </div>
+          ) : (
+            <div className="bg-zinc-800/50 rounded-lg p-3 min-h-[280px]">
+              {chartLoading ? (
+                <div className="flex items-center justify-center h-48">
+                  <Loader2 className="h-6 w-6 animate-spin text-yellow-400" />
+                  <span className="ml-2 text-sm text-zinc-500">Cargando gráfico...</span>
+                </div>
+              ) : chartError ? (
+                <div className="flex items-center justify-center h-48 text-amber-400">
+                  <AlertCircle className="h-5 w-5 mr-2" />
+                  <span className="text-sm">No se pudo cargar el historial</span>
+                </div>
+              ) : history.length >= 2 ? (
+                <div>
+                  {renderChart()}
+                  <p className="text-[10px] text-zinc-500 mt-2">{history.length} puntos · Yahoo Finance</p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-48 text-zinc-500">
+                  <span className="text-sm">Sin datos históricos para este período</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Company Fundamentals (stocks/CEDEARs only) */}
           {(resolvedCategory === "cedear" || resolvedCategory === "stock") && (
@@ -1003,7 +1014,7 @@ function SecurityDetailModal({
               Agregar a favoritos
             </button>
           )}
-          <p className="text-[10px] text-zinc-500">Yahoo Finance · Clic afuera para cerrar</p>
+          <p className="text-[10px] text-zinc-500">{tvSymbol ? "TradingView" : "Yahoo Finance"} · Clic afuera para cerrar</p>
         </div>
       </div>
     </div>

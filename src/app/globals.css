@@ -181,6 +181,39 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   ACCORDION ROW — inline expansion for portfolio table
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.table-row-expanded {
+  background: rgba(39, 39, 42, 0.3);
+  border-left: 2px solid #3b82f6;
+}
+
+.table-row-expanded > td {
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.accordion-row-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease-out;
+}
+
+.accordion-row-wrapper[data-expanded="true"] {
+  grid-template-rows: 1fr;
+}
+
+.accordion-row-inner {
+  overflow: hidden;
+}
+
+/* Highlight the data row when its accordion is expanded */
+.table-row-active {
+  background: rgba(39, 39, 42, 0.35) !important;
+  border-left-color: #3b82f6 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    MODAL POLISH — backdrop blur transition + slide-up content
    ═══════════════════════════════════════════════════════════════════════════ */
 

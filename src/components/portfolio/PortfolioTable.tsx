@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -31,8 +31,8 @@ import { PortfolioCardList, PortfolioCardListSkeleton } from "./PortfolioCardLis
 import { formatCurrency, formatPercent, cn } from "@/lib/utils";
 import { downloadCSV } from "@/lib/csv";
 
-// Lazy-load heavy modals — only rendered when user clicks a row / trade button
-const AssetDetailModal = dynamic(() => import("./AssetDetailModal"), {
+// Lazy-load heavy components — only rendered when user interacts
+const AssetExpandedRow = dynamic(() => import("./AssetExpandedRow"), {
   ssr: false,
 });
 const TradeDialog = dynamic(() => import("./TradeDialog"), {
@@ -66,9 +66,30 @@ export default function PortfolioTable() {
     React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState<string | null>(null);
-  const [selectedAsset, setSelectedAsset] = React.useState<PortfolioRow | null>(null);
+  const [expandedRowId, setExpandedRowId] = React.useState<string | null>(null);
   const [tradeAsset, setTradeAsset] = React.useState<PortfolioRow | null>(null);
   const [tradeAction, setTradeAction] = React.useState<"buy" | "sell">("buy");
+
+  // Reset expanded row if the asset disappears after data refetch
+  React.useEffect(() => {
+    if (expandedRowId && !data.some((r) => r.id === expandedRowId)) {
+      setExpandedRowId(null);
+    }
+  }, [data, expandedRowId]);
+
+  // Track table container width so expanded rows can pin to visible area
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = tableContainerRef.current;
+    if (!el) return;
+    const update = () => {
+      el.style.setProperty("--table-container-width", `${el.clientWidth}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Handle category filter change
   const handleCategoryFilter = (category: string | null) => {
@@ -283,13 +304,16 @@ export default function PortfolioTable() {
           <PortfolioCardList
             rows={table.getRowModel().rows.map((r) => r.original)}
             displayCurrency={displayCurrency}
-            onSelectAsset={setSelectedAsset}
+            expandedRowId={expandedRowId}
+            onToggleExpand={(row) => setExpandedRowId((prev) => prev === row.id ? null : row.id)}
+            onBuy={handleBuy}
+            onSell={handleSell}
           />
         )}
       </div>
 
       {/* ── Desktop Table ─────────────────────────────────────────────── */}
-      <div className="hidden sm:block overflow-x-auto card-elevated backdrop-blur-sm">
+      <div ref={tableContainerRef} className="hidden sm:block overflow-x-auto card-elevated backdrop-blur-sm">
         <table className="w-full text-sm">
           <thead>
             {table.getHeaderGroups().map((hg) => (
@@ -357,35 +381,55 @@ export default function PortfolioTable() {
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row, rowIndex) => (
-                <tr
-                  key={row.id}
-                  onClick={() => setSelectedAsset(row.original)}
-                  className={cn(
-                    "table-row-hover border-b border-zinc-800/30 cursor-pointer",
-                    rowIndex % 2 === 1 && "table-row-even"
-                  )}
-                >
-                  {row.getVisibleCells().map((cell) => {
-                    const hideOnMobile = (cell.column.columnDef.meta as { hideOnMobile?: boolean })?.hideOnMobile;
-                    return (
-                      <td
-                        key={cell.id}
-                        className={cn(
-                          "px-2 sm:px-4",
-                          compact ? "py-2" : "py-3",
-                          hideOnMobile && "hidden sm:table-cell"
-                        )}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))
+              table.getRowModel().rows.map((row, rowIndex) => {
+                const isExpanded = expandedRowId === row.original.id;
+                return (
+                  <React.Fragment key={row.id}>
+                    <tr
+                      onClick={() => setExpandedRowId((prev) => prev === row.original.id ? null : row.original.id)}
+                      className={cn(
+                        "table-row-hover border-b border-zinc-800/30 cursor-pointer",
+                        rowIndex % 2 === 1 && "table-row-even",
+                        isExpanded && "table-row-active"
+                      )}
+                    >
+                      {row.getVisibleCells().map((cell) => {
+                        const hideOnMobile = (cell.column.columnDef.meta as { hideOnMobile?: boolean })?.hideOnMobile;
+                        return (
+                          <td
+                            key={cell.id}
+                            className={cn(
+                              "px-2 sm:px-4",
+                              compact ? "py-2" : "py-3",
+                              hideOnMobile && "hidden sm:table-cell"
+                            )}
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    {isExpanded && (
+                      <tr className="table-row-expanded">
+                        <td colSpan={columns.length} className="p-0">
+                          <div className="sticky left-0 w-[var(--table-container-width,100vw)]">
+                            <AssetExpandedRow
+                              asset={row.original}
+                              displayCurrency={displayCurrency}
+                              onCollapse={() => setExpandedRowId(null)}
+                              onBuy={() => handleBuy(row.original)}
+                              onSell={() => handleSell(row.original)}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -396,7 +440,7 @@ export default function PortfolioTable() {
         <span>
           {data.length} asset{data.length !== 1 && "s"} ·{" "}
           {table.getFilteredRowModel().rows.length} shown
-          <span className="text-zinc-700 ml-2">· Click row for details</span>
+          <span className="text-zinc-700 ml-2">· Click row to expand</span>
         </span>
         <span>
           {[
@@ -407,17 +451,6 @@ export default function PortfolioTable() {
           · {isFetching ? "Updating..." : "Click Refresh for latest"}
         </span>
       </div>
-
-      {/* ── Asset Detail Modal ─────────────────────────────────────────── */}
-      {selectedAsset && (
-        <AssetDetailModal
-          asset={selectedAsset}
-          displayCurrency={displayCurrency}
-          onClose={() => setSelectedAsset(null)}
-          onBuy={() => handleBuy(selectedAsset)}
-          onSell={() => handleSell(selectedAsset)}
-        />
-      )}
 
       {/* ── Trade Dialog ─────────────────────────────────────────────────── */}
       {tradeAsset && (
